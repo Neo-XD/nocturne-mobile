@@ -1,4 +1,4 @@
-﻿import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 import java.net.URL
 
@@ -19,10 +19,9 @@ plugins {
 android {
     namespace = "com.music.vivi"
     compileSdk = 35
-    ndkVersion = "27.0.12077973"
 
     defaultConfig {
-        applicationId = "com.vivi.vivimusic"
+        applicationId = "com.nocturne.music"
         minSdk = 26
         targetSdk = 35
         versionCode = 74
@@ -101,7 +100,6 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
             storePassword = "android"
-            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
         }
     }
 
