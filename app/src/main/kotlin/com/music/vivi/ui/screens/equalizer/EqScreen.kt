@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens.equalizer
+package com.music.vivi.ui.screens.equalizer
 
 import android.annotation.SuppressLint
 import android.content.Intent

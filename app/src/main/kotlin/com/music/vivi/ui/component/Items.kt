@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  * 
@@ -1101,9 +1101,9 @@ fun MediaMetadataListItem(
         subtitle = if (mediaMetadata.suggestedBy != null) {
             buildAnnotatedString {
                 append(mediaMetadata.artists.joinToString { it.name })
-                append(" â€¢ ")
+                append(" • ")
                 append(makeTimeString(mediaMetadata.duration * 1000L))
-                append(" â€¢ ")
+                append(" • ")
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                     append(mediaMetadata.suggestedBy)
                 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -124,7 +124,7 @@ private fun Material3MenuItemRow(
 }
 
 /**
- * Expressive menu item row — matches the ExpressiveSettingsItemRow style:
+ * Expressive menu item row � matches the ExpressiveSettingsItemRow style:
  * compact 22dp primary-tinted icons, bodyLarge title, bodyMedium description below.
  */
 @Composable

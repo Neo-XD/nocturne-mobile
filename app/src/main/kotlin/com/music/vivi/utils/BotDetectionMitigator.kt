@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -31,7 +31,7 @@ object BotDetectionMitigator {
 
     private val failureCount = AtomicInteger(0)
 
-    // Error reasons that indicate geographic restriction – NOT a bot signal.
+    // Error reasons that indicate geographic restriction � NOT a bot signal.
     // IMPORTANT: Keep these specific to avoid false positives.
     private val GEO_ERROR_SIGNATURES = listOf(
         "not available in your country",

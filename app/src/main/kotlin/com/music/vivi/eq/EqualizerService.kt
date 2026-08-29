@@ -1,4 +1,4 @@
-﻿package com.music.vivi.eq
+package com.music.vivi.eq
 
 
 import android.annotation.SuppressLint

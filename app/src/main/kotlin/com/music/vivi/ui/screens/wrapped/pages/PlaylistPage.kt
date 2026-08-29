@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens.wrapped.pages
+package com.music.vivi.ui.screens.wrapped.pages
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween

@@ -1,4 +1,4 @@
-﻿package com.dpi
+package com.dpi
 
 import android.content.Context
 import timber.log.Timber

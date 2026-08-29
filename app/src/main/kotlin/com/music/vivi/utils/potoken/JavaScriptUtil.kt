@@ -1,4 +1,4 @@
-﻿package com.music.vivi.utils.potoken
+package com.music.vivi.utils.potoken
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull

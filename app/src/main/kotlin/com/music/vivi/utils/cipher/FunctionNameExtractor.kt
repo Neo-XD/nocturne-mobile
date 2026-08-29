@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -152,7 +152,7 @@ object FunctionNameExtractor {
 
     /**
      * Get the validated config for a known player.js hash from [PlayerConfigStore] (the
-     * bundled asset overlaid by the remote table). Replaces the former hardcoded map â€” new
+     * bundled asset overlaid by the remote table). Replaces the former hardcoded map — new
      * players are now added by pushing to player_configs.json, not by editing this file.
      */
     fun getHardcodedConfig(playerHash: String): HardcodedPlayerConfig? {
@@ -176,7 +176,7 @@ object FunctionNameExtractor {
      * Validated config FIRST, legacy regex heuristics only as a fallback: config entries are
      * proven against the live CDN (HTTP 206) before they ship, while the patterns below are
      * unanchored heuristics that can false-match anywhere in the ~2 MB player JS. A heuristic
-     * must never shadow a validated config â€” and a false positive here must not block the
+     * must never shadow a validated config — and a false positive here must not block the
      * unknown-player forced refresh in CipherDeobfuscator.
      * @param playerJs The player.js content
      * @param knownHash Optional hash for config lookup
@@ -232,7 +232,7 @@ object FunctionNameExtractor {
     /**
      * Extract N-transform function info from player.js.
      *
-     * Validated config FIRST, legacy regex heuristics only as a fallback â€” same precedence
+     * Validated config FIRST, legacy regex heuristics only as a fallback — same precedence
      * rationale as [extractSigFunctionInfo].
      * @param playerJs The player.js content
      * @param knownHash Optional hash for config lookup

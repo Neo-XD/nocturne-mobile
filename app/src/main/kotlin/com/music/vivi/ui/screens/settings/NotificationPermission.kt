@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -60,10 +60,10 @@ import com.music.vivi.ui.component.Material3SettingsItem
 import com.music.vivi.ui.component.ModernSwitch
 import com.music.vivi.ui.utils.backToMain
 import com.music.vivi.utils.rememberPreference
-import com.music.vivi.vivimusic.updater.getUpdateNotificationsSetting
-import com.music.vivi.vivimusic.updater.saveUpdateNotificationsSetting
-import com.music.vivi.vivimusic.updater.getDownloadNotificationsSetting
-import com.music.vivi.vivimusic.updater.saveDownloadNotificationsSetting
+import com.music.vivi.nocturne.updater.getUpdateNotificationsSetting
+import com.music.vivi.nocturne.updater.saveUpdateNotificationsSetting
+import com.music.vivi.nocturne.updater.getDownloadNotificationsSetting
+import com.music.vivi.nocturne.updater.saveDownloadNotificationsSetting
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

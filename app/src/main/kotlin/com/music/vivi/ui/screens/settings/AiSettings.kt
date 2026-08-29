@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -435,7 +435,7 @@ fun AiSettings(
                             description = { 
                                 Text(
                                     if (deeplApiKey.isNotEmpty()) 
-                                        "â€¢".repeat(minOf(deeplApiKey.length, 8))
+                                        "•".repeat(minOf(deeplApiKey.length, 8))
                                     else 
                                         stringResource(R.string.not_set)
                                 )
@@ -470,7 +470,7 @@ fun AiSettings(
                             description = { 
                                 Text(
                                     if (openRouterApiKey.isNotEmpty()) 
-                                        "â€¢".repeat(minOf(openRouterApiKey.length, 8))
+                                        "•".repeat(minOf(openRouterApiKey.length, 8))
                                     else 
                                         stringResource(R.string.not_set)
                                 )

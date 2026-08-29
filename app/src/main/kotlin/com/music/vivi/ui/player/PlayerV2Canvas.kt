@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.player
+package com.music.vivi.ui.player
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -6,7 +6,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.music.vivi.canvas.CanvasArtwork
 import com.music.vivi.canvas.TidalCanvasProvider
 import com.music.vivi.applecanvas.AppleMusicCanvasProvider
-import com.music.vivi.vivimusiccanvas.ViviMusicCanvasProvider
+import com.music.vivi.nocturnecanvas.NocturneCanvasProvider
 import com.music.vivi.constants.CanvasSource
 import com.music.vivi.constants.CanvasSourceKey
 import com.music.vivi.models.MediaMetadata
@@ -59,7 +59,7 @@ fun PlayerV2Canvas(
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
                         ?: TidalCanvasProvider.getBySongArtist(songTitle, artistName, albumName)
                             ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
-                        ?: ViviMusicCanvasProvider.getBySongArtist(songTitle, artistName, albumName)
+                        ?: NocturneCanvasProvider.getBySongArtist(songTitle, artistName, albumName)
                             ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
                 }
                 CanvasSource.APPLE_MUSIC -> {
@@ -67,7 +67,7 @@ fun PlayerV2Canvas(
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
                 }
                 CanvasSource.VIVIMUSIC -> {
-                    ViviMusicCanvasProvider.getBySongArtist(songTitle, artistName, albumName)
+                    NocturneCanvasProvider.getBySongArtist(songTitle, artistName, albumName)
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
                 }
                 CanvasSource.TIDAL -> {

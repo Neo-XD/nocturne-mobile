@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.menu
+package com.music.vivi.ui.menu
 
 import android.content.Intent
 import android.widget.Toast
@@ -435,7 +435,7 @@ fun OldPlayerMenu(
             Material3MenuGroup(
                 expressive = true,
                 items = buildList {
-                    // ── Single smart Retry button ────────────────────────────
+                    // -- Single smart Retry button ----------------------------
                     // Always visible. Re-triggers the full resolution chain.
                     add(
                         Material3MenuItemData(

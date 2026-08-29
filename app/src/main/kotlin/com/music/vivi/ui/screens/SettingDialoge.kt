@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens
+package com.music.vivi.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -324,7 +324,7 @@ fun SettingDialoge(
                         )
                     }
                 
-                    Text(text = "•", color = onPrimaryColor)
+                    Text(text = "�", color = onPrimaryColor)
                     TextButton(onClick = { uriHandler.openUri("https://vivimusicapp.netlify.app/terms") }) {
                         Text(
                             text = "Terms of Service",

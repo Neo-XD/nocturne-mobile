@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -27,7 +27,7 @@ import com.music.innertube.models.YouTubeLocale
 import com.music.kugou.KuGou
 import com.music.lastfm.LastFM
 import com.music.vivi.constants.*
-import com.music.vivi.vivimusic.release.NewReleaseCheckWorker
+import com.music.vivi.nocturne.release.NewReleaseCheckWorker
 import com.music.vivi.di.ApplicationScope
 import com.music.vivi.extensions.toEnum
 import com.music.vivi.extensions.toInetSocketAddress
@@ -77,7 +77,7 @@ class App : Application(), SingletonImageLoader.Factory {
 
         Timber.plant(Timber.DebugTree())
 
-        // تهيئة إعدادات التطبيق عند الإقلاع
+        // ????? ??????? ??????? ??? ???????
         applicationScope.launch {
             initializeSettings()
             observeSettingsChanges()

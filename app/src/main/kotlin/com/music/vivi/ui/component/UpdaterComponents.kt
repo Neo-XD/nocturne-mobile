@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.component
+package com.music.vivi.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
@@ -56,7 +56,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.core.content.ContextCompat
-import com.music.vivi.vivimusic.updater.extractUrls
+import com.music.vivi.nocturne.updater.extractUrls
 @Composable
 fun AnimatedActionButton(
     text: String,

@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.component
+package com.music.vivi.ui.component
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.animateColorAsState

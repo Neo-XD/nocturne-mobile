@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -46,13 +46,13 @@ import com.music.vivi.utils.rememberPreference
 import kotlinx.coroutines.delay
 
 /**
- * Apple Music style lyrics animation — ViviMusic_1
+ * Apple Music style lyrics animation � ViviMusic_1
  * Features:
  * - Word-by-word fill with spring easing (FastOutSlowInEasing)
  * - Spring-based scale with gentle bounce on activation
  * - Y-offset entrance animation when a line becomes active
  * - Sentence linger: active state held 180ms after line change for softer handoff
- * - Softer curved inactive alpha falloff (0.75 → 0.50 → 0.30 → 0.20)
+ * - Softer curved inactive alpha falloff (0.75 ? 0.50 ? 0.30 ? 0.20)
  * - Faster blur transition (600ms FastOutSlowInEasing)
  * - Space glyphs animated in sync with preceding word progress
  * - No-word-timestamp fallback: whole sentence sweeps at once
@@ -82,7 +82,7 @@ fun ViviMusicLyricsLine(
 ) {
     val (appleMusicLyricsBlur) = rememberPreference(AppleMusicLyricsBlurKey, true)
 
-    // ── Sentence linger ────────────────────────────────────────────────────────
+    // -- Sentence linger --------------------------------------------------------
     // Keep the "active" state alive for 180 ms after the line deactivates so
     // the last word can finish its fill animation before cross-fading away.
     val lingeredIsActive = remember { mutableStateOf(false) }
@@ -95,7 +95,7 @@ fun ViviMusicLyricsLine(
         }
     }
 
-    // ── Blur ──────────────────────────────────────────────────────────────────
+    // -- Blur ------------------------------------------------------------------
     val targetBlur = if (!appleMusicLyricsBlur || !isAutoScrollActive || isActive || !isSynced || isSelectionModeActive) {
         0f
     } else {
@@ -111,12 +111,12 @@ fun ViviMusicLyricsLine(
 
     val animatedBlur by animateFloatAsState(
         targetValue = targetBlur,
-        // Faster, more reactive blur — 600 ms instead of 1000 ms
+        // Faster, more reactive blur � 600 ms instead of 1000 ms
         animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
         label = "blur"
     )
 
-    // ── Line duration for sentence-level timing ────────────────────────────────
+    // -- Line duration for sentence-level timing --------------------------------
     val duration = remember(entry.time, nextEntryTime) {
         if (nextEntryTime != null) nextEntryTime - entry.time else 4000L
     }
@@ -124,7 +124,7 @@ fun ViviMusicLyricsLine(
         (duration * 0.95).toLong().coerceAtLeast(300L)
     }
 
-    // ── Word data ─────────────────────────────────────────────────────────────
+    // -- Word data -------------------------------------------------------------
     val hasWordTimestamps = entry.words != null && entry.words.isNotEmpty() &&
             !com.music.vivi.lyrics.LyricsUtils.isHindi(entry.text)
 
@@ -137,12 +137,12 @@ fun ViviMusicLyricsLine(
                 Triple(word.text, wordStart, wordEnd)
             }
         } else {
-            // No word timestamps — null signals sentence-level fallback below
+            // No word timestamps � null signals sentence-level fallback below
             null
         }
     }
 
-    // ── Alpha falloff — soft curve ────────────────────────────────────────────
+    // -- Alpha falloff � soft curve --------------------------------------------
     val targetAlpha = when {
         !isSynced || (isSelectionModeActive && isSelected) -> 1f
         lingeredIsActive.value -> 1f
@@ -159,8 +159,8 @@ fun ViviMusicLyricsLine(
         label = "lineAlpha"
     )
 
-    // ── Scale ──────────────────────────────────────────────────────────────
-    // Smooth tween — no bounce. Active line gently grows.
+    // -- Scale --------------------------------------------------------------
+    // Smooth tween � no bounce. Active line gently grows.
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.05f else 1f,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
@@ -189,7 +189,7 @@ fun ViviMusicLyricsLine(
         .padding(horizontal = 24.dp, vertical = (8 * lineSpacing).dp)
         .blur(animatedBlur.dp)
 
-    // ── Agent alignment ───────────────────────────────────────────────────────
+    // -- Agent alignment -------------------------------------------------------
     val agentAlignment = when {
         entry.isBackground -> Alignment.CenterHorizontally
         entry.agent == "v1" -> Alignment.Start
@@ -219,8 +219,8 @@ fun ViviMusicLyricsLine(
         horizontalAlignment = agentAlignment
     ) {
         if (wordData != null) {
-            // ── WORD-BY-WORD mode — Ocean Wave ────────────────────────────────
-            // ONE global wave progress (0→1) sweeps continuously from the first
+            // -- WORD-BY-WORD mode � Ocean Wave --------------------------------
+            // ONE global wave progress (0?1) sweeps continuously from the first
             // word to the last. Each word just reads where the wave front sits
             // within its own bounds, creating a single fluid motion across the
             // whole sentence instead of per-word independent fills.
@@ -232,7 +232,7 @@ fun ViviMusicLyricsLine(
 
             val rawGlobalWave = (lineRelTime.toFloat() / globalEnd.toFloat()).coerceIn(0f, 1f)
 
-            // Animate as one smooth value — tight follow (80ms) so the wave
+            // Animate as one smooth value � tight follow (80ms) so the wave
             // tracks time accurately while staying fluid.
             val globalWave by animateFloatAsState(
                 targetValue = rawGlobalWave,
@@ -258,7 +258,7 @@ fun ViviMusicLyricsLine(
                 )
             ) {
                 wordData.forEachIndexed { index, (wordText, startRelative, endRelative) ->
-                    // Map global wave position into this word's local 0→1 space.
+                    // Map global wave position into this word's local 0?1 space.
                     val wordStartFrac = startRelative.toFloat() / globalEnd
                     val wordEndFrac = endRelative.toFloat() / globalEnd
                     val wordSpan = (wordEndFrac - wordStartFrac).coerceAtLeast(0.001f)
@@ -274,28 +274,28 @@ fun ViviMusicLyricsLine(
 
                     val finalFontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Bold
 
-                    // ── Wave brush — trailing feather only ───────────────────
+                    // -- Wave brush � trailing feather only -------------------
                     // Apple Music: content BEFORE the wave = fully bright.
                     // Content AFTER the wave = fully dim.
                     // Only the wave FRONT itself has a soft feather edge.
-                    // No leading feather — that's what was causing the first-letter
+                    // No leading feather � that's what was causing the first-letter
                     // highlight bug (fillEdgeStart clamped to 0 when wave barely entered).
                     val waveFront = wordLocalProgress
                     val waveTail = (wordLocalProgress + waveFeather).coerceAtMost(1f)
 
                     val wordBrush = when {
-                        // Wave hasn't reached this word yet → pure dim, no gradient
+                        // Wave hasn't reached this word yet ? pure dim, no gradient
                         wordLocalProgress <= 0f -> Brush.horizontalGradient(
                             colors = listOf(
                                 textColor.copy(alpha = 0.45f),
                                 textColor.copy(alpha = 0.45f)
                             )
                         )
-                        // Wave has fully passed this word → pure bright, no gradient
+                        // Wave has fully passed this word ? pure bright, no gradient
                         wordLocalProgress >= 1f -> Brush.horizontalGradient(
                             colors = listOf(textColor, textColor)
                         )
-                        // Wave is actively crossing through → trailing-feather gradient
+                        // Wave is actively crossing through ? trailing-feather gradient
                         else -> Brush.horizontalGradient(
                             0f        to textColor,                      // solid bright (filled)
                             waveFront to textColor,                      // bright right at the front
@@ -321,7 +321,7 @@ fun ViviMusicLyricsLine(
                     )
 
                     if (index != wordData.lastIndex) {
-                        // Space glyph follows the wave front — fully bright once the
+                        // Space glyph follows the wave front � fully bright once the
                         // wave has passed this word, dim while it's still ahead.
                         val spaceAlpha = (0.45f + 0.55f * wordLocalProgress).coerceIn(0.45f, 1f)
                         Text(
@@ -343,8 +343,8 @@ fun ViviMusicLyricsLine(
                 }
             }
         } else {
-            // ── SENTENCE-LEVEL fallback ───────────────────────────────────────
-            // No word timestamps → highlight the whole sentence at once, Apple-style.
+            // -- SENTENCE-LEVEL fallback ---------------------------------------
+            // No word timestamps ? highlight the whole sentence at once, Apple-style.
             val targetSentenceAlpha = if (isActive || lingeredIsActive.value) 1f else 0.45f
 
             val sentenceAlpha by animateFloatAsState(
@@ -379,7 +379,7 @@ fun ViviMusicLyricsLine(
             )
         }
 
-        // ── Romanized text ────────────────────────────────────────────────────
+        // -- Romanized text ----------------------------------------------------
         if (showRomanized) {
             val romanizedText by entry.romanizedTextFlow.collectAsState()
             romanizedText?.let { romanized ->
@@ -395,7 +395,7 @@ fun ViviMusicLyricsLine(
             }
         }
 
-        // ── Translated text ───────────────────────────────────────────────────
+        // -- Translated text ---------------------------------------------------
         if (showTranslated) {
             val translatedText by entry.translatedTextFlow.collectAsState()
             translatedText?.let { translated ->

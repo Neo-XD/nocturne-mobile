@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -889,7 +889,7 @@ fun Lyrics(
             val lookUpIndex = if (isLyricsProviderShown) targetIndex + 1 else targetIndex
             val itemInfo = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == lookUpIndex }
             if (itemInfo != null) {
-                // Item is visible â€” animate directly to center with smooth deceleration
+                // Item is visible — animate directly to center with smooth deceleration
                 val viewportHeight = lazyListState.layoutInfo.viewportEndOffset - lazyListState.layoutInfo.viewportStartOffset
                 val center = lazyListState.layoutInfo.viewportStartOffset + (viewportHeight / 2)
                 val itemCenter = itemInfo.offset + itemInfo.size / 2
@@ -901,7 +901,7 @@ fun Lyrics(
                     )
                 }
             } else {
-                // Item not visible â€” jump to it so next cycle can animate from a visible position
+                // Item not visible — jump to it so next cycle can animate from a visible position
                 lazyListState.scrollToItem(targetIndex)
             }
         } finally {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -119,7 +119,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import com.music.vivi.applecanvas.AppleMusicCanvasProvider
-import com.music.vivi.vivimusiccanvas.ViviMusicCanvasProvider
+import com.music.vivi.nocturnecanvas.NocturneCanvasProvider
 import java.util.Locale
 
 /**
@@ -801,7 +801,7 @@ private fun ThumbnailItem(
                                             artist = a,
                                             album = albumName
                                         )?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() && validateCanvasMatch(it, s, a, album) }
-                                        ?: ViviMusicCanvasProvider.getBySongArtist(
+                                        ?: NocturneCanvasProvider.getBySongArtist(
                                             song = s,
                                             artist = a,
                                             album = album
@@ -820,7 +820,7 @@ private fun ThumbnailItem(
                             }
                             CanvasSource.VIVIMUSIC -> {
                                 searchTasks.firstNotNullOfOrNull { (s, a) ->
-                                    ViviMusicCanvasProvider.getBySongArtist(
+                                    NocturneCanvasProvider.getBySongArtist(
                                         song = s,
                                         artist = a,
                                         album = albumName ?: ""
@@ -1001,7 +1001,7 @@ internal fun validateCanvasMatch(
 internal fun splitAndNormalizeArtists(raw: String): List<String> {
     return raw.split(
         Regex(
-            "(?:\\s*,\\s*|\\s*&\\s*|\\s+×\\s+|\\s+x\\s+|\\bfeat\\.?\\b|\\bft\\.?\\b|\\bfeaturing\\b|\\bwith\\b)",
+            "(?:\\s*,\\s*|\\s*&\\s*|\\s+�\\s+|\\s+x\\s+|\\bfeat\\.?\\b|\\bft\\.?\\b|\\bfeaturing\\b|\\bwith\\b)",
             RegexOption.IGNORE_CASE,
         )
     ).map { it.normalizeForComparison() }

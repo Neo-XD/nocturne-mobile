@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens.search.suggestions
+package com.music.vivi.ui.screens.search.suggestions
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable

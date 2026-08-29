@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens.equalizer
+package com.music.vivi.ui.screens.equalizer
 
 import com.music.vivi.eq.data.SavedEQProfile
 

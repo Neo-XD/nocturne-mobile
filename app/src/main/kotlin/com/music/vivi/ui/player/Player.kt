@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -187,10 +187,10 @@ import com.music.vivi.extensions.toggleRepeatMode
 import com.music.vivi.listentogether.RoomRole
 import com.music.vivi.models.MediaMetadata
 import com.music.vivi.playback.ExoDownloadService
-import com.music.vivi.vivimusic.getConnectedBluetoothDeviceName
-import com.music.vivi.vivimusic.isBuds
-import com.music.vivi.vivimusic.isSpeaker
-import com.music.vivi.vivimusic.AudioDeviceBottomSheet
+import com.music.vivi.nocturne.getConnectedBluetoothDeviceName
+import com.music.vivi.nocturne.isBuds
+import com.music.vivi.nocturne.isSpeaker
+import com.music.vivi.nocturne.AudioDeviceBottomSheet
 import com.music.vivi.ui.component.BottomSheet
 import com.music.vivi.ui.component.BottomSheetState
 import com.music.vivi.ui.component.LocalBottomSheetPageState
@@ -243,7 +243,7 @@ import com.music.vivi.constants.CanvasSourceKey
 import com.music.vivi.constants.CanvasThumbnailAnimationKey
 import com.music.vivi.extensions.metadata
 import com.music.vivi.ui.player.CanvasArtworkPlaybackCache
-import com.music.vivi.vivimusiccanvas.ViviMusicCanvasProvider
+import com.music.vivi.nocturnecanvas.NocturneCanvasProvider
 import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -594,7 +594,7 @@ fun BottomSheetPlayer(
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() && validateCanvasMatch(it, s, a, requestedAlbum) }
                         ?: TidalCanvasProvider.getBySongArtist(s, a, requestedAlbum)
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() && validateCanvasMatch(it, s, a, requestedAlbum) }
-                        ?: ViviMusicCanvasProvider.getBySongArtist(s, a, requestedAlbum)
+                        ?: NocturneCanvasProvider.getBySongArtist(s, a, requestedAlbum)
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() && validateCanvasMatch(it, s, a, requestedAlbum) }
                 }
                 CanvasSource.APPLE_MUSIC -> {
@@ -602,7 +602,7 @@ fun BottomSheetPlayer(
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
                 }
                 CanvasSource.VIVIMUSIC -> {
-                    ViviMusicCanvasProvider.getBySongArtist(s, a, requestedAlbum)
+                    NocturneCanvasProvider.getBySongArtist(s, a, requestedAlbum)
                         ?.takeIf { !it.preferredAnimationUrl.isNullOrBlank() }
                 }
                 CanvasSource.TIDAL -> {

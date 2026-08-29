@@ -1,4 +1,4 @@
-﻿package com.music.vivi.recognition
+package com.music.vivi.recognition
 
 /**
  * Native library interface for generating Shazam-compatible audio fingerprints.

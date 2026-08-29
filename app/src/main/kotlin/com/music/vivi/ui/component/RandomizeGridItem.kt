@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.component
+package com.music.vivi.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween

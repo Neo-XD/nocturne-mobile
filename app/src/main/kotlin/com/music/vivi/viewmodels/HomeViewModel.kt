@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -568,7 +568,7 @@ class HomeViewModel @Inject constructor(
     /**
      * Phase 2: Fires all network sections concurrently.
      * Because isLoading is already false, each section streams into the UI
-     * as its data arrives â€” no spinner blocking the user.
+     * as its data arrives — no spinner blocking the user.
      */
     private suspend fun loadNetworkDataPhase() {
         val hideExplicit = context.dataStore.get(HideExplicitKey, false)
@@ -626,11 +626,11 @@ class HomeViewModel @Inject constructor(
     private suspend fun load() {
         isLoading.value = true
 
-        // Phase 1: Local DB only â€” UI renders immediately after this
+        // Phase 1: Local DB only — UI renders immediately after this
         loadLocalDataPhase()
         isLoading.value = false
 
-        // Phase 2: All network sections in parallel â€” streams in progressively
+        // Phase 2: All network sections in parallel — streams in progressively
         loadNetworkDataPhase()
     }
 

@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens.settings
+package com.music.vivi.ui.screens.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -35,19 +35,19 @@ import com.music.vivi.R
 import com.music.vivi.ui.component.IconButton
 import com.music.vivi.ui.component.Material3SettingsGroup
 import com.music.vivi.ui.component.Material3SettingsItem
-import com.music.vivi.vivimusic.component.UpdateInfoDialog
+import com.music.vivi.nocturne.component.UpdateInfoDialog
 import com.music.vivi.ui.utils.backToMain
-import com.music.vivi.vivimusic.updater.getAutoUpdateCheckSetting
-import com.music.vivi.vivimusic.updater.saveAutoUpdateCheckSetting
-import com.music.vivi.vivimusic.updater.getUpdateAvailableState
-import com.music.vivi.vivimusic.updater.saveUpdateAvailableState
+import com.music.vivi.nocturne.updater.getAutoUpdateCheckSetting
+import com.music.vivi.nocturne.updater.saveAutoUpdateCheckSetting
+import com.music.vivi.nocturne.updater.getUpdateAvailableState
+import com.music.vivi.nocturne.updater.saveUpdateAvailableState
 import android.widget.Toast
 import androidx.compose.ui.res.pluralStringResource
-import com.music.vivi.vivimusic.updater.getDownloadedApkCount
-import com.music.vivi.vivimusic.updater.clearDownloadedApks
-import com.music.vivi.vivimusic.updater.getBetaUpdatesSetting
-import com.music.vivi.vivimusic.updater.saveBetaUpdatesSetting
-import com.music.vivi.vivimusic.updater.autoClearOldApks
+import com.music.vivi.nocturne.updater.getDownloadedApkCount
+import com.music.vivi.nocturne.updater.clearDownloadedApks
+import com.music.vivi.nocturne.updater.getBetaUpdatesSetting
+import com.music.vivi.nocturne.updater.saveBetaUpdatesSetting
+import com.music.vivi.nocturne.updater.autoClearOldApks
 import androidx.compose.material3.MaterialTheme
 import com.music.vivi.BuildConfig
 import com.music.vivi.utils.rememberPreference
@@ -59,7 +59,7 @@ import android.Manifest
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.Lifecycle
-import com.music.vivi.vivimusic.updater.checkForUpdate
+import com.music.vivi.nocturne.updater.checkForUpdate
 
 //here b5.0.1 must be used for the beta tag
 

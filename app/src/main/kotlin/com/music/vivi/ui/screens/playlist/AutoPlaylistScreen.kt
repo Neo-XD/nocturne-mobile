@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -807,12 +807,12 @@ private fun AutoPlaylistHeader(
 
         Spacer(Modifier.height(16.dp))
 
-        // Metadata - Song Count â€¢ Duration
+        // Metadata - Song Count • Duration
         Text(
             text = buildString {
                 append(pluralStringResource(R.plurals.n_song, songs.size, songs.size))
                 if (likeLength > 0) {
-                    append(" â€¢ ")
+                    append(" • ")
                     append(makeTimeString(likeLength * 1000L))
                 }
             },

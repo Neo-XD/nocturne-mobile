@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens.equalizer.axion
+package com.music.vivi.ui.screens.equalizer.axion
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke

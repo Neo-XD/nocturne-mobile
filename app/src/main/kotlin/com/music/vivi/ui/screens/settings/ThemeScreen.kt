@@ -1,4 +1,4 @@
-ï»¿package com.music.vivi.ui.screens.settings
+package com.music.vivi.ui.screens.settings
 
 import android.content.res.Configuration
 import android.os.Build
@@ -759,14 +759,14 @@ fun ThemePreviewCard(
                     )
                 }
 
-                // Color swatch row â€” primary, secondary, tertiary, primaryContainer
+                // Color swatch row — primary, secondary, tertiary, primaryContainer
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Primary â€” largest swatch
+                    // Primary — largest swatch
                     Box(
                         modifier = Modifier
                             .weight(2f)

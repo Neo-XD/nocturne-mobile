@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.component
+package com.music.vivi.ui.component
 
 import android.graphics.BlurMaskFilter
 import androidx.compose.animation.AnimatedVisibility
@@ -363,7 +363,7 @@ private fun WordLevelCanvasLyrics(
         }
     }
     
-    // Read playerConnection directly — same as Metrolist. This avoids the 8ms polling
+    // Read playerConnection directly � same as Metrolist. This avoids the 8ms polling
     // lag from effectivePlaybackPosition which is only updated by the Lyrics.kt loop.
     val playerConnection = LocalPlayerConnection.current
 

@@ -1,4 +1,4 @@
-﻿package com.music.vivi.utils.sabr
+package com.music.vivi.utils.sabr
 
 import android.content.Context
 import android.net.Uri

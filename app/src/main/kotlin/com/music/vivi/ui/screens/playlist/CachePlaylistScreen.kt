@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -514,12 +514,12 @@ private fun CachePlaylistHeader(
 
         Spacer(Modifier.height(8.dp))
 
-        // Metadata - Song Count â€¢ Duration
+        // Metadata - Song Count • Duration
         Text(
             text = buildString {
                 append(pluralStringResource(R.plurals.n_song, songs.size, songs.size))
                 if (cacheLength > 0) {
-                    append(" â€¢ ")
+                    append(" • ")
                     append(makeTimeString(cacheLength * 1000L))
                 }
             },

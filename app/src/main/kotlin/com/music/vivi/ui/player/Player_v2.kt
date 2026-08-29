@@ -1,4 +1,4 @@
-ï»¿package com.music.vivi.ui.player
+package com.music.vivi.ui.player
 
 import android.content.BroadcastReceiver
 import android.content.Intent
@@ -70,8 +70,8 @@ import androidx.compose.ui.unit.sp
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.music.vivi.extensions.SwipeGesture
-import com.music.vivi.vivimusic.AudioDeviceBottomSheet
-import com.music.vivi.vivimusic.getConnectedBluetoothDeviceName
+import com.music.vivi.nocturne.AudioDeviceBottomSheet
+import com.music.vivi.nocturne.getConnectedBluetoothDeviceName
 import com.music.vivi.ui.component.CastButton
 import com.music.vivi.BuildConfig
 import com.music.vivi.R
@@ -122,7 +122,7 @@ fun PlayerV2(
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
 
-    // Cast state â€” mirrors Player.kt lines 366-378
+    // Cast state — mirrors Player.kt lines 366-378
     val castHandler = remember(playerConnection) {
         try { playerConnection.service.castConnectionHandler } catch (e: Exception) { null }
     }
@@ -245,7 +245,7 @@ fun PlayerV2(
         }
     }
     
-    // Position update â€” only poll local player when not casting
+    // Position update — only poll local player when not casting
     LaunchedEffect(isPlaying, isCasting) {
         if (!isCasting && isPlaying) {
             while (isActive) {

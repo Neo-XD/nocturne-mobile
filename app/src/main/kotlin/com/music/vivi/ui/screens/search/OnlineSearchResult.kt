@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -132,7 +132,7 @@ fun OnlineSearchResult(
     // Whether the SearchBar is in its "active/expanded" state (showing suggestions)
     var searchActive by rememberSaveable { mutableStateOf(false) }
 
-    // Same animated padding as SearchScreen â€” pill expands edge-to-edge on activation
+    // Same animated padding as SearchScreen — pill expands edge-to-edge on activation
     val searchBarHorizontalPadding by animateDpAsState(
         targetValue = if (searchActive) 0.dp else 16.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -184,7 +184,7 @@ fun OnlineSearchResult(
         query = TextFieldValue(decodedQuery, TextRange(decodedQuery.length))
     }
 
-    // Hardware back when suggestions overlay is open â€” dismiss it first
+    // Hardware back when suggestions overlay is open — dismiss it first
     BackHandler(enabled = searchActive) {
         searchActive = false
     }

@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.screens.settings
+package com.music.vivi.ui.screens.settings
 
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest

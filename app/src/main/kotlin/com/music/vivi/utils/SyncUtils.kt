@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * OuterTune Project Copyright (C) 2025
  * Licensed under GPL-3.0 | See git history for contributors
@@ -655,7 +655,7 @@ class SyncUtils @Inject constructor(
                         try {
                             val dbAlbum = database.album(album.id).firstOrNull()
                             if (dbAlbum == null) {
-                                // New album â€” fetch full details and insert
+                                // New album — fetch full details and insert
                                 YouTube.album(album.browseId).onSuccess { albumPage ->
                                     database.insert(albumPage)
                                     database.album(album.id).firstOrNull()?.let { newDbAlbum ->
@@ -663,10 +663,10 @@ class SyncUtils @Inject constructor(
                                     }
                                 }
                             } else if (dbAlbum.album.bookmarkedAt == null) {
-                                // Already cached but not liked yet â€” just mark liked
+                                // Already cached but not liked yet — just mark liked
                                 database.update(dbAlbum.album.localToggleLike())
                             }
-                            // else: already cached and liked â€” skip network call
+                            // else: already cached and liked — skip network call
                             delay(DB_OPERATION_DELAY_MS)
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to process album: ${album.id}")
@@ -719,7 +719,7 @@ class SyncUtils @Inject constructor(
                         try {
                             val dbAlbum = database.album(album.id).firstOrNull()
                             if (dbAlbum == null) {
-                                // New uploaded album â€” fetch full details and insert
+                                // New uploaded album — fetch full details and insert
                                 YouTube.album(album.browseId).onSuccess { albumPage ->
                                     database.insert(albumPage)
                                     database.album(album.id).firstOrNull()?.let { newDbAlbum ->
@@ -727,10 +727,10 @@ class SyncUtils @Inject constructor(
                                     }
                                 }.onFailure { reportException(it) }
                             } else if (!dbAlbum.album.isUploaded) {
-                                // Already cached but not marked uploaded â€” just update flag
+                                // Already cached but not marked uploaded — just update flag
                                 database.update(dbAlbum.album.toggleUploaded())
                             }
-                            // else: already cached and marked uploaded â€” skip network call
+                            // else: already cached and marked uploaded — skip network call
                             delay(DB_OPERATION_DELAY_MS)
                         } catch (e: Exception) {
                             Timber.e(e, "Failed to process album: ${album.id}")
@@ -782,7 +782,7 @@ class SyncUtils @Inject constructor(
                     remoteArtists.forEach { artist ->
                         try {
                             val dbArtist = database.artist(artist.id).firstOrNull()
-                            // Use cached channelId first â€” only call YouTube.getChannelId() for new artists
+                            // Use cached channelId first — only call YouTube.getChannelId() for new artists
                             val channelId = artist.channelId
                                 ?: dbArtist?.artist?.channelId
                                 ?: if (dbArtist == null && artist.id.startsWith("UC")) {

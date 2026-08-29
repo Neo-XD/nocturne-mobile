@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -84,7 +84,7 @@ fun ThumbnailCornerRadiusModal(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // ── Image (left) + Chips (right) ──────────────────────────
+                    // -- Image (left) + Chips (right) --------------------------
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -142,7 +142,7 @@ fun ThumbnailCornerRadiusModal(
                             }
                         )
                     }
-                    // ──────────────────────────────────────────────────────────
+                    // ----------------------------------------------------------
 
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
@@ -337,14 +337,14 @@ fun ThumbnailCornerRadiusModal(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChipsGrid(
-    modifier: Modifier = Modifier,   // ← added
+    modifier: Modifier = Modifier,   // ? added
     values: List<Float>,
     selectedValue: Float?,
     onValueSelected: (Float) -> Unit
 ) {
     val chunkedValues = values.chunked(2)
     Column(
-        modifier = modifier,          // ← use passed-in modifier
+        modifier = modifier,          // ? use passed-in modifier
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {

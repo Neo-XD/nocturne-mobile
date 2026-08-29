@@ -1,4 +1,4 @@
-﻿package com.music.vivi.eq.data
+package com.music.vivi.eq.data
 
 import kotlinx.serialization.Serializable
 

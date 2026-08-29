@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.theme
+package com.music.vivi.ui.theme
 
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily

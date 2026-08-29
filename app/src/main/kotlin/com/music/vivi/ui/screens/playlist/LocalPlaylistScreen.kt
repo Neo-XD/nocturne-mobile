@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -1189,7 +1189,7 @@ fun LocalPlaylistHeader(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Metadata - Song Count â€¢ Duration
+        // Metadata - Song Count • Duration
         val songCount = if (playlist.songCount == 0 && playlist.playlist.remoteSongCount != null) {
             playlist.playlist.remoteSongCount
         } else {
@@ -1199,7 +1199,7 @@ fun LocalPlaylistHeader(
             text = buildString {
                 append(pluralStringResource(R.plurals.n_song, songCount, songCount))
                 if (playlistLength > 0) {
-                    append(" â€¢ ")
+                    append(" • ")
                     append(makeTimeString(playlistLength * 1000L))
                 }
             },

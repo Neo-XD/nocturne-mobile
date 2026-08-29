@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -218,7 +218,7 @@ fun RecognitionHistoryScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // ── Static search bar ──────────────────────────────────
+            // -- Static search bar ----------------------------------
             TextField(
                 value = query,
                 onValueChange = { query = it },
@@ -262,7 +262,7 @@ fun RecognitionHistoryScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // ── List / empty state ─────────────────────────────────
+            // -- List / empty state ---------------------------------
             when {
                 historyItems.isEmpty() -> {
                     // No history at all
@@ -320,7 +320,7 @@ fun RecognitionHistoryScreen(
                             .asPaddingValues()
                     ) {
                         if (query.text.isEmpty()) {
-                            // No active search → show grouped with sticky date headers
+                            // No active search ? show grouped with sticky date headers
                             groupedItems.forEach { (label, groupItems) ->
                                 stickyHeader(key = "header_$label") {
                                     NavigationTitle(
@@ -347,7 +347,7 @@ fun RecognitionHistoryScreen(
                                 }
                             }
                         } else {
-                            // Active search → flat list, no date headers
+                            // Active search ? flat list, no date headers
                             items(
                                 items = filteredItems,
                                 key = { it.id }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -152,8 +152,8 @@ import android.bluetooth.BluetoothDevice
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import com.music.vivi.vivimusic.isBluetoothHeadphoneConnected
-import com.music.vivi.vivimusic.AudioDeviceBottomSheet
+import com.music.vivi.nocturne.isBluetoothHeadphoneConnected
+import com.music.vivi.nocturne.AudioDeviceBottomSheet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive

@@ -1,4 +1,4 @@
-﻿package com.music.vivi.ui.component.snackbar
+package com.music.vivi.ui.component.snackbar
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.staticCompositionLocalOf

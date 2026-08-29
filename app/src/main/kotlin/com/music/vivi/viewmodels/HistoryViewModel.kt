@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -222,7 +222,7 @@ constructor(
 /**
  * Flat item types for HistoryScreen LazyColumn.
  * Precomputed in the ViewModel on a background thread, consumed as a single
- * `items {}` block in the screen — eliminates the `forEach` anti-pattern.
+ * `items {}` block in the screen � eliminates the `forEach` anti-pattern.
  */
 @Stable
 sealed class FlatHistoryItem {

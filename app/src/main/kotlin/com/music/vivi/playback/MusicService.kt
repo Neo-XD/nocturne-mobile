@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -1874,7 +1874,7 @@ class MusicService :
      * Acquires a high-performance Wi-Fi lock when playback starts.
      *
      * WIFI_MODE_FULL_HIGH_PERF tells the system to keep the Wi-Fi chip fully
-     * active with minimal latency â€” disabling power-saving sleep cycles.
+     * active with minimal latency — disabling power-saving sleep cycles.
      * This is called every time [player.isPlaying] becomes true.
      */
     private fun acquireWifiLock() {
@@ -2007,7 +2007,7 @@ class MusicService :
         }
 
         // Eagerly push updated custom layout so notification buttons (like/repeat/shuffle)
-        // reflect the new track immediately â€” before the 50ms debounced observer fires.
+        // reflect the new track immediately — before the 50ms debounced observer fires.
         updateNotification()
 
         // Pre-warm album art into Coil's memory cache so the notification bitmap is
@@ -2030,15 +2030,15 @@ class MusicService :
      *
      * Resolves the next queued track's signed CDN stream URL in the background and stores it
      * in [songUrlCache].  When ExoPlayer later transitions to that track, [createDataSourceFactory]
-     * reads the cached URL instantly â€” eliminating the 500 msâ€“2 s network round-trip that would
+     * reads the cached URL instantly — eliminating the 500 ms–2 s network round-trip that would
      * otherwise cause an audible gap between songs.
      *
      * Only the **immediate next** track is prefetched to keep bandwidth usage minimal.  The job is
      * cancelled and restarted on every track change, so stale URLs from shuffle/queue edits are
      * automatically discarded.
      *
-     * Note: this only resolves a small InnerTube JSON response (~10â€“30 KB).  No audio bytes are
-     * downloaded here â€” that is handled by ExoPlayer's own CacheDataSource pipeline.
+     * Note: this only resolves a small InnerTube JSON response (~10–30 KB).  No audio bytes are
+     * downloaded here — that is handled by ExoPlayer's own CacheDataSource pipeline.
      */
     private fun prefetchNextTrack() {
         // Cancel any in-flight prefetch from the previous song
@@ -2049,7 +2049,7 @@ class MusicService :
 
         val nextMediaId = player.getMediaItemAt(nextIndex).mediaId
 
-        // Nothing to do â€” URL is already cached and hasn't expired
+        // Nothing to do — URL is already cached and hasn't expired
         val cachedEntry = songUrlCache[nextMediaId]
         if (cachedEntry != null) return
 
@@ -2096,7 +2096,7 @@ class MusicService :
                         }
                     }
                 }
-            } ?: Timber.tag(TAG).d("[Prefetch] Could not resolve stream URL for $nextMediaId â€” will resolve on demand")
+            } ?: Timber.tag(TAG).d("[Prefetch] Could not resolve stream URL for $nextMediaId — will resolve on demand")
         }
     }
 
@@ -2511,7 +2511,7 @@ class MusicService :
 
     /**
      * Stops the player, clears all caches for the current song on the IO thread,
-     * then restarts playback â€” ensuring no stale cache data causes parse errors.
+     * then restarts playback — ensuring no stale cache data causes parse errors.
      * Safe to call from the main thread (UI).
      */
     fun retryCurrentStream() {
@@ -2520,12 +2520,12 @@ class MusicService :
         // Stop player before touching the cache so ExoPlayer isn't mid-read
         player.stop()
 
-        // Clear all caches synchronously on IO â€” must finish before prepare()
+        // Clear all caches synchronously on IO — must finish before prepare()
         runBlocking(Dispatchers.IO) {
             performAggressiveCacheClear(mediaId)
         }
 
-        // Now safe to restart â€” ExoPlayer will fetch a fresh stream
+        // Now safe to restart — ExoPlayer will fetch a fresh stream
         player.seekTo(0)
         player.prepare()
         player.play()

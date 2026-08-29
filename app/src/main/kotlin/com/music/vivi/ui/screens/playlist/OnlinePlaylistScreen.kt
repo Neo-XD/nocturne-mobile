@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -669,7 +669,7 @@ private fun OnlinePlaylistHeader(
                     text = buildString {
                         append(pluralStringResource(R.plurals.n_song, songs.size, songs.size))
                         if (totalDuration > 0) {
-                            append(" • ")
+                            append(" � ")
                             val hours = totalDuration / 3600
                             val minutes = (totalDuration % 3600) / 60
                             if (hours > 0) {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -69,11 +69,11 @@ import com.music.vivi.ui.screens.recognition.RecognitionHistoryScreen
 import com.music.vivi.ui.screens.settings.UpdateSettings
 import com.music.vivi.ui.screens.settings.NotificationPermission
 import com.music.vivi.ui.screens.wrapped.WrappedScreen
-import com.music.vivi.vivimusic.updater.UpdateScreen
+import com.music.vivi.nocturne.updater.UpdateScreen
 import com.music.vivi.utils.rememberEnumPreference
 import com.music.vivi.utils.rememberPreference
-import com.music.vivi.vivimusic.changelog.ChangelogScreen
-import com.music.vivi.vivimusic.commitscreen.CommitScreen
+import com.music.vivi.nocturne.changelog.ChangelogScreen
+import com.music.vivi.nocturne.commitscreen.CommitScreen
 import com.music.vivi.ui.screens.equalizer.axion.AxionEqScreen
 
 @OptIn(ExperimentalMaterial3Api::class)

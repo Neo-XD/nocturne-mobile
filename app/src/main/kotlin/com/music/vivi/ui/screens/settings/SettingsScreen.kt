@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -44,10 +44,10 @@ import com.music.vivi.ui.component.Material3SettingsGroup
 import com.music.vivi.ui.component.Material3SettingsItem
 import com.music.vivi.ui.screens.Screens
 import com.music.vivi.ui.utils.backToMain
-import com.music.vivi.vivimusic.updater.getUpdateAvailableState
-import com.music.vivi.vivimusic.updater.getAutoUpdateCheckSetting
-import com.music.vivi.vivimusic.updater.checkForUpdate
-import com.music.vivi.vivimusic.updater.saveUpdateAvailableState
+import com.music.vivi.nocturne.updater.getUpdateAvailableState
+import com.music.vivi.nocturne.updater.getAutoUpdateCheckSetting
+import com.music.vivi.nocturne.updater.checkForUpdate
+import com.music.vivi.nocturne.updater.saveUpdateAvailableState
 
 
 @OptIn(ExperimentalMaterial3Api::class)

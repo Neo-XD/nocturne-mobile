@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -33,6 +33,6 @@ fun joinByBullet(vararg str: String?) =
     str
         .filterNot {
             it.isNullOrEmpty()
-        }.joinToString(separator = " • ")
+        }.joinToString(separator = " � ")
 
 

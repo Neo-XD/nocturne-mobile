@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -517,7 +517,7 @@ fun DailyDiscoverCard(
                             text = buildString {
                                 append((dailyDiscover.recommendation as? SongItem)?.artists?.joinToString(", ") { it.name } ?: "")
                                 if (playCount > 0) {
-                                    append(" â€¢ $playCount $playsString")
+                                    append(" • $playCount $playsString")
                                 }
                             },
                             style = MaterialTheme.typography.bodyMedium,
@@ -537,7 +537,7 @@ fun DailyDiscoverCard(
                     }
 
                     Text(
-                        text = stringResource(messageRes, "${dailyDiscover.seed.title} â€¢ ${dailyDiscover.seed.artists.joinToString(", ") { it.name }}"),
+                        text = stringResource(messageRes, "${dailyDiscover.seed.title} • ${dailyDiscover.seed.artists.joinToString(", ") { it.name }}"),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.6f),

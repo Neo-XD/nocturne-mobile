@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -178,13 +178,13 @@ class SuggestionsViewModel @Inject constructor(
     /**
      * Returns true if the YT Music artist [ytArtistName] matches the Apple Music
      * [appleMusicArtist] string. Checks both directions so compound/featured-artist
-     * strings (e.g. "Taylor Swift feat. Ed Sheeran") are handled correctly â€”
+     * strings (e.g. "Taylor Swift feat. Ed Sheeran") are handled correctly —
      * no words are stripped or removed from either side.
      */
     private fun artistMatches(ytArtistName: String, appleMusicArtist: String): Boolean {
         val ytNorm = ytArtistName.trim().lowercase()
         val apNorm = appleMusicArtist.trim().lowercase()
-        // Check both directions â€” no stripping, no word removal
+        // Check both directions — no stripping, no word removal
         return apNorm.contains(ytNorm) || ytNorm.contains(apNorm)
     }
 
@@ -208,7 +208,7 @@ class SuggestionsViewModel @Inject constructor(
                 songs.firstOrNull { s ->
                     s.artists.any { a -> artistMatches(a.name, track.artist) }
                 } ?:
-                // 4. Fallback â€” first song in results (last resort)
+                // 4. Fallback — first song in results (last resort)
                 songs.firstOrNull()
 
                 if (bestMatch != null) {

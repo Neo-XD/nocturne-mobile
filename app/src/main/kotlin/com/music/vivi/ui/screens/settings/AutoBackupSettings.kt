@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -232,7 +232,7 @@ fun AutoBackupSettings(
                     val (dateStr, typeStr) = parseBackupFilename(backupFile, context)
                     Material3SettingsItem(
                         title = { Text(dateStr) },
-                        description = { Text("$typeStr • ${formatFileSize(backupFile.length())}") },
+                        description = { Text("$typeStr � ${formatFileSize(backupFile.length())}") },
                         onClick = {
                             backupToRestore = backupFile
                         },

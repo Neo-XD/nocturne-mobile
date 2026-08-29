@@ -1,4 +1,4 @@
-﻿package com.music.vivi.utils.potoken
+package com.music.vivi.utils.potoken
 
 import android.content.Context
 import android.webkit.ConsoleMessage

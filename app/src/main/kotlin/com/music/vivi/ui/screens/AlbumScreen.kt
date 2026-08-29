@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -329,16 +329,16 @@ fun AlbumScreen(
                         val albumInfoText = buildString {
                             append(stringResource(R.string.album_text))
                             if (albumWithSongs.album.year != null) {
-                                append(" â€¢ ${albumWithSongs.album.year}")
+                                append(" • ${albumWithSongs.album.year}")
                             }
-                            append(" â€¢ ${albumWithSongs.songs.size} Tracks")
+                            append(" • ${albumWithSongs.songs.size} Tracks")
                             val totalDuration = albumWithSongs.songs.sumOf { it.song.duration }
                             val hours = totalDuration / 3600
                             val minutes = (totalDuration % 3600) / 60
                             if (hours > 0) {
-                                append(" â€¢ ${hours}h ${minutes}m")
+                                append(" • ${hours}h ${minutes}m")
                             } else {
-                                append(" â€¢ ${minutes}m")
+                                append(" • ${minutes}m")
                             }
                         }
 
@@ -400,7 +400,7 @@ fun AlbumScreen(
                                     )
                                     if (hasExplicitContent) {
                                         Text(
-                                            text = " â€¢ ",
+                                            text = " • ",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -461,7 +461,7 @@ fun AlbumScreen(
                                     )
                                     if (hasExplicitContent) {
                                         Text(
-                                            text = " â€¢ ",
+                                            text = " • ",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
