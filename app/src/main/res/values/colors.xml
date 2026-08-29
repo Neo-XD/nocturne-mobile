@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nocturne_background">#0E0E11</color>
+    <color name="nocturne_surface">#18181D</color>
+    <color name="nocturne_primary">#9D72FF</color>
+    <color name="nocturne_primary_variant">#7E4EE0</color>
+    <color name="nocturne_secondary">#2DD4BF</color>
+    <color name="nocturne_on_surface">#F5F5F7</color>
+</resources>
