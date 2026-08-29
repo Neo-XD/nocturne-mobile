@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalTextApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalTextApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 
 package com.music.vivi
 
@@ -391,7 +391,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         onClick = {},
                         label = {
                             Text(
-                                text = "$flavorSuffix v${BuildConfig.VERSION_NAME}",
+                                text = "$flavorSuffix ${if (BuildConfig.VERSION_NAME.startsWith("v")) "" else "v"}${BuildConfig.VERSION_NAME}",
                                 fontFamily = GoogleSansFlex
                             )
                         },

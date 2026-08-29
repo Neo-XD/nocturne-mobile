@@ -24,7 +24,7 @@ dependencyResolutionManagement {
 //     id("org.gradle.toolchains.foojay-resolver-convention") version("1.0.0")
 // }
 
-rootProject.name = "vivimusic"
+rootProject.name = "nocturne-mobile"
 include(":app")
 include(":canvas")
 include(":innertube")

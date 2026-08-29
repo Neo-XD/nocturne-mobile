@@ -160,10 +160,16 @@ class RemoteSyncManager @Inject constructor(
         if (discoveryJob?.isActive == true) return
 
         discoveryJob = scope.launch {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-            val multicastLock = wifiManager?.createMulticastLock("nocturne_discovery")
-            multicastLock?.setReferenceCounted(true)
-            multicastLock?.acquire()
+            val wifiManager = runCatching {
+                context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            }.getOrNull()
+
+            val multicastLock = runCatching {
+                wifiManager?.createMulticastLock("nocturne_discovery")?.apply {
+                    setReferenceCounted(true)
+                    acquire()
+                }
+            }.getOrNull()
 
             var socket: DatagramSocket? = null
             try {
