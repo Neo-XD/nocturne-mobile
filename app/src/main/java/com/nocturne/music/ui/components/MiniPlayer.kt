@@ -1,8 +1,10 @@
 package com.nocturne.music.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -13,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,17 +43,19 @@ fun MiniPlayer(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .shadow(elevation = 12.dp, shape = RoundedCornerShape(16.dp), spotColor = NocturnePurple.copy(alpha = 0.3f))
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
-        color = NocturneDarkSurfaceVariant,
-        tonalElevation = 8.dp
+        color = NocturneDarkSurface,
+        tonalElevation = 6.dp
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
@@ -57,11 +63,11 @@ fun MiniPlayer(
                     contentDescription = track.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(10.dp))
                 )
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
                 Column(
                     modifier = Modifier.weight(1f)
@@ -69,7 +75,7 @@ fun MiniPlayer(
                     Text(
                         text = track.title,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         ),
                         maxLines = 1,
@@ -80,38 +86,51 @@ fun MiniPlayer(
                         text = track.artists,
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = TextSecondary,
-                            fontSize = 11.sp
+                            fontSize = 12.sp
                         ),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
 
-                IconButton(onClick = onPlayPauseClick) {
-                    Icon(
-                        imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
-                        tint = TextPrimary
-                    )
+                Surface(
+                    shape = CircleShape,
+                    color = NocturnePurple.copy(alpha = 0.18f),
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clickable(onClick = onPlayPauseClick)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
+                            tint = NocturnePurpleLight,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.width(6.dp))
 
                 IconButton(onClick = onNextClick) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Next",
-                        tint = TextPrimary
+                        tint = TextPrimary,
+                        modifier = Modifier.size(26.dp)
                     )
                 }
             }
 
-            // Linear Progress Bar at bottom of mini-player
+            // Slim progress indicator line
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(2.dp),
+                    .height(2.5.dp),
                 color = NocturnePurple,
-                trackColor = NocturneDarkElevated
+                trackColor = Color.Transparent
             )
         }
     }

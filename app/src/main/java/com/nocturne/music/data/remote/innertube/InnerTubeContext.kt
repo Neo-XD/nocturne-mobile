@@ -1,7 +1,7 @@
 package com.nocturne.music.data.remote.innertube
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 
 @Serializable
 data class ClientInfo(
@@ -13,7 +13,7 @@ data class ClientInfo(
     val osVersion: String? = null,
     val deviceMake: String? = null,
     val deviceModel: String? = null,
-    val androidSdkVersion: String? = null,
+    val androidSdkVersion: Int? = null,
     val hl: String = "en",
     val gl: String = "US"
 )
@@ -35,7 +35,19 @@ object YouTubeClients {
         osVersion = "12",
         deviceMake = "Oculus",
         deviceModel = "Quest 3",
-        androidSdkVersion = "32"
+        androidSdkVersion = 32
+    )
+
+    val ANDROID_MUSIC = ClientInfo(
+        clientName = "ANDROID_MUSIC",
+        clientVersion = "6.42.52",
+        clientId = "21",
+        userAgent = "com.google.android.apps.youtube.music/6.42.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004; Cronet/121.0.6167.101)",
+        osName = "Android",
+        osVersion = "14",
+        deviceMake = "Google",
+        deviceModel = "Pixel 8 Pro",
+        androidSdkVersion = 34
     )
 
     val VISIONOS = ClientInfo(
@@ -59,46 +71,24 @@ object YouTubeClients {
         deviceMake = "Apple",
         deviceModel = "iPhone16,2"
     )
-
-    val ANDROID_MUSIC = ClientInfo(
-        clientName = "ANDROID_MUSIC",
-        clientVersion = "6.42.52",
-        clientId = "21",
-        userAgent = "com.google.android.apps.youtube.music/6.42.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004; Cronet/121.0.6167.101)",
-        osName = "Android",
-        osVersion = "14",
-        deviceMake = "Google",
-        deviceModel = "Pixel 8 Pro",
-        androidSdkVersion = "34"
-    )
 }
 
-@Serializable
-data class InnerTubeContextPayload(
-    val client: Map<String, String>,
-    val user: Map<String, String> = emptyMap(),
-    @SerialName("thirdParty")
-    val thirdParty: Map<String, String>? = null
-)
-
-fun createInnerTubeContext(client: ClientInfo, videoId: String? = null, visitorData: String? = null): InnerTubeContextPayload {
-    val clientMap = mutableMapOf(
-        "clientName" to client.clientName,
-        "clientVersion" to client.clientVersion,
-        "hl" to client.hl,
-        "gl" to client.gl,
-        "userAgent" to client.userAgent
-    )
-    client.osName?.let { clientMap["osName"] = it }
-    client.osVersion?.let { clientMap["osVersion"] = it }
-    client.deviceMake?.let { clientMap["deviceMake"] = it }
-    client.deviceModel?.let { clientMap["deviceModel"] = it }
-    client.androidSdkVersion?.let { clientMap["androidSdkVersion"] = it }
-    visitorData?.let { clientMap["visitorData"] = it }
-
-    val thirdParty = if (videoId != null && (client.clientName == "ANDROID_VR" || client.clientName == "VISIONOS")) {
-        mapOf("embedUrl" to "https://www.youtube.com/watch?v=$videoId")
-    } else null
-
-    return InnerTubeContextPayload(client = clientMap, thirdParty = thirdParty)
+fun buildInnerTubeContextJson(client: ClientInfo, videoId: String? = null, visitorData: String? = null): JsonObject = buildJsonObject {
+    putJsonObject("client") {
+        put("clientName", client.clientName)
+        put("clientVersion", client.clientVersion)
+        put("hl", client.hl)
+        put("gl", client.gl)
+        client.osName?.let { put("osName", it) }
+        client.osVersion?.let { put("osVersion", it) }
+        client.deviceMake?.let { put("deviceMake", it) }
+        client.deviceModel?.let { put("deviceModel", it) }
+        client.androidSdkVersion?.let { put("androidSdkVersion", it) }
+        visitorData?.let { put("visitorData", it) }
+    }
+    if (videoId != null && (client.clientName == "ANDROID_VR" || client.clientName == "VISIONOS")) {
+        putJsonObject("thirdParty") {
+            put("embedUrl", "https://www.youtube.com/watch?v=$videoId")
+        }
+    }
 }

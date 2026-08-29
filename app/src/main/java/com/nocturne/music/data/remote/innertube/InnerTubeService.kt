@@ -19,9 +19,9 @@ class InnerTubeService(
 
     suspend fun searchAll(query: String): Result<SearchResults> = runCatching {
         val client = YouTubeClients.WEB_REMIX
-        val context = createInnerTubeContext(client)
+        val contextJson = buildInnerTubeContextJson(client)
         val payload = buildJsonObject {
-            put("context", json.encodeToJsonElement(context))
+            put("context", contextJson)
             put("query", query)
         }
 
@@ -43,9 +43,9 @@ class InnerTubeService(
 
     suspend fun getHome(params: String? = null): Result<HomePage> = runCatching {
         val client = YouTubeClients.WEB_REMIX
-        val context = createInnerTubeContext(client)
+        val contextJson = buildInnerTubeContextJson(client)
         val payload = buildJsonObject {
-            put("context", json.encodeToJsonElement(context))
+            put("context", contextJson)
             put("browseId", "FEmusic_home")
             params?.let { put("params", it) }
         }
@@ -68,9 +68,9 @@ class InnerTubeService(
 
     suspend fun getAlbum(browseId: String): Result<AlbumPage> = runCatching {
         val client = YouTubeClients.WEB_REMIX
-        val context = createInnerTubeContext(client)
+        val contextJson = buildInnerTubeContextJson(client)
         val payload = buildJsonObject {
-            put("context", json.encodeToJsonElement(context))
+            put("context", contextJson)
             put("browseId", browseId)
         }
 
@@ -90,9 +90,9 @@ class InnerTubeService(
 
     suspend fun getArtist(browseId: String): Result<ArtistPage> = runCatching {
         val client = YouTubeClients.WEB_REMIX
-        val context = createInnerTubeContext(client)
+        val contextJson = buildInnerTubeContextJson(client)
         val payload = buildJsonObject {
-            put("context", json.encodeToJsonElement(context))
+            put("context", contextJson)
             put("browseId", browseId)
         }
 
@@ -116,9 +116,9 @@ class InnerTubeService(
         playlistId: String? = null,
         signatureTimestamp: Int? = null
     ): Result<JsonObject> = runCatching {
-        val context = createInnerTubeContext(client, videoId = videoId)
+        val contextJson = buildInnerTubeContextJson(client, videoId = videoId)
         val payload = buildJsonObject {
-            put("context", json.encodeToJsonElement(context))
+            put("context", contextJson)
             put("videoId", videoId)
             playlistId?.let { put("playlistId", it) }
             put("contentCheckOk", true)
