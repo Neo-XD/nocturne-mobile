@@ -267,7 +267,9 @@ class MainActivity : ComponentActivity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             if (service is MusicBinder) {
                 try {
-                    playerConnection = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
+                    val conn = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
+                    conn.remoteSyncManager = remoteSyncManager
+                    playerConnection = conn
                     Timber.tag("MainActivity").d("PlayerConnection created successfully")
                     // Connect Listen Together manager to player
                     listenTogetherManager.setPlayerConnection(playerConnection)
@@ -277,7 +279,9 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch {
                         delay(500)
                         try {
-                            playerConnection = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
+                            val conn = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
+                            conn.remoteSyncManager = remoteSyncManager
+                            playerConnection = conn
                             listenTogetherManager.setPlayerConnection(playerConnection)
                         } catch (e2: Exception) {
                             Timber.tag("MainActivity").e(e2, "Failed to create PlayerConnection on retry")

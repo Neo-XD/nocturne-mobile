@@ -222,6 +222,30 @@ private fun NewMiniPlayer(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
+
+    // Remote Sync state
+    val remoteSyncManager = com.music.vivi.sync.LocalRemoteSyncManager.current
+    val remotePlaybackTarget by remoteSyncManager?.playbackTarget?.collectAsState() ?: remember { mutableStateOf(com.music.vivi.sync.PlaybackDeviceTarget.LOCAL) }
+    val remoteConnectionState by remoteSyncManager?.connectionState?.collectAsState() ?: remember { mutableStateOf(com.music.vivi.sync.RemoteConnectionState.DISCONNECTED) }
+    val remoteRoomState by remoteSyncManager?.remoteRoomState?.collectAsState() ?: remember { mutableStateOf(null) }
+
+    val isRemoteDesktop = remotePlaybackTarget == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+                          remoteConnectionState == com.music.vivi.sync.RemoteConnectionState.CONNECTED
+
+    val effectiveMediaMetadata = remember(mediaMetadata, isRemoteDesktop, remoteRoomState) {
+        if (isRemoteDesktop && remoteRoomState?.current_track != null) {
+            val t = remoteRoomState!!.current_track!!
+            com.music.vivi.models.MediaMetadata(
+                id = t.id,
+                title = t.title,
+                artists = listOf(com.music.vivi.models.MediaMetadata.Artist(id = null, name = t.artist)),
+                duration = (t.duration_ms / 1000).toInt(),
+                thumbnailUrl = t.thumbnail
+            )
+        } else {
+            mediaMetadata
+        }
+    }
     
     // Cast state - safely access castConnectionHandler to prevent crashes during service lifecycle changes
     val castHandler = remember(playerConnection) {
@@ -271,7 +295,7 @@ private fun NewMiniPlayer(
     val (gradientColors, onGradientColorsChange) = remember { mutableStateOf<List<Color>>(emptyList()) }
 
     MiniPlayerColorExtractor(
-        mediaMetadata = mediaMetadata,
+        mediaMetadata = effectiveMediaMetadata,
         miniPlayerBackground = miniPlayerBackground,
         onGradientColorsChange = onGradientColorsChange
     )
@@ -304,38 +328,22 @@ private fun NewMiniPlayer(
                                     offsetXAnimatable.animateTo(0f, animationSpec)
                                 }
                             },
-                            onHorizontalDrag = { _, dragAmount ->
-                                val adjustedDragAmount =
-                                    if (layoutDirection == LayoutDirection.Rtl) -dragAmount else dragAmount
-                                val canSkipPrevious = playerConnection.player.previousMediaItemIndex != -1
-                                val canSkipNext = playerConnection.player.nextMediaItemIndex != -1
-                                val tryingToSwipeRight = adjustedDragAmount > 0
-                                val tryingToSwipeLeft = adjustedDragAmount < 0
-                                val allowLeft = tryingToSwipeLeft && canSkipNext
-                                val allowRight = tryingToSwipeRight && canSkipPrevious
-
-                                val canReturnToCenter =
-                                    (tryingToSwipeRight && !canSkipPrevious && offsetXAnimatable.value < 0) ||
-                                            (tryingToSwipeLeft && !canSkipNext && offsetXAnimatable.value > 0)
-
-                                if (allowLeft || allowRight || canReturnToCenter) {
-                                    totalDragDistance += kotlin.math.abs(adjustedDragAmount)
-                                    coroutineScope.launch {
-                                        offsetXAnimatable.snapTo(offsetXAnimatable.value + adjustedDragAmount)
-                                    }
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                totalDragDistance += dragAmount
+                                coroutineScope.launch {
+                                    offsetXAnimatable.snapTo(offsetXAnimatable.value + dragAmount)
                                 }
                             },
                             onDragEnd = {
                                 val dragDuration = System.currentTimeMillis() - dragStartTime
-                                val velocity = if (dragDuration > 0) totalDragDistance / dragDuration else 0f
+                                val velocity = if (dragDuration > 0) (totalDragDistance / dragDuration) * 1000 else 0f
+                                val isFling = kotlin.math.abs(velocity) > 750
                                 val currentOffset = offsetXAnimatable.value
-                                val minDistanceThreshold = 50f
-                                val velocityThreshold = (swipeSensitivity * -8.25f) + 8.5f
-
-                                val shouldChangeSong = (kotlin.math.abs(currentOffset) > minDistanceThreshold && velocity > velocityThreshold) ||
-                                    (kotlin.math.abs(currentOffset) > autoSwipeThreshold)
-
-                                if (shouldChangeSong) {
+                                
+                                val shouldDismiss = isFling || kotlin.math.abs(currentOffset) > autoSwipeThreshold
+                                
+                                if (shouldDismiss) {
                                     if (currentOffset > 0 && canSkipPrevious) {
                                         playerConnection.player.seekToPreviousMediaItem()
                                     } else if (currentOffset <= 0 && canSkipNext) {
@@ -363,7 +371,7 @@ private fun NewMiniPlayer(
             // Background Layers
             MiniPlayerBackgroundLayer(
                 style = miniPlayerBackground,
-                mediaMetadata = mediaMetadata,
+                mediaMetadata = effectiveMediaMetadata,
                 gradientColors = gradientColors
             )
 
@@ -378,7 +386,7 @@ private fun NewMiniPlayer(
                     isCasting = isCasting,
                     castHandler = castHandler,
                     playerConnection = playerConnection,
-                    mediaMetadata = mediaMetadata,
+                    mediaMetadata = effectiveMediaMetadata,
                     primaryColor = primaryColor,
                     outlineColor = outlineColor,
                     listenTogetherManager = listenTogetherManager
@@ -388,13 +396,13 @@ private fun NewMiniPlayer(
 
                 // Song info - isolated composable
                 NewMiniPlayerSongInfo(
-                    mediaMetadata = mediaMetadata,
+                    mediaMetadata = effectiveMediaMetadata,
                     onSurfaceColor = onSurfaceColor,
                     errorColor = errorColor,
                     modifier = Modifier.weight(1f)
                 )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 
                 // Cast indicator
                 if (isCasting) {
@@ -427,7 +435,7 @@ private fun NewMiniPlayer(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 // Favorite button - isolated composable
-                mediaMetadata?.let { 
+                effectiveMediaMetadata?.let { 
                     FavoriteButton(
                         songId = it.id,
                         onSurfaceColor = onSurfaceColor,
@@ -462,7 +470,22 @@ private fun NewMiniPlayerPlayButton(
 ) {
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
-    val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
+
+    val remoteSyncManager = com.music.vivi.sync.LocalRemoteSyncManager.current
+    val remotePlaybackTarget by remoteSyncManager?.playbackTarget?.collectAsState() ?: remember { mutableStateOf(com.music.vivi.sync.PlaybackDeviceTarget.LOCAL) }
+    val remoteConnectionState by remoteSyncManager?.connectionState?.collectAsState() ?: remember { mutableStateOf(com.music.vivi.sync.RemoteConnectionState.DISCONNECTED) }
+    val remoteRoomState by remoteSyncManager?.remoteRoomState?.collectAsState() ?: remember { mutableStateOf(null) }
+
+    val isRemoteDesktop = remotePlaybackTarget == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+                          remoteConnectionState == com.music.vivi.sync.RemoteConnectionState.CONNECTED
+
+    val effectiveIsPlaying = if (isRemoteDesktop && remoteRoomState != null) {
+        remoteRoomState!!.is_playing
+    } else if (isCasting) {
+        castIsPlaying
+    } else {
+        isPlaying
+    }
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
     val isMuted by playerConnection.isMuted.collectAsState()
 

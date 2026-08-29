@@ -40,7 +40,7 @@ class PlayerConnection(
     context: Context,
     binder: MusicBinder,
     val database: MusicDatabase,
-    scope: CoroutineScope,
+    val scope: CoroutineScope,
 ) : Player.Listener {
     private companion object {
         private const val TAG = "PlayerConnection"
@@ -213,7 +213,50 @@ class PlayerConnection(
         Timber.tag(TAG).d("Attached to new player instance: $newPlayer")
     }
 
+    var remoteSyncManager: com.music.vivi.sync.RemoteSyncManager? = null
+
     fun playQueue(queue: Queue) {
+        val sync = remoteSyncManager
+        if (sync != null && 
+            sync.playbackTarget.value == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+            sync.connectionState.value == com.music.vivi.sync.RemoteConnectionState.CONNECTED) {
+            
+            scope.launch {
+                try {
+                    val preload = queue.preloadItem
+                    val track = if (preload != null) {
+                        com.music.vivi.sync.RemoteTrack(
+                            id = preload.id,
+                            title = preload.title ?: "",
+                            artist = preload.artists.joinToString { it.name },
+                            thumbnail = preload.thumbnailUrl,
+                            duration_ms = (preload.duration ?: 0) * 1000L
+                        )
+                    } else {
+                        val status = queue.getInitialStatus()
+                        val mediaItem = status.items.getOrNull(status.mediaItemIndex) ?: status.items.firstOrNull()
+                        val meta = mediaItem?.metadata
+                        if (mediaItem != null) {
+                            com.music.vivi.sync.RemoteTrack(
+                                id = mediaItem.mediaId,
+                                title = meta?.title ?: "",
+                                artist = meta?.artists?.joinToString { it.name } ?: "",
+                                thumbnail = meta?.thumbnailUrl,
+                                duration_ms = (meta?.duration ?: 0) * 1000L
+                            )
+                        } else null
+                    }
+                    if (track != null) {
+                        sync.sendChangeTrack(track)
+                        pause()
+                    }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e, "Error routing playQueue to desktop PC")
+                }
+            }
+            return
+        }
+
         if (!playerReadinessFlow.value) {
             Timber.tag(TAG).w("playQueue called before player ready; delegating to service")
         }
@@ -299,9 +342,16 @@ class PlayerConnection(
     }
 
     /**
-     * Toggle play/pause - handles Cast when active
+     * Toggle play/pause - handles Cast and Remote PC when active
      */
     fun togglePlayPause() {
+        val sync = remoteSyncManager
+        if (sync != null && 
+            sync.playbackTarget.value == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+            sync.connectionState.value == com.music.vivi.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendToggle()
+            return
+        }
         try {
             val castHandler = service.castConnectionHandler
             if (castHandler?.isCasting?.value == true) {
@@ -319,9 +369,16 @@ class PlayerConnection(
     }
     
     /**
-     * Start playback - handles Cast when active
+     * Start playback - handles Cast and Remote PC when active
      */
     fun play() {
+        val sync = remoteSyncManager
+        if (sync != null && 
+            sync.playbackTarget.value == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+            sync.connectionState.value == com.music.vivi.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendPlay()
+            return
+        }
         try {
             val castHandler = service.castConnectionHandler
             if (castHandler?.isCasting?.value == true) {
@@ -338,9 +395,16 @@ class PlayerConnection(
     }
     
     /**
-     * Pause playback - handles Cast when active
+     * Pause playback - handles Cast and Remote PC when active
      */
     fun pause() {
+        val sync = remoteSyncManager
+        if (sync != null && 
+            sync.playbackTarget.value == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+            sync.connectionState.value == com.music.vivi.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendPause()
+            return
+        }
         try {
             val castHandler = service.castConnectionHandler
             if (castHandler?.isCasting?.value == true) {
@@ -354,9 +418,16 @@ class PlayerConnection(
     }
 
     /**
-     * Seek to position - handles Cast when active
+     * Seek to position - handles Cast and Remote PC when active
      */
     fun seekTo(position: Long) {
+        val sync = remoteSyncManager
+        if (sync != null && 
+            sync.playbackTarget.value == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+            sync.connectionState.value == com.music.vivi.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendSeek(position)
+            return
+        }
         try {
             val castHandler = service.castConnectionHandler
             if (castHandler?.isCasting?.value == true) {
@@ -370,6 +441,13 @@ class PlayerConnection(
     }
 
     fun seekToNext() {
+        val sync = remoteSyncManager
+        if (sync != null && 
+            sync.playbackTarget.value == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+            sync.connectionState.value == com.music.vivi.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendNext()
+            return
+        }
         try {
             // When casting, use Cast skip instead of local player
             val castHandler = service.castConnectionHandler
@@ -391,6 +469,13 @@ class PlayerConnection(
     var onRestartSong: (() -> Unit)? = null
 
     fun seekToPrevious() {
+        val sync = remoteSyncManager
+        if (sync != null && 
+            sync.playbackTarget.value == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+            sync.connectionState.value == com.music.vivi.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendPrevious()
+            return
+        }
         try {
             // When casting, use Cast skip instead of local player
             val castHandler = service.castConnectionHandler

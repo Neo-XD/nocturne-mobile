@@ -376,9 +376,39 @@ fun BottomSheetPlayer(
     val castDuration by castHandler?.castDuration?.collectAsState() ?: remember { mutableLongStateOf(0L) }
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
     val castVolume by castHandler?.castVolume?.collectAsState() ?: remember { mutableFloatStateOf(1f) }
+
+    // Remote Sync state
+    val remoteSyncManager = com.music.vivi.sync.LocalRemoteSyncManager.current
+    val remotePlaybackTarget by remoteSyncManager?.playbackTarget?.collectAsState() ?: remember { mutableStateOf(com.music.vivi.sync.PlaybackDeviceTarget.LOCAL) }
+    val remoteConnectionState by remoteSyncManager?.connectionState?.collectAsState() ?: remember { mutableStateOf(com.music.vivi.sync.RemoteConnectionState.DISCONNECTED) }
+    val remoteRoomState by remoteSyncManager?.remoteRoomState?.collectAsState() ?: remember { mutableStateOf(null) }
+
+    val isRemoteDesktop = remotePlaybackTarget == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+                          remoteConnectionState == com.music.vivi.sync.RemoteConnectionState.CONNECTED
+
+    val effectiveMediaMetadata = remember(mediaMetadata, isRemoteDesktop, remoteRoomState) {
+        if (isRemoteDesktop && remoteRoomState?.current_track != null) {
+            val t = remoteRoomState!!.current_track!!
+            com.music.vivi.models.MediaMetadata(
+                id = t.id,
+                title = t.title,
+                artists = listOf(com.music.vivi.models.MediaMetadata.Artist(id = null, name = t.artist)),
+                duration = (t.duration_ms / 1000).toInt(),
+                thumbnailUrl = t.thumbnail
+            )
+        } else {
+            mediaMetadata
+        }
+    }
     
-    // Use Cast state when casting, otherwise local player
-    val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
+    // Use Remote Desktop state when connected, otherwise Cast or local player
+    val effectiveIsPlaying = if (isRemoteDesktop && remoteRoomState != null) {
+        remoteRoomState!!.is_playing
+    } else if (isCasting) {
+        castIsPlaying
+    } else {
+        isPlaying
+    }
 
     // Use State objects for position/duration to pass to MiniPlayer without causing recomposition
     // These states persist across playback state changes to ensure continuous progress updates
@@ -775,11 +805,22 @@ fun BottomSheetPlayer(
         mutableStateOf(false)
     }
 
-    // Position update - only for local playback
-    // When casting, we use castPosition directly to avoid sync issues
-    // Use isPlaying instead of playbackState to ensure continuous updates during playback
-    LaunchedEffect(isPlaying, isCasting) {
-        if (!isCasting && isPlaying) {
+    // Position update - for remote desktop, cast, or local playback
+    LaunchedEffect(isPlaying, isCasting, isRemoteDesktop, remoteRoomState) {
+        if (isRemoteDesktop) {
+            while (isActive) {
+                val r = remoteRoomState
+                if (r != null) {
+                    val elapsed = if (r.is_playing) System.currentTimeMillis() - r.last_update_ms else 0L
+                    val d = r.current_track?.duration_ms ?: 0L
+                    if (sliderPosition == null) {
+                        position = (r.position_ms + elapsed).coerceIn(0L, if (d > 0) d else Long.MAX_VALUE)
+                        duration = d
+                    }
+                }
+                delay(100)
+            }
+        } else if (!isCasting && isPlaying) {
             while (isActive) {
                 delay(100) // Update more frequently for smoother progress bar
                 if (sliderPosition == null) { // Only update if user isn't dragging
@@ -791,8 +832,8 @@ fun BottomSheetPlayer(
     }
     
     // Also update position when playback state changes (e.g., song change, seek)
-    LaunchedEffect(playbackState, mediaMetadata?.id) {
-        if (!isCasting) {
+    LaunchedEffect(playbackState, effectiveMediaMetadata?.id, isRemoteDesktop) {
+        if (!isCasting && !isRemoteDesktop) {
             position = playerConnection.player.currentPosition
             duration = playerConnection.player.duration
         }
@@ -1330,7 +1371,7 @@ fun BottomSheetPlayer(
         } else {
             val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
             val playPauseRoundness by animateDpAsState(
-                targetValue = if (isPlaying) 24.dp else 36.dp,
+                targetValue = if (effectiveIsPlaying) 24.dp else 36.dp,
                 animationSpec = tween(durationMillis = 90, easing = LinearEasing),
                 label = "playPauseRoundness",
             )
@@ -1386,7 +1427,7 @@ fun BottomSheetPlayer(
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxSize()
-                                                .background(Color.Black.copy(alpha = if (isPlaying) 0f else 0.4f))
+                                                .background(Color.Black.copy(alpha = if (effectiveIsPlaying) 0f else 0.4f))
                                         )
 
                                         androidx.compose.animation.AnimatedVisibility(
@@ -1588,7 +1629,7 @@ fun BottomSheetPlayer(
                             } else {
                                 FilledIconButton(
                                     onClick = {
-                                        mediaMetadata?.let { meta ->
+                                        effectiveMediaMetadata?.let { meta ->
                                             when (download?.state) {
                                                 Download.STATE_COMPLETED, Download.STATE_QUEUED, Download.STATE_DOWNLOADING -> {
                                                     DownloadService.sendRemoveDownload(
@@ -2612,7 +2653,7 @@ fun BottomSheetPlayer(
                     ) {
                         Spacer(Modifier.weight(1f))
 
-                        mediaMetadata?.let {
+                        effectiveMediaMetadata?.let {
                             controlsContent(it)
                         }
 
@@ -2664,7 +2705,7 @@ fun BottomSheetPlayer(
                         }
                     }
 
-                    mediaMetadata?.let {
+                    effectiveMediaMetadata?.let {
                         controlsContent(it)
                     }
 
