@@ -1,4 +1,4 @@
-package com.music.vivi.ui.screens.equalizer
+﻿package com.music.vivi.ui.screens.equalizer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

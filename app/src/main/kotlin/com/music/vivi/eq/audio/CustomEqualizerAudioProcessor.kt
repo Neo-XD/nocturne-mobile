@@ -1,4 +1,4 @@
-package com.music.vivi.eq.audio
+﻿package com.music.vivi.eq.audio
 
 import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
@@ -311,3 +311,4 @@ class CustomEqualizerAudioProcessor : AudioProcessor {
         inputEnded = true
     }
 }
+

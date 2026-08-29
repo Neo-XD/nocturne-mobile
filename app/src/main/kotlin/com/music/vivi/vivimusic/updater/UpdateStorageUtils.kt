@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic.updater
+﻿package com.music.vivi.vivimusic.updater
 
 import android.content.Context
 import android.os.Environment
@@ -42,3 +42,4 @@ fun autoClearOldApks(context: Context) {
         file.isFile && file.name.endsWith(".apk", ignoreCase = true) && file.lastModified() < oneDayAgo
     }?.forEach { it.delete() }
 }
+

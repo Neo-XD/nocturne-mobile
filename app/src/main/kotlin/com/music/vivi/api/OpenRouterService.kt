@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -244,3 +244,4 @@ Output MUST be a JSON array with EXACTLY $lineCount strings."""
         return@withContext Result.failure(Exception("Max retries exceeded"))
     }
 }
+

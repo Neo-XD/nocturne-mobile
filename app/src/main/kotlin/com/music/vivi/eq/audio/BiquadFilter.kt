@@ -1,4 +1,4 @@
-package com.music.vivi.eq.audio
+﻿package com.music.vivi.eq.audio
 
 import com.music.vivi.eq.data.FilterType
 import kotlin.math.PI

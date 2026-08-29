@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -32,3 +32,4 @@ data class SongArtistMap(
     @ColumnInfo(index = true) val artistId: String,
     val position: Int,
 )
+

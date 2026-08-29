@@ -1,4 +1,4 @@
-package com.music.vivi.eq.data
+﻿package com.music.vivi.eq.data
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -192,3 +192,4 @@ class EQProfileRepository @Inject constructor(
             .sortedByDescending { it.addedTimestamp }
     }
 }
+

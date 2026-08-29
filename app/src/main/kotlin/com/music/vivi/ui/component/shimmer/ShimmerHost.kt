@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -67,3 +67,4 @@ val ShimmerTheme =
             Color.Unspecified.copy(alpha = 0.25f),
         ),
     )
+

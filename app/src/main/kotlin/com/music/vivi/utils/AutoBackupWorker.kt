@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -30,3 +30,4 @@ class AutoBackupWorker(private val context: Context, workerParams: WorkerParamet
         }
     }
 }
+

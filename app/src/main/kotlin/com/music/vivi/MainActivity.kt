@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -808,7 +808,7 @@ class MainActivity : ComponentActivity() {
                                 if (isFoss) {
                                     val intent = Intent(
                                         Intent.ACTION_VIEW,
-                                        Uri.parse("https://github.com/vivizzz007/vivi-music/releases/latest")
+                                        Uri.parse("https://github.com/Neo-XD/nocturne-mobile/releases/latest")
                                     )
                                     context.startActivity(intent)
                                 } else {
@@ -1412,3 +1412,4 @@ val LocalDownloadUtil = staticCompositionLocalOf<DownloadUtil> { error("No Downl
 val LocalSyncUtils = staticCompositionLocalOf<SyncUtils> { error("No SyncUtils provided") }
 val LocalListenTogetherManager = staticCompositionLocalOf<com.music.vivi.listentogether.ListenTogetherManager?> { null }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
+

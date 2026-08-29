@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic
+﻿package com.music.vivi.vivimusic
 
 import android.content.Context
 import android.media.AudioDeviceInfo
@@ -84,3 +84,4 @@ fun isSpeaker(name: String?): Boolean {
            lowerName.contains("party") ||
            lowerName.contains("waves")
 }
+

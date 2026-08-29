@@ -1,4 +1,4 @@
-package com.dpi
+﻿package com.dpi
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -114,3 +114,4 @@ abstract class ActivityLifecycleManager : BaseLifecycleContentProvider() {
         }
     }
 }
+

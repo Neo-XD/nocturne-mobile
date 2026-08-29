@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic.updater.downloadmanager
+﻿package com.music.vivi.vivimusic.updater.downloadmanager
 
 import android.content.Context
 import android.os.Environment
@@ -166,3 +166,4 @@ class UpdateDownloadWorker(private val context: Context, workerParams: WorkerPar
         }
     }
 }
+

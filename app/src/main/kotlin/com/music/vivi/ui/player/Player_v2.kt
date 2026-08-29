@@ -1,4 +1,4 @@
-package com.music.vivi.ui.player
+﻿package com.music.vivi.ui.player
 
 import android.content.BroadcastReceiver
 import android.content.Intent
@@ -1018,3 +1018,4 @@ fun PlayerV2(
         }
     }
 }
+

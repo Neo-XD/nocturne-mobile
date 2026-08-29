@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -365,3 +365,4 @@ private fun parseBackupFilename(file: File, context: Context): Pair<String, Stri
 
     return Pair(formattedTime, type)
 }
+

@@ -1,4 +1,4 @@
-package com.music.vivi.ui.component
+﻿package com.music.vivi.ui.component
 
 import android.graphics.BlurMaskFilter
 import androidx.compose.animation.AnimatedVisibility
@@ -864,3 +864,4 @@ private fun WordLevelCanvasLyrics(
         }
     }
 }
+

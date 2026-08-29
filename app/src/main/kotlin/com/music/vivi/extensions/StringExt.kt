@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -26,3 +26,4 @@ fun String.toInetSocketAddress(): InetSocketAddress {
     val (host, port) = split(":")
     return createUnresolved(host, port.toInt())
 }
+

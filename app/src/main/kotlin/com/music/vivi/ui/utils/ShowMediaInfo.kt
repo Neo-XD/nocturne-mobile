@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -384,3 +384,4 @@ fun shortNumberFormatter(count: Int): String {
         else -> String.format("%.1fM", count / 1_000_000.0)
     }
 }
+

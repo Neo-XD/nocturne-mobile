@@ -1,4 +1,4 @@
-package com.music.vivi.recognition
+﻿package com.music.vivi.recognition
 
 import android.util.Base64
 import java.io.ByteArrayOutputStream
@@ -380,3 +380,4 @@ internal object ShazamSignatureGenerator {
         }
     }
 }
+

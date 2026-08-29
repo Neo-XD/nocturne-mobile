@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -45,3 +45,4 @@ object ListenTogetherServers {
 
     fun findByUrl(url: String): ListenTogetherServer? = servers.firstOrNull { it.url == url }
 }
+

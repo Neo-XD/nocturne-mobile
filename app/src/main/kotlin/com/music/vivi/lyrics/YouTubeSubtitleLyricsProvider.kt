@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -21,3 +21,4 @@ object YouTubeSubtitleLyricsProvider : LyricsProvider {
         album: String?,
     ): Result<String> = YouTube.transcript(id)
 }
+

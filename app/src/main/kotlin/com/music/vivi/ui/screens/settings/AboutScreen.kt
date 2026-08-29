@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -242,36 +242,13 @@ fun AboutScreen(
                     description = { Text(stringResource(R.string.app_developer), color = MaterialTheme.colorScheme.primary) },
                     tintIcon = false,
                     iconShape = cookieShape,
-                    onClick = { uriHandler.safeOpenUri(context, "https://github.com/vivizzz007") },
+                    onClick = { uriHandler.safeOpenUri(context, "https://github.com/Neo-XD") },
                     isExpressive = true,
                     descriptionBelow = true,
-                    isExternalLink = true
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.web_link),
-                    title = { Text(stringResource(R.string.website)) },
-                    onClick = { uriHandler.safeOpenUri(context, "https://vivimusic.mkmdevilmi.workers.dev/") },
-                    isExpressive = true,
                     isExternalLink = true
                 )
             )
         )
-//        Spacer(modifier = Modifier.height(27.dp))
-//
-//        // Collaborator Section
-//        Material3SettingsGroup(
-//            title = stringResource(R.string.collaborator_section),
-//            items = listOf(
-//                Material3SettingsItem(
-//                    icon = painterResource(R.drawable.collab),
-//                    title = { Text(stringResource(R.string.collaborator_tboyke)) },
-//                    description = { Text(stringResource(R.string.collaborator_role)) },
-//                    tintIcon = false,
-//                    iconShape = cloverShape,
-//                    onClick = { uriHandler.safeOpenUri(context, "https://github.com/T-Boyke") }
-//                )
-//            )
-//        )
         Spacer(modifier = Modifier.height(27.dp))
 
         // Community Section
@@ -281,14 +258,7 @@ fun AboutScreen(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.github),
                     title = { Text(stringResource(R.string.github_repository)) },
-                    onClick = { uriHandler.safeOpenUri(context, "https://github.com/vivizzz007/vivi-music") },
-                    isExpressive = true,
-                    isExternalLink = true
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.telegram), // add a telegram icon drawable
-                    title = { Text(stringResource(R.string.telegram_channel)) },
-                    onClick = { uriHandler.safeOpenUri(context, "https://t.me/vivimusicapp") },
+                    onClick = { uriHandler.safeOpenUri(context, "https://github.com/Neo-XD/nocturne-mobile") },
                     isExpressive = true,
                     isExternalLink = true
                 )
@@ -316,7 +286,7 @@ fun AboutScreen(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.license_vivi),
                     title = { Text(stringResource(R.string.license)) },
-                    onClick = { uriHandler.safeOpenUri(context, "https://github.com/vivizzz007/vivi-music/blob/main/LICENSE") },
+                    onClick = { uriHandler.safeOpenUri(context, "https://github.com/Neo-XD/nocturne-mobile/blob/main/LICENSE") },
                     isExpressive = true,
                     isExternalLink = true
                 ),

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -111,3 +111,4 @@ object AppModule {
         client: ListenTogetherClient,
     ): ListenTogetherManager = ListenTogetherManager(client, context)
 }
+

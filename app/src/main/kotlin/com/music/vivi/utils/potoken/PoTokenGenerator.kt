@@ -1,4 +1,4 @@
-package com.music.vivi.utils.potoken
+﻿package com.music.vivi.utils.potoken
 
 import android.webkit.CookieManager
 import com.music.vivi.utils.cipher.CipherDeobfuscator
@@ -98,3 +98,4 @@ class PoTokenGenerator {
         return PoTokenResult(playerPot, streamingPot)
     }
 }
+

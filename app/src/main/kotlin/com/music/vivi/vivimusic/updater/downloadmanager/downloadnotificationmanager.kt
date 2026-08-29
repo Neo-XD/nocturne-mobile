@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic.updater.downloadmanager
+﻿package com.music.vivi.vivimusic.updater.downloadmanager
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -148,3 +148,4 @@ object DownloadNotificationManager {
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 }
+

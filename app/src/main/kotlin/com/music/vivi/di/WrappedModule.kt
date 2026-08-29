@@ -1,4 +1,4 @@
-package com.music.vivi.di
+﻿package com.music.vivi.di
 
 import android.content.Context
 import com.music.vivi.db.DatabaseDao
@@ -25,3 +25,4 @@ object WrappedModule {
     @Singleton
     fun provideWrappedAudioService(@ApplicationContext context: Context): WrappedAudioService = WrappedAudioService(context)
 }
+

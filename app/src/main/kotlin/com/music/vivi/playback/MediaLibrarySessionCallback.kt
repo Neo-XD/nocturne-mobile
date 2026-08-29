@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -945,3 +945,4 @@ constructor(
         return subList(fromIndex.toInt(), minOf(fromIndex.toInt() + pageSize, size))
     }
 }
+

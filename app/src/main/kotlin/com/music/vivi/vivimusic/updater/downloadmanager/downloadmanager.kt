@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic.updater.downloadmanager
+﻿package com.music.vivi.vivimusic.updater.downloadmanager
 
 import android.content.Context
 import android.os.Environment
@@ -105,3 +105,4 @@ class CustomDownloadManager {
 }
 
 // new download manager removed old download manager
+

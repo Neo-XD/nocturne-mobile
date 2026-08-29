@@ -1,4 +1,4 @@
-package com.music.vivi.ui.screens.settings
+﻿package com.music.vivi.ui.screens.settings
 
 import android.content.res.Configuration
 import android.os.Build
@@ -807,3 +807,4 @@ fun ThemePreviewCard(
         }
     }
 }
+

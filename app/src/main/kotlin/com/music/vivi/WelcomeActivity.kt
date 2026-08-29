@@ -417,7 +417,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         onClick = {},
                         label = {
                             Text(
-                                text = "By vividh p ashokan",
+                                text = "By Neo-XD",
                                 fontFamily = GoogleSansFlex
                             )
                         },
@@ -437,7 +437,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         border = null
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(100.dp))
                 }
             }
         ),
@@ -482,8 +482,8 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     ) {
                         PermissionCard(
                             icon = rememberVectorPainter(Icons.Rounded.Notifications),
-                            iconColor = Color(0xFFffaee4),
-                            iconTint = Color(0xFF8d0053),
+                            iconColor = Color(0xFFcce5ff),
+                            iconTint = Color(0xFF00497d),
                             title = stringResource(com.music.vivi.R.string.perm_notif_title),
                             description = stringResource(com.music.vivi.R.string.perm_notif_desc),
                             shape = if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) topCardShape else RoundedCornerShape(20.dp),
@@ -561,132 +561,6 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                                 }
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(100.dp))
-                    }
-                }
-            }
-        ),
-        OnboardingPageInfo(
-            content = { _ ->
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Spacer(modifier = Modifier.height(80.dp))
-
-                    Text(
-                        text = "Join our",
-                        style = thinHeaderStyle,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "Community",
-                        fontFamily = GoogleSansFlex,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 48.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        lineHeight = 56.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "ViviMusic is open-source and depends on community support to grow. Your help makes a difference!",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontFamily = GoogleSansFlex
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        PermissionCard(
-                            icon = rememberVectorPainter(Icons.Rounded.Star),
-                            iconColor = Color(0xFFfff1a8),
-                            iconTint = Color(0xFF8d6e00),
-                            title = "Star on GitHub",
-                            description = "Help us reach more people by starring our repository.",
-                            shape = topCardShape,
-                            control = {
-                                Icon(
-                                    imageVector = Icons.Rounded.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                uriHandler.safeOpenUri(context, "https://github.com/vivizzz007/vivi-music")
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        PermissionCard(
-                            icon = painterResource(com.music.vivi.R.drawable.telegram),
-                            iconColor = Color(0xFF67d4ff),
-                            iconTint = Color(0xFF004e5d),
-                            title = "Join Telegram",
-                            description = "Get the latest updates and chat with the community.",
-                            shape = middleCardShape,
-                            control = {
-                                Icon(
-                                    imageVector = Icons.Rounded.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                uriHandler.safeOpenUri(context, "https://t.me/vivimusicapp")
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        PermissionCard(
-                            icon = painterResource(com.music.vivi.R.drawable.currency_rupee_upi),
-                            iconColor = Color(0xFFffb4ab),
-                            iconTint = Color(0xFF690005),
-                            title = "Support via UPI",
-                            description = "Directly support development via UPI.",
-                            shape = middleCardShape,
-                            control = {
-                                Icon(
-                                    imageVector = Icons.Rounded.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                uriHandler.safeOpenUri(context, "upi://pay?pa=vividhpashokan@axl&pn=Vividh P Ashokan")
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        PermissionCard(
-                            icon = painterResource(com.music.vivi.R.drawable.buymeacoffee),
-                            iconColor = Color(0xFFffb4ab),
-                            iconTint = Color(0xFF690005),
-                            title = "Buy Me a Coffee",
-                            description = "Support the project through Ko-fi.",
-                            shape = bottomCardShape,
-                            control = {
-                                Icon(
-                                    imageVector = Icons.Rounded.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            onClick = {
-                                uriHandler.safeOpenUri(context, "https://ko-fi.com/vividhpashokan")
-                            }
-                        )
 
                         Spacer(modifier = Modifier.height(100.dp))
                     }
@@ -1000,7 +874,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "ViviMusic…",
+                        text = "Nocturne…",
                         fontFamily = GoogleSansFlex,
                         fontWeight = FontWeight.Bold,
                         fontSize = 48.sp,
@@ -1371,5 +1245,6 @@ fun WelcomeExpressiveButton(
         }
     }
 }
+
 
 

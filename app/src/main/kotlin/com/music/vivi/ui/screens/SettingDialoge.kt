@@ -1,4 +1,4 @@
-package com.music.vivi.ui.screens
+﻿package com.music.vivi.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -444,5 +444,6 @@ private fun SwitchOptionItem(
         )
     }
 }
+
 
 

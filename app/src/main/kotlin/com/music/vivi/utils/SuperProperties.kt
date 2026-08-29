@@ -1,4 +1,4 @@
-package com.music.vivi.utils
+﻿package com.music.vivi.utils
 
 import android.os.Build
 import android.util.Base64
@@ -41,3 +41,4 @@ object SuperProperties {
         "Discord-Android/$CLIENT_BUILD_NUMBER;RNA"
     }
 }
+

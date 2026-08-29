@@ -1,4 +1,4 @@
-package com.music.vivi.db.entities
+﻿package com.music.vivi.db.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -95,3 +95,4 @@ data class SpeedDialItem(
         }
     }
 }
+

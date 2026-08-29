@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -333,3 +333,4 @@ class BackupRestoreViewModel @Inject constructor(
         const val SETTINGS_FILENAME = "settings.preferences_pb"
     }
 }
+

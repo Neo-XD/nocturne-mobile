@@ -1,4 +1,4 @@
-package com.music.vivi.recognition
+﻿package com.music.vivi.recognition
 
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
@@ -112,3 +112,4 @@ object AudioResampler {
         }
     }
 }
+

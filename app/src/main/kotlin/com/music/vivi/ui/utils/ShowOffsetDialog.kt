@@ -1,4 +1,4 @@
-package com.music.vivi.ui.utils
+﻿package com.music.vivi.ui.utils
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -247,3 +247,4 @@ fun ShowOffsetDialog(songProvider: () -> SongEntity?) {
         }
     }
 }
+

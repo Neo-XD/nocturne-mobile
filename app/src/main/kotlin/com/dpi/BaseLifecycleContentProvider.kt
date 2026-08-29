@@ -1,4 +1,4 @@
-package com.dpi
+﻿package com.dpi
 
 import android.content.ContentProvider
 import android.content.ContentValues
@@ -34,3 +34,4 @@ abstract class BaseLifecycleContentProvider : ContentProvider() {
         selectionArgs: Array<String>?
     ): Int = 0
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -22,3 +22,4 @@ data class LyricsEntity(
         const val LYRICS_NOT_FOUND = "LYRICS_NOT_FOUND"
     }
 }
+

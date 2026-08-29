@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -49,3 +49,4 @@ sealed class Screens(
         val MainScreens = listOf(Home, Search, ListenTogether, Library)
     }
 }
+

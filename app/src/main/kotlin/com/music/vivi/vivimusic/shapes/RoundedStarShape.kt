@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic.shapes
+﻿package com.music.vivi.vivimusic.shapes
 
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
@@ -70,3 +70,4 @@ class RoundedStarShape(
         return (x - a) / (b - a) * (d - c) + c
     }
 }
+

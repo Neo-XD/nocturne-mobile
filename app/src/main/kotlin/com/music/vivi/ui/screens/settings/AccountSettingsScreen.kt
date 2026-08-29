@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -370,7 +370,7 @@ fun AccountSettingsScreen(
                         ),
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable {
-                            uriHandler.safeOpenUri(context, "https://github.com/vivizzz007/vivi-music/issues")
+                            uriHandler.safeOpenUri(context, "https://github.com/Neo-XD/nocturne-mobile/issues")
                         }
                     )
                 }
@@ -530,3 +530,4 @@ fun AccountSettingsScreen(
         }
     }
 }
+

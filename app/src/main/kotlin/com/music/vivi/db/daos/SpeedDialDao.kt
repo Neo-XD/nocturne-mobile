@@ -1,4 +1,4 @@
-package com.music.vivi.db.daos
+﻿package com.music.vivi.db.daos
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -21,3 +21,4 @@ interface SpeedDialDao {
     @Query("SELECT EXISTS(SELECT * FROM speed_dial_item WHERE id = :id)")
     fun isPinned(id: String): Flow<Boolean>
 }
+

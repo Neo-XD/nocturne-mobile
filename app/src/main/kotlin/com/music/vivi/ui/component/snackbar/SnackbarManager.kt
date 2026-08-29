@@ -1,4 +1,4 @@
-package com.music.vivi.ui.component.snackbar
+﻿package com.music.vivi.ui.component.snackbar
 
 import androidx.compose.material3.SnackbarDuration
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -37,3 +37,4 @@ object SnackbarManager {
         )
     }
 }
+

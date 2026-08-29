@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic.release
+﻿package com.music.vivi.vivimusic.release
 
 import android.content.Context
 import androidx.work.Constraints
@@ -243,3 +243,4 @@ class NewReleaseCheckWorker(
         }
     }
 }
+

@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+﻿@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package com.music.vivi.vivimusic
 
@@ -1201,3 +1201,4 @@ fun DeviceSelector(
         }
     }
 }
+

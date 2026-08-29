@@ -1,4 +1,4 @@
-package com.music.vivi.ui.menu
+﻿package com.music.vivi.ui.menu
 
 import android.content.Intent
 import android.widget.Toast
@@ -658,3 +658,4 @@ fun OldPlayerMenu(
         }
     }
 }
+

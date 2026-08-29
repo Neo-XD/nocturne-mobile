@@ -1,4 +1,4 @@
-package com.music.vivi.utils.potoken
+﻿package com.music.vivi.utils.potoken
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
@@ -127,3 +127,4 @@ private fun base64ToByteString(base64: String): ByteArray {
     return (base64Mod.decodeBase64() ?: throw PoTokenException("Cannot base64 decode"))
         .toByteArray()
 }
+

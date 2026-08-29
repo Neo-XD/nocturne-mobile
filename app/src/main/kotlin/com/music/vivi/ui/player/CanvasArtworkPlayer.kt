@@ -1,4 +1,4 @@
-package com.music.vivi.ui.player
+﻿package com.music.vivi.ui.player
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -220,3 +220,4 @@ fun CanvasArtworkPlayer(
         modifier = modifier.alpha(alpha),
     )
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -87,3 +87,4 @@ class MusicWidgetReceiver : AppWidgetProvider() {
         const val ACTION_UPDATE_WIDGET = "com.music.vivi.widget.UPDATE_WIDGET"
     }
 }
+

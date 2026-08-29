@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -85,3 +85,4 @@ internal class StreamUrlCache(
         generations[mediaId] = (generations[mediaId] ?: 0L) + 1L
     }
 }
+

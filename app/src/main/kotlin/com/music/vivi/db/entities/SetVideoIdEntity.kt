@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -14,3 +14,4 @@ data class SetVideoIdEntity(
     val videoId: String = "",
     val setVideoId: String? = null,
 )
+

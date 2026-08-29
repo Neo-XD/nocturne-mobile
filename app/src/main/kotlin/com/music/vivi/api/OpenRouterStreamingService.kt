@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -260,3 +260,4 @@ Output MUST be a JSON array with EXACTLY $lineCount strings."""
         data class Error(val message: String) : StreamChunk()
     }
 }
+

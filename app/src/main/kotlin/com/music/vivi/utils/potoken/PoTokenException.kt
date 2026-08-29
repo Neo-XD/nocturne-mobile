@@ -1,4 +1,4 @@
-package com.music.vivi.utils.potoken
+﻿package com.music.vivi.utils.potoken
 
 class PoTokenException(message: String) : Exception(message)
 
@@ -11,3 +11,4 @@ fun buildExceptionForJsError(error: String): Exception {
     else
         PoTokenException(error)
 }
+

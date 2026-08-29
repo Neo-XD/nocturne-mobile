@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -100,3 +100,4 @@ data class FontSizeRange(
         private val DEFAULT_TEXT_STEP = 1.sp
     }
 }
+

@@ -1,4 +1,4 @@
-package com.music.vivi.utils
+﻿package com.music.vivi.utils
 
 fun normalizeDataSyncId(raw: String?): String? {
     if (raw == null) return null
@@ -6,3 +6,4 @@ fun normalizeDataSyncId(raw: String?): String? {
     val delegated = raw.substringAfter("||")
     return delegated.ifEmpty { raw.substringBefore("||") }
 }
+

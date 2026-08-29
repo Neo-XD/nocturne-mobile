@@ -1,4 +1,4 @@
-package com.music.vivi.ui.player
+﻿package com.music.vivi.ui.player
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -94,3 +94,4 @@ fun PlayerV2Canvas(
         )
     }
 }
+

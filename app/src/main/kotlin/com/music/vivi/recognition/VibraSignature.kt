@@ -1,4 +1,4 @@
-package com.music.vivi.recognition
+﻿package com.music.vivi.recognition
 
 /**
  * Native library interface for generating Shazam-compatible audio fingerprints.
@@ -18,3 +18,4 @@ object VibraSignature {
     @JvmStatic
     fun fromI16(samples: ByteArray): String = ShazamSignatureGenerator.fromI16(samples)
 }
+

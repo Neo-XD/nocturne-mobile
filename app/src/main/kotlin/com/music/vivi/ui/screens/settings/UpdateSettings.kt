@@ -1,4 +1,4 @@
-package com.music.vivi.ui.screens.settings
+﻿package com.music.vivi.ui.screens.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -178,7 +178,7 @@ fun UpdateSettings(
                     onClick = {
                         val isFoss = !BuildConfig.CAST_AVAILABLE
                         if (isFoss) {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/vivizzz007/vivi-music/releases/latest"))
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Neo-XD/nocturne-mobile/releases/latest"))
                             context.startActivity(intent)
                         } else {
                             navController.navigate("update")
@@ -360,3 +360,4 @@ fun UpdateSettings(
         }
     )
 }
+

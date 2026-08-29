@@ -1,4 +1,4 @@
-package com.music.vivi.ui.screens.wrapped.components
+﻿package com.music.vivi.ui.screens.wrapped.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -147,3 +147,4 @@ fun WrappedBackground(
         }
     }
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Music Recognition Feature
  * 
  * This feature is based on the original MusicRecognizer project by Aleksey Saenko.
@@ -173,3 +173,4 @@ object MusicRecognitionService {
         _recognitionStatus.value = RecognitionStatus.Ready
     }
 }
+

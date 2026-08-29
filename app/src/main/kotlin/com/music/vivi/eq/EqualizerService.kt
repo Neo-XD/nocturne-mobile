@@ -1,4 +1,4 @@
-package com.music.vivi.eq
+﻿package com.music.vivi.eq
 
 
 import android.annotation.SuppressLint
@@ -164,3 +164,4 @@ data class EqualizerInfo(
     val maxBands: Int,
     val description: String
 )
+

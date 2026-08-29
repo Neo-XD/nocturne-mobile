@@ -1,4 +1,4 @@
-package com.music.vivi.vivimusic.updater.downloadmanager
+﻿package com.music.vivi.vivimusic.updater.downloadmanager
 
 import android.app.Notification
 import android.content.Context
@@ -186,3 +186,4 @@ class ViviNotificationProvider(
         } catch (e: Exception) {}
     }
 }
+

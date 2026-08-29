@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -62,7 +62,7 @@ class DiscordRPC(
                 button2Text.ifEmpty { "Visit vivimusic" },
                 song
             )
-            buttonsList.add(resolvedText to "https://github.com/vivizzz007/vivi-music")
+            buttonsList.add(resolvedText to "https://github.com/Neo-XD/nocturne-mobile")
         }
 
         val type = when (activityType) {
@@ -115,3 +115,4 @@ class DiscordRPC(
         }
     }
 }
+

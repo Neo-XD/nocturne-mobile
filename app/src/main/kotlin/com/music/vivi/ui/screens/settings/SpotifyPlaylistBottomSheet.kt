@@ -1,4 +1,4 @@
-package com.music.vivi.ui.screens.settings
+﻿package com.music.vivi.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -315,3 +315,4 @@ private fun SpotifySourceRow(
         }
     }
 }
+

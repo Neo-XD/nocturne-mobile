@@ -1,4 +1,4 @@
-package com.music.vivi.ui.player
+﻿package com.music.vivi.ui.player
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
@@ -387,3 +387,4 @@ fun AppleMiniPlayer(
         }
     }
 }
+

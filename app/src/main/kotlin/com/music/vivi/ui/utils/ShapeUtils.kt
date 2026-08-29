@@ -1,4 +1,4 @@
-/**
+﻿/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -11,3 +11,4 @@ import androidx.compose.ui.unit.dp
 
 fun CornerBasedShape.top(): CornerBasedShape =
     copy(bottomStart = CornerSize(0.dp), bottomEnd = CornerSize(0.dp))
+
