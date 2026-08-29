@@ -52,6 +52,7 @@ fun RemoteSyncSettingsScreen(
     val playbackTarget by syncManager.playbackTarget.collectAsState()
     val roomState by syncManager.remoteRoomState.collectAsState()
     val statusMessage by syncManager.statusMessage.collectAsState()
+    val discoveredDevices by syncManager.discoveredDevices.collectAsState()
 
     val savedHost by syncManager.hostFlow.collectAsState(initial = "192.168.1.10")
     val savedPort by syncManager.portFlow.collectAsState(initial = 8080)
@@ -185,7 +186,7 @@ fun RemoteSyncSettingsScreen(
                 }
             }
 
-            // Connection Card
+            // Discovered PCs Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -203,7 +204,123 @@ fun RemoteSyncSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Desktop Connection",
+                            text = "Discovered PCs on Wi-Fi",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        IconButton(
+                            onClick = { syncManager.startLanDiscovery() },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Scan for PCs",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    if (discoveredDevices.isEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Text(
+                                text = "Scanning your local network for Nocturne Desktop...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            discoveredDevices.forEach { device ->
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            syncManager.connect(device.ip, device.port)
+                                            syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
+                                        },
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Computer,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Column {
+                                                Text(
+                                                    text = device.name,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Text(
+                                                    text = "${device.ip}:${device.port}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                syncManager.connect(device.ip, device.port)
+                                                syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        ) {
+                                            Text("Connect", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Connection Card (Manual Connect & Status)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Connection Status",
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
@@ -243,7 +360,7 @@ fun RemoteSyncSettingsScreen(
                         OutlinedTextField(
                             value = hostInput,
                             onValueChange = { hostInput = it },
-                            label = { Text("Desktop IP / Tailscale Host") },
+                            label = { Text("Desktop IP / Tailscale Host (Manual)") },
                             placeholder = { Text("e.g. 192.168.1.10 or 100.x.y.z") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -270,7 +387,7 @@ fun RemoteSyncSettingsScreen(
                         ) {
                             Icon(Icons.Default.Link, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (isConnecting) "Connecting..." else "Connect to Desktop")
+                            Text(if (isConnecting) "Connecting..." else "Connect Manually")
                         }
                     } else {
                         OutlinedButton(

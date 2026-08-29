@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -254,6 +254,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var listenTogetherManager: com.music.vivi.listentogether.ListenTogetherManager
+
+    @Inject
+    lateinit var remoteSyncManager: com.music.vivi.sync.RemoteSyncManager
 
     private lateinit var navController: NavHostController
     private var pendingIntent: Intent? = null
@@ -937,6 +940,7 @@ class MainActivity : ComponentActivity() {
                     LocalSyncUtils provides syncUtils,
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalSnackbarHostState provides snackbarHostState,
+                    com.music.vivi.sync.LocalRemoteSyncManager provides remoteSyncManager,
                 ) {
                     Scaffold(
                         containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface,

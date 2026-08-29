@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package com.music.vivi.vivimusic
 
@@ -40,6 +40,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.key
+import androidx.compose.runtime.collectAsState
+import com.music.vivi.sync.DiscoveredDevice
+import com.music.vivi.sync.PlaybackDeviceTarget
+import com.music.vivi.sync.RemoteConnectionState
+import com.music.vivi.sync.LocalRemoteSyncManager
 import com.music.vivi.vivimusic.shapes.RoundedStarShape
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +74,8 @@ import androidx.compose.material.icons.filled.Battery4Bar
 import androidx.compose.material.icons.filled.Battery6Bar
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.MusicNote
@@ -169,6 +176,10 @@ fun AudioDeviceBottomSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier)
 
     val playerConnection = LocalPlayerConnection.current
     val service = playerConnection?.service
+    val syncManager = com.music.vivi.sync.LocalRemoteSyncManager.current
+    val remoteConnectionState by syncManager.connectionState.collectAsState()
+    val playbackTarget by syncManager.playbackTarget.collectAsState()
+    val discoveredDevices by syncManager.discoveredDevices.collectAsState()
     var showDevicePopup by remember { mutableStateOf(false) }
 
     val bluetoothLauncher = rememberLauncherForActivityResult(
@@ -532,6 +543,65 @@ fun AudioDeviceBottomSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier)
                                             }
                                         }
                                     }
+                                }
+                            }
+                        }
+
+                        // Nocturne Desktop Output Device
+                        val isRemoteActive = playbackTarget == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP
+                        val isRemoteConnected = remoteConnectionState == com.music.vivi.sync.RemoteConnectionState.CONNECTED
+                        Surface(
+                            onClick = {
+                                if (isRemoteActive) {
+                                    syncManager.setPlaybackTarget(com.music.vivi.sync.PlaybackDeviceTarget.LOCAL)
+                                } else {
+                                    if (discoveredDevices.isNotEmpty() && !isRemoteConnected) {
+                                        val firstPc = discoveredDevices.first()
+                                        syncManager.connect(firstPc.ip, firstPc.port)
+                                    }
+                                    syncManager.setPlaybackTarget(com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP)
+                                }
+                            },
+                            shape = MaterialTheme.shapes.large,
+                            color = if (isRemoteActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Default.Computer,
+                                    contentDescription = null,
+                                    tint = if (isRemoteActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Nocturne Desktop PC",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isRemoteActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = when {
+                                            isRemoteActive -> "Playing on Desktop PC (Wi-Fi Sync)"
+                                            isRemoteConnected -> "Ready to stream to Desktop"
+                                            discoveredDevices.isNotEmpty() -> "Found ${discoveredDevices.first().name} on Wi-Fi"
+                                            else -> "Tap to stream over Wi-Fi"
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (isRemoteActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isRemoteActive) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
                             }
                         }

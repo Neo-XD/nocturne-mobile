@@ -1,6 +1,7 @@
 package com.music.vivi.sync
 
 import android.content.Context
+import android.net.wifi.WifiManager
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -14,9 +15,17 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.*
 import timber.log.Timber
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.compose.runtime.staticCompositionLocalOf
+
+val LocalRemoteSyncManager = staticCompositionLocalOf<RemoteSyncManager> {
+    error("No RemoteSyncManager provided")
+}
 
 enum class RemoteConnectionState {
     DISCONNECTED,
@@ -72,6 +81,22 @@ data class RemoteWireMessage(
     val action: RemotePlaybackActionPayload? = null
 )
 
+@Serializable
+data class DiscoveredDevice(
+    val ip: String,
+    val port: Int = 8080,
+    val name: String = "Nocturne PC",
+    val lastSeenMs: Long = System.currentTimeMillis()
+)
+
+@Serializable
+private data class DiscoveryPayload(
+    val service: String? = null,
+    val device_name: String? = null,
+    val port: Int? = null,
+    val ip: String? = null
+)
+
 val RemoteSyncHostKey = stringPreferencesKey("remote_sync_host")
 val RemoteSyncPortKey = intPreferencesKey("remote_sync_port")
 val RemoteSyncAutoConnectKey = booleanPreferencesKey("remote_sync_auto_connect")
@@ -92,7 +117,7 @@ class RemoteSyncManager @Inject constructor(
         .build()
 
     private var webSocket: WebSocket? = null
-    private var reconnectJob: Job? = null
+    private var discoveryJob: Job? = null
 
     private val _connectionState = MutableStateFlow(RemoteConnectionState.DISCONNECTED)
     val connectionState: StateFlow<RemoteConnectionState> = _connectionState.asStateFlow()
@@ -106,10 +131,15 @@ class RemoteSyncManager @Inject constructor(
     private val _statusMessage = MutableStateFlow("Disconnected")
     val statusMessage: StateFlow<String> = _statusMessage.asStateFlow()
 
+    private val _discoveredDevices = MutableStateFlow<List<DiscoveredDevice>>(emptyList())
+    val discoveredDevices: StateFlow<List<DiscoveredDevice>> = _discoveredDevices.asStateFlow()
+
     val hostFlow = context.dataStore.data.map { it[RemoteSyncHostKey] ?: "192.168.1.10" }
     val portFlow = context.dataStore.data.map { it[RemoteSyncPortKey] ?: 8080 }
 
     init {
+        startLanDiscovery()
+
         scope.launch {
             context.dataStore.data.collectLatest { prefs ->
                 val targetStr = prefs[RemotePlaybackTargetKey] ?: PlaybackDeviceTarget.LOCAL.name
@@ -126,6 +156,83 @@ class RemoteSyncManager @Inject constructor(
         }
     }
 
+    fun startLanDiscovery() {
+        if (discoveryJob?.isActive == true) return
+
+        discoveryJob = scope.launch {
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            val multicastLock = wifiManager?.createMulticastLock("nocturne_discovery")
+            multicastLock?.setReferenceCounted(true)
+            multicastLock?.acquire()
+
+            var socket: DatagramSocket? = null
+            try {
+                socket = DatagramSocket()
+                socket.broadcast = true
+                socket.soTimeout = 2000
+
+                val buffer = ByteArray(2048)
+
+                while (isActive) {
+                    // Send discovery ping to broadcast
+                    try {
+                        val pingData = "{\"type\":\"nocturne-discover\"}".toByteArray(Charsets.UTF_8)
+                        val packet = DatagramPacket(
+                            pingData,
+                            pingData.size,
+                            InetAddress.getByName("255.255.255.255"),
+                            8081
+                        )
+                        socket.send(packet)
+                    } catch (e: Exception) {
+                        Timber.d("Discovery ping send failed: ${e.message}")
+                    }
+
+                    // Receive responses & beacons
+                    val endTime = System.currentTimeMillis() + 2500
+                    while (System.currentTimeMillis() < endTime && isActive) {
+                        try {
+                            val receivePacket = DatagramPacket(buffer, buffer.size)
+                            socket.receive(receivePacket)
+                            val text = String(receivePacket.data, 0, receivePacket.length, Charsets.UTF_8)
+                            val payload = runCatching { json.decodeFromString<DiscoveryPayload>(text) }.getOrNull()
+
+                            if (payload?.service == "nocturne-sync") {
+                                val senderIp = payload.ip ?: receivePacket.address.hostAddress ?: ""
+                                val port = payload.port ?: 8080
+                                val name = payload.device_name ?: "Nocturne PC"
+
+                                if (senderIp.isNotEmpty() && !senderIp.startsWith("127.")) {
+                                    val newDevice = DiscoveredDevice(
+                                        ip = senderIp,
+                                        port = port,
+                                        name = name,
+                                        lastSeenMs = System.currentTimeMillis()
+                                    )
+                                    val current = _discoveredDevices.value.filter {
+                                        it.ip != senderIp && (System.currentTimeMillis() - it.lastSeenMs < 15000)
+                                    }
+                                    _discoveredDevices.value = current + newDevice
+                                }
+                            }
+                        } catch (_: Exception) {
+                            // Timeout is normal in receive loop
+                        }
+                    }
+
+                    delay(3000)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Discovery engine exception")
+            } finally {
+                socket?.close()
+                if (multicastLock?.isHeld == true) {
+                    multicastLock.release()
+                }
+            }
+        }
+    }
+
     fun setPlaybackTarget(target: PlaybackDeviceTarget) {
         _playbackTarget.value = target
         scope.launch {
@@ -134,7 +241,6 @@ class RemoteSyncManager @Inject constructor(
     }
 
     fun connect(host: String, port: Int = 8080) {
-        reconnectJob?.cancel()
         disconnectInternal(clearAutoConnect = false)
 
         val cleanHost = host.trim()
@@ -162,6 +268,11 @@ class RemoteSyncManager @Inject constructor(
                 Timber.d("RemoteSync: Connected to $cleanHost:$port")
                 _connectionState.value = RemoteConnectionState.CONNECTED
                 _statusMessage.value = "Connected to $cleanHost:$port"
+                val authMsg = RemoteWireMessage(
+                    type = "auth_response",
+                    client_device_name = "Nocturne Mobile (${android.os.Build.MODEL})"
+                )
+                webSocket.send(json.encodeToString(authMsg))
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
