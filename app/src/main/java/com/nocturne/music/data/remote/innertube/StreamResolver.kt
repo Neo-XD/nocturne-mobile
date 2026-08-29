@@ -10,44 +10,19 @@ import org.schabi.newpipe.extractor.stream.StreamInfo
 class StreamResolver(
     private val innerTubeService: InnerTubeService
 ) {
+    // Client cascade: ANDROID_VR & ANDROID_MUSIC provide direct GoogleVideo audio URLs without JS signature deciphering
     private val clientCascade = listOf(
         YouTubeClients.ANDROID_VR,
-        YouTubeClients.VISIONOS,
+        YouTubeClients.ANDROID_MUSIC,
         YouTubeClients.IOS_MUSIC,
+        YouTubeClients.VISIONOS,
         YouTubeClients.WEB_REMIX
     )
 
     suspend fun resolveStream(videoId: String): Result<ResolvedStream> = withContext(Dispatchers.IO) {
-        // 1. Primary: Use NewPipeExtractor for YouTube audio streams (handles deciphering and audio streams)
-        try {
-            val url = "https://www.youtube.com/watch?v=$videoId"
-            val streamInfo = StreamInfo.getInfo(ServiceList.YouTube, url)
-            val audioStreams = streamInfo.audioStreams
-
-            if (!audioStreams.isNullOrEmpty()) {
-                // Pick highest bitrate audio stream (Opus 160kbps / AAC 128kbps)
-                val bestStream = audioStreams.maxByOrNull { it.averageBitrate } ?: audioStreams.first()
-                val streamUrl = bestStream.content
-
-                if (!streamUrl.isNullOrBlank()) {
-                    return@withContext Result.success(
-                        ResolvedStream(
-                            videoId = videoId,
-                            url = streamUrl,
-                            itag = bestStream.itag.toLong(),
-                            headers = mapOf(
-                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                            ),
-                            expiresAt = System.currentTimeMillis() / 1000 + 21600,
-                            streamClient = "NewPipeExtractor"
-                        )
-                    )
-                }
-            }
-        } catch (_: Exception) {}
-
-        // 2. Fallback: InnerTube multi-client cascade
         var lastError: Throwable? = null
+
+        // 1. Primary: InnerTube Native Clients (ANDROID_VR / ANDROID_MUSIC / IOS_MUSIC)
         for (client in clientCascade) {
             try {
                 val playerResult = innerTubeService.getPlayerResponse(client, videoId)
@@ -98,7 +73,10 @@ class StreamResolver(
                             videoId = videoId,
                             url = streamUrl,
                             itag = itag,
-                            headers = mapOf("User-Agent" to client.userAgent),
+                            headers = mapOf(
+                                "User-Agent" to client.userAgent,
+                                "Referer" to "https://www.youtube.com/"
+                            ),
                             expiresAt = expiresAt,
                             loudnessDb = loudnessDb,
                             streamClient = client.clientName
@@ -108,6 +86,36 @@ class StreamResolver(
             } catch (e: Exception) {
                 lastError = e
             }
+        }
+
+        // 2. Secondary fallback: NewPipeExtractor
+        try {
+            val url = "https://www.youtube.com/watch?v=$videoId"
+            val streamInfo = StreamInfo.getInfo(ServiceList.YouTube, url)
+            val audioStreams = streamInfo.audioStreams
+
+            if (!audioStreams.isNullOrEmpty()) {
+                val bestStream = audioStreams.maxByOrNull { it.averageBitrate } ?: audioStreams.first()
+                val streamUrl = bestStream.content
+
+                if (!streamUrl.isNullOrBlank()) {
+                    return@withContext Result.success(
+                        ResolvedStream(
+                            videoId = videoId,
+                            url = streamUrl,
+                            itag = bestStream.itag.toLong(),
+                            headers = mapOf(
+                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                                "Referer" to "https://www.youtube.com/"
+                            ),
+                            expiresAt = System.currentTimeMillis() / 1000 + 21600,
+                            streamClient = "NewPipeExtractor"
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            lastError = e
         }
 
         Result.failure(lastError ?: IllegalStateException("All stream extraction methods failed for $videoId"))

@@ -59,6 +59,18 @@ object YouTubeClients {
         deviceMake = "Apple",
         deviceModel = "iPhone16,2"
     )
+
+    val ANDROID_MUSIC = ClientInfo(
+        clientName = "ANDROID_MUSIC",
+        clientVersion = "6.42.52",
+        clientId = "21",
+        userAgent = "com.google.android.apps.youtube.music/6.42.52 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UQ1A.240205.004; Cronet/121.0.6167.101)",
+        osName = "Android",
+        osVersion = "14",
+        deviceMake = "Google",
+        deviceModel = "Pixel 8 Pro",
+        androidSdkVersion = "34"
+    )
 }
 
 @Serializable

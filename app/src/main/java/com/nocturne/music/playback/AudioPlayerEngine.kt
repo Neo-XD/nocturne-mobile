@@ -3,10 +3,9 @@ package com.nocturne.music.playback
 import android.content.Context
 import androidx.media3.common.*
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.nocturne.music.core.model.PlaybackState
 import com.nocturne.music.core.model.RepeatMode
 import com.nocturne.music.core.model.ResolvedStream
@@ -24,24 +23,13 @@ class AudioPlayerEngine(
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    private val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-        .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        .setAllowCrossProtocolRedirects(true)
-        .setConnectTimeoutMs(15000)
-        .setReadTimeoutMs(15000)
-
-    private val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
-
     val exoPlayer: ExoPlayer by lazy {
         val audioAttributes = AudioAttributes.Builder()
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .setUsage(C.USAGE_MEDIA)
             .build()
 
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
-
         ExoPlayer.Builder(context)
-            .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_LOCAL)
@@ -58,6 +46,7 @@ class AudioPlayerEngine(
 
     private var currentIndex = 0
     private var progressJob: Job? = null
+    private var _currentTrack: Track? = null
 
     init {
         startProgressTracker()
@@ -135,8 +124,6 @@ class AudioPlayerEngine(
         }
     }
 
-    private var _currentTrack: Track? = null
-
     private fun loadAndPlay(track: Track) {
         _currentTrack = track
         _playbackState.value = _playbackState.value.copy(
@@ -152,7 +139,7 @@ class AudioPlayerEngine(
                 val stream = resolvedResult.getOrThrow()
                 playStream(track, stream)
             } else {
-                // If stream resolution failed, try next
+                // If stream resolution failed, advance to next track
                 next()
             }
         }
@@ -172,7 +159,21 @@ class AudioPlayerEngine(
             .setMediaMetadata(mediaMetadata)
             .build()
 
-        exoPlayer.setMediaItem(mediaItem)
+        // Create matching HTTP data source for GoogleVideo streaming CDN
+        val userAgent = stream.headers["User-Agent"]
+            ?: "com.google.android.apps.youtube.vr.oculus/1.43.32 (Linux; U; Android 12; en_US; Quest 3; Build/SQ3A.220605.009.A1; Cronet/107.0.5284.2)"
+
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent(userAgent)
+            .setAllowCrossProtocolRedirects(true)
+            .setConnectTimeoutMs(20000)
+            .setReadTimeoutMs(20000)
+            .setDefaultRequestProperties(stream.headers)
+
+        val mediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
+            .createMediaSource(mediaItem)
+
+        exoPlayer.setMediaSource(mediaSource)
         exoPlayer.prepare()
         exoPlayer.play()
 

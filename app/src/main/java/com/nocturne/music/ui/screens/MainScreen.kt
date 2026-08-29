@@ -62,9 +62,7 @@ fun MainScreen(
                         viewModel = searchViewModel,
                         onPlayTrack = { track -> playerViewModel.playTrack(track) }
                     )
-                    NavigationTab.SYNC -> SyncScreen(
-                        viewModel = syncViewModel
-                    )
+                    NavigationTab.SETTINGS -> SettingsScreen()
                 }
             }
         }

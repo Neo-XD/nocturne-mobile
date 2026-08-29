@@ -1,10 +1,9 @@
 package com.nocturne.music.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -16,7 +15,7 @@ import com.nocturne.music.ui.theme.TextPrimary
 enum class NavigationTab(val title: String, val icon: ImageVector) {
     HOME("Home", Icons.Default.Home),
     SEARCH("Search", Icons.Default.Search),
-    SYNC("Sync PC", Icons.Default.Cast)
+    SETTINGS("Settings", Icons.Default.Settings)
 }
 
 @Composable

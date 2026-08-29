@@ -6,6 +6,7 @@ val NocturneDarkBackground = Color(0xFF0E0E11)
 val NocturneDarkSurface = Color(0xFF18181D)
 val NocturneDarkSurfaceVariant = Color(0xFF22222A)
 val NocturneDarkElevated = Color(0xFF2A2A35)
+val NocturneDarkCard = Color(0xFF18181D)
 
 val NocturnePurple = Color(0xFF9D72FF)
 val NocturnePurpleLight = Color(0xFFBCA1FF)
