@@ -299,6 +299,30 @@ fun Thumbnail(
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
 
+    // Remote Sync state
+    val remoteSyncManager = com.music.vivi.sync.LocalRemoteSyncManager.current
+    val remotePlaybackTarget by remoteSyncManager.playbackTarget.collectAsState()
+    val remoteConnectionState by remoteSyncManager.connectionState.collectAsState()
+    val remoteRoomState by remoteSyncManager.remoteRoomState.collectAsState()
+
+    val isRemoteDesktop = remotePlaybackTarget == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+                          remoteConnectionState == com.music.vivi.sync.RemoteConnectionState.CONNECTED
+
+    val effectiveMediaMetadata = remember(mediaMetadata, isRemoteDesktop, remoteRoomState) {
+        if (isRemoteDesktop && remoteRoomState?.current_track != null) {
+            val t = remoteRoomState!!.current_track!!
+            com.music.vivi.models.MediaMetadata(
+                id = t.id,
+                title = t.title,
+                artists = listOf(com.music.vivi.models.MediaMetadata.Artist(id = null, name = t.artist)),
+                duration = (t.duration_ms / 1000).toInt(),
+                thumbnailUrl = t.thumbnail
+            )
+        } else {
+            mediaMetadata
+        }
+    }
+
     // Preferences - computed once
     // Disable swipe for Listen Together guests
     val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
@@ -322,10 +346,27 @@ fun Thumbnail(
         playerConnection.player.currentMediaItemIndex,
         playerConnection.player.shuffleModeEnabled,
         swipeThumbnail,
-        mediaMetadata
+        mediaMetadata,
+        isRemoteDesktop,
+        remoteRoomState
     ) {
         derivedStateOf {
-            getMediaItems(playerConnection.player, swipeThumbnail)
+            if (isRemoteDesktop && remoteRoomState?.current_track != null) {
+                val t = remoteRoomState!!.current_track!!
+                val mi = androidx.media3.common.MediaItem.Builder()
+                    .setMediaId(t.id)
+                    .setMediaMetadata(
+                        androidx.media3.common.MediaMetadata.Builder()
+                            .setTitle(t.title)
+                            .setArtist(t.artist)
+                            .setArtworkUri(t.thumbnail?.let { android.net.Uri.parse(it) })
+                            .build()
+                    )
+                    .build()
+                MediaItemsData(items = listOf(mi), currentIndex = 0)
+            } else {
+                getMediaItems(playerConnection.player, swipeThumbnail)
+            }
         }
     }
     
@@ -436,7 +477,7 @@ fun Thumbnail(
                 if (!isLandscape) {
                     ThumbnailHeader(
                         queueTitle = queueTitle,
-                        albumTitle = mediaMetadata?.album?.title,
+                        albumTitle = effectiveMediaMetadata?.album?.title,
                         textColor = textBackgroundColor
                     )
                 }
@@ -502,8 +543,8 @@ fun Thumbnail(
                                 context = context,
                                 isLandscape = isLandscape,
                                 isListenTogetherGuest = isListenTogetherGuest,
-                                currentMediaId = mediaMetadata?.id,
-                                currentMediaThumbnail = mediaMetadata?.thumbnailUrl,
+                                currentMediaId = effectiveMediaMetadata?.id,
+                                currentMediaThumbnail = effectiveMediaMetadata?.thumbnailUrl,
                                 playerBackground = playerBackground
                             )
                         }
@@ -1001,7 +1042,7 @@ internal fun validateCanvasMatch(
 internal fun splitAndNormalizeArtists(raw: String): List<String> {
     return raw.split(
         Regex(
-            "(?:\\s*,\\s*|\\s*&\\s*|\\s+×\\s+|\\s+x\\s+|\\bfeat\\.?\\b|\\bft\\.?\\b|\\bfeaturing\\b|\\bwith\\b)",
+            "(?:\\s*,\\s*|\\s*&\\s*|\\s+ï¿½\\s+|\\s+x\\s+|\\bfeat\\.?\\b|\\bft\\.?\\b|\\bfeaturing\\b|\\bwith\\b)",
             RegexOption.IGNORE_CASE,
         )
     ).map { it.normalizeForComparison() }

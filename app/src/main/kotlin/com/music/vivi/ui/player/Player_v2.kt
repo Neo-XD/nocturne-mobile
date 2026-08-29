@@ -122,7 +122,7 @@ fun PlayerV2(
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
 
-    // Cast state — mirrors Player.kt lines 366-378
+    // Cast state ï¿½ mirrors Player.kt lines 366-378
     val castHandler = remember(playerConnection) {
         try { playerConnection.service.castConnectionHandler } catch (e: Exception) { null }
     }
@@ -132,7 +132,38 @@ fun PlayerV2(
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
     val castIsBuffering by castHandler?.castIsBuffering?.collectAsState() ?: remember { mutableStateOf(false) }
     val castVolume by castHandler?.castVolume?.collectAsState() ?: remember { mutableFloatStateOf(1f) }
-    val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
+
+    // Remote Sync state
+    val remoteSyncManager = com.music.vivi.sync.LocalRemoteSyncManager.current
+    val remotePlaybackTarget by remoteSyncManager.playbackTarget.collectAsState()
+    val remoteConnectionState by remoteSyncManager.connectionState.collectAsState()
+    val remoteRoomState by remoteSyncManager.remoteRoomState.collectAsState()
+
+    val isRemoteDesktop = remotePlaybackTarget == com.music.vivi.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+                          remoteConnectionState == com.music.vivi.sync.RemoteConnectionState.CONNECTED
+
+    val effectiveMediaMetadata = remember(mediaMetadata, isRemoteDesktop, remoteRoomState) {
+        if (isRemoteDesktop && remoteRoomState?.current_track != null) {
+            val t = remoteRoomState!!.current_track!!
+            com.music.vivi.models.MediaMetadata(
+                id = t.id,
+                title = t.title,
+                artists = listOf(com.music.vivi.models.MediaMetadata.Artist(id = null, name = t.artist)),
+                duration = (t.duration_ms / 1000).toInt(),
+                thumbnailUrl = t.thumbnail
+            )
+        } else {
+            mediaMetadata
+        }
+    }
+
+    val effectiveIsPlaying = if (isRemoteDesktop && remoteRoomState != null) {
+        remoteRoomState!!.is_playing
+    } else if (isCasting) {
+        castIsPlaying
+    } else {
+        isPlaying
+    }
     var lastManualSeekTime by remember { mutableLongStateOf(0L) }
     
     androidx.activity.compose.BackHandler(enabled = playerState != PlayerInternalState.COVER) {
@@ -245,9 +276,22 @@ fun PlayerV2(
         }
     }
     
-    // Position update — only poll local player when not casting
-    LaunchedEffect(isPlaying, isCasting) {
-        if (!isCasting && isPlaying) {
+    // Position update - for remote desktop, cast, or local playback
+    LaunchedEffect(isPlaying, isCasting, isRemoteDesktop, remoteRoomState) {
+        if (isRemoteDesktop) {
+            while (isActive) {
+                val r = remoteRoomState
+                if (r != null) {
+                    val elapsed = if (r.is_playing) System.currentTimeMillis() - r.last_update_ms else 0L
+                    val d = r.current_track?.duration_ms ?: 0L
+                    if (sliderPosition == null) {
+                        position = (r.position_ms + elapsed).coerceIn(0L, if (d > 0) d else Long.MAX_VALUE)
+                        duration = d
+                    }
+                }
+                delay(100)
+            }
+        } else if (!isCasting && isPlaying) {
             while (isActive) {
                 delay(100)
                 if (sliderPosition == null) {
@@ -260,8 +304,8 @@ fun PlayerV2(
     }
 
     // Also update once on song change
-    LaunchedEffect(mediaMetadata?.id) {
-        if (!isCasting) {
+    LaunchedEffect(effectiveMediaMetadata?.id, isRemoteDesktop) {
+        if (!isCasting && !isRemoteDesktop) {
             val rawDuration = playerConnection.player.duration
             position = playerConnection.player.currentPosition.coerceAtLeast(0L)
             duration = if (rawDuration == C.TIME_UNSET || rawDuration < 0) 0L else rawDuration
@@ -420,13 +464,13 @@ fun PlayerV2(
                                         }
                                     } else {
                                         AsyncImage(
-                                            model = mediaMetadata?.thumbnailUrl?.resize(1200, 1200),
+                                            model = effectiveMediaMetadata?.thumbnailUrl?.resize(1200, 1200),
                                             contentDescription = "Cover Art",
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop
                                         )
                                         PlayerV2Canvas(
-                                            mediaMetadata = mediaMetadata,
+                                            mediaMetadata = effectiveMediaMetadata,
                                             isPlaying = isPlaying,
                                             modifier = Modifier.fillMaxSize()
                                         )
@@ -443,7 +487,7 @@ fun PlayerV2(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            mediaMetadata?.title ?: "Unknown",
+                                            effectiveMediaMetadata?.title ?: "Unknown",
                                             style = MaterialTheme.typography.headlineSmall, 
                                             color = adaptivePrimary,
                                             fontWeight = FontWeight.Bold,
@@ -454,12 +498,12 @@ fun PlayerV2(
                                                 animatedVisibilityScope = this@AnimatedContent
                                             ).clickable {
                                                 state.collapseSoft()
-                                                mediaMetadata?.album?.id?.let { navController.navigate("album/$it") }
+                                                effectiveMediaMetadata?.album?.id?.let { navController.navigate("album/$it") }
                                             }
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            mediaMetadata?.artists?.firstOrNull()?.name ?: "Unknown",
+                                            effectiveMediaMetadata?.artists?.firstOrNull()?.name ?: "Unknown",
                                             style = MaterialTheme.typography.titleMedium,
                                             color = adaptiveSecondary,
                                             fontWeight = FontWeight.Medium,
@@ -470,7 +514,7 @@ fun PlayerV2(
                                                 animatedVisibilityScope = this@AnimatedContent
                                             ).clickable {
                                                 state.collapseSoft()
-                                                mediaMetadata?.artists?.firstOrNull()?.id?.let { navController.navigate("artist/$it") }
+                                                effectiveMediaMetadata?.artists?.firstOrNull()?.id?.let { navController.navigate("artist/$it") }
                                             }
                                         )
                                     }
@@ -514,11 +558,11 @@ fun PlayerV2(
                                             onClick = {
                                                 menuState.show {
                                                     OldPlayerMenu(
-                                                        mediaMetadata = mediaMetadata,
+                                                        mediaMetadata = effectiveMediaMetadata,
                                                         navController = navController,
                                                         playerBottomSheetState = state,
                                                         onShowDetailsDialog = {
-                                                            mediaMetadata?.id?.let {
+                                                            effectiveMediaMetadata?.id?.let {
                                                                 bottomSheetPageState.show {
                                                                     ShowMediaInfo(it)
                                                                 }
@@ -578,13 +622,13 @@ fun PlayerV2(
                                             }
                                         } else {
                                             AsyncImage(
-                                                model = mediaMetadata?.thumbnailUrl?.resize(1200, 1200),
+                                                model = effectiveMediaMetadata?.thumbnailUrl?.resize(1200, 1200),
                                                 contentDescription = "Cover Art",
                                                 modifier = Modifier.fillMaxSize(),
                                                 contentScale = ContentScale.Crop
                                             )
                                             PlayerV2Canvas(
-                                                mediaMetadata = mediaMetadata,
+                                                mediaMetadata = effectiveMediaMetadata,
                                                 isPlaying = isPlaying,
                                                 modifier = Modifier.fillMaxSize()
                                             )
@@ -593,7 +637,7 @@ fun PlayerV2(
                                     Spacer(modifier = Modifier.width(16.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            mediaMetadata?.title ?: "Unknown",
+                                            effectiveMediaMetadata?.title ?: "Unknown",
                                             style = MaterialTheme.typography.titleMedium, 
                                             color = adaptivePrimary,
                                             fontWeight = FontWeight.Bold,
@@ -605,7 +649,7 @@ fun PlayerV2(
                                             )
                                         )
                                         Text(
-                                            mediaMetadata?.artists?.firstOrNull()?.name ?: "Unknown",
+                                            effectiveMediaMetadata?.artists?.firstOrNull()?.name ?: "Unknown",
                                             style = MaterialTheme.typography.titleSmall,
                                             color = adaptiveSecondary,
                                             maxLines = 1,
@@ -642,11 +686,11 @@ fun PlayerV2(
                                                 if (targetState == PlayerInternalState.QUEUE) {
                                                     menuState.show {
                                                         OldPlayerMenu(
-                                                            mediaMetadata = mediaMetadata,
+                                                            mediaMetadata = effectiveMediaMetadata,
                                                             navController = navController,
                                                             playerBottomSheetState = state,
                                                             onShowDetailsDialog = {
-                                                                mediaMetadata?.id?.let {
+                                                                effectiveMediaMetadata?.id?.let {
                                                                     bottomSheetPageState.show {
                                                                         ShowMediaInfo(it)
                                                                     }
@@ -660,7 +704,7 @@ fun PlayerV2(
                                                         LyricsMenu(
                                                             lyricsProvider = { currentLyrics },
                                                             songProvider = { currentSong?.song },
-                                                            mediaMetadataProvider = { mediaMetadata!! },
+                                                            mediaMetadataProvider = { (effectiveMediaMetadata ?: mediaMetadata)!! },
                                                             onDismiss = menuState::dismiss,
                                                             onShowOffsetDialog = {
                                                                 bottomSheetPageState.show {
@@ -695,7 +739,7 @@ fun PlayerV2(
                                 ) {
                                     if (targetState == PlayerInternalState.LYRICS) {
                                         LyricsV2(
-                                            mediaMetadata = mediaMetadata,
+                                            mediaMetadata = effectiveMediaMetadata,
                                             showLyrics = true,
                                             positionProvider = { sliderPosition ?: position }
                                         )

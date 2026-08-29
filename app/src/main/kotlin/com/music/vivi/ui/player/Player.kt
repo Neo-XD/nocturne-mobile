@@ -505,9 +505,9 @@ fun BottomSheetPlayer(
     val defaultGradientColors = listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant)
     val fallbackColor = MaterialTheme.colorScheme.surface.toArgb()
 
-    LaunchedEffect(mediaMetadata?.id, playerBackground) {
+    LaunchedEffect(effectiveMediaMetadata?.id, playerBackground) {
         if (playerBackground == PlayerBackgroundStyle.GRADIENT || playerBackground == PlayerBackgroundStyle.GLOW_ANIMATED) {
-            val currentMetadata = mediaMetadata
+            val currentMetadata = effectiveMediaMetadata
             if (currentMetadata != null && currentMetadata.thumbnailUrl != null) {
                 val cachedColors = gradientColorsCache[currentMetadata.id]
                 if (cachedColors != null) {
@@ -885,7 +885,7 @@ fun BottomSheetPlayer(
                 when (playerBackground) {
                     PlayerBackgroundStyle.BLUR -> {
                         AnimatedContent(
-                            targetState = mediaMetadata?.thumbnailUrl,
+                            targetState = effectiveMediaMetadata?.thumbnailUrl,
                             transitionSpec = {
                                 fadeIn(tween(800)).togetherWith(fadeOut(tween(800)))
                             },
@@ -1118,7 +1118,7 @@ fun BottomSheetPlayer(
                     }
                     PlayerBackgroundStyle.APPLE_MUSIC -> {
                         AnimatedContent(
-                            targetState = mediaMetadata?.thumbnailUrl,
+                            targetState = effectiveMediaMetadata?.thumbnailUrl,
                             transitionSpec = {
                                 fadeIn(tween(1200)).togetherWith(fadeOut(tween(1200)))
                             },
@@ -1245,7 +1245,7 @@ fun BottomSheetPlayer(
                         )
 
                         AnimatedContent(
-                            targetState = mediaMetadata?.thumbnailUrl,
+                            targetState = effectiveMediaMetadata?.thumbnailUrl,
                             transitionSpec = {
                                 fadeIn(tween(1500)).togetherWith(fadeOut(tween(1500)))
                             },
@@ -2628,7 +2628,7 @@ fun BottomSheetPlayer(
                         ) { showLyrics ->
                             if (showLyrics) {
                                 InlineLyricsView(
-                                    mediaMetadata = mediaMetadata,
+                                    mediaMetadata = effectiveMediaMetadata,
                                     showLyrics = showLyrics,
                                     positionProvider = { effectivePosition }
                                 )
@@ -2690,7 +2690,7 @@ fun BottomSheetPlayer(
                         ) { showLyrics ->
                             if (showLyrics) {
                                 InlineLyricsView(
-                                    mediaMetadata = mediaMetadata,
+                                    mediaMetadata = effectiveMediaMetadata,
                                     showLyrics = showLyrics,
                                     positionProvider = { effectivePosition }
                                 )

@@ -348,7 +348,7 @@ class RemoteSyncManager @Inject constructor(
         RemotePlaybackActionPayload(kind = "change_track", track = track)
     )
 
-    private fun sendAction(action: RemotePlaybackActionPayload) {
+    fun sendAction(action: RemotePlaybackActionPayload) {
         val ws = webSocket
         if (ws != null && _connectionState.value == RemoteConnectionState.CONNECTED) {
             val wireMsg = RemoteWireMessage(
