@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="weeks">שבועות</string>
     <string name="months">חודשים</string>
@@ -46,3 +46,4 @@
     <string name="close">סגור</string>
     <string name="next">הבא</string>
 </resources>
+

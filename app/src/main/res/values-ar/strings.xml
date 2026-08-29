@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="artists">فنانون</string>
     <string name="albums">ألبومات</string>
@@ -301,7 +301,7 @@
     <string name="restore_failed">فشل في استعادة النسخة الاحتياطية</string>
     <string name="options">خيارات</string>
     <string name="preview">معاينة</string>
-    <string name="discord_information">vivimusic يستخدم مكتبة KizzyRPC لتعيين حالة حساب Discord الخاص بك. هذا يتضمن استخدام اتصال Discord Gateway، والذي قد يعتبر انتهاكًا لشروط خدمة Discord. مع ذلك، لا توجد حالات معروفة لتعطيل حسابات المستخدمين لهذا السبب. استخدم على مسؤوليتك الخاصة. \n \nسيقوم vivimusic فقط باستخراج رمز الوصول الخاص بك، وسيتم تخزين كل شيء آخر محليًا.</string>
+    <string name="discord_information">Nocturne Mobile يستخدم مكتبة KizzyRPC لتعيين حالة حساب Discord الخاص بك. هذا يتضمن استخدام اتصال Discord Gateway، والذي قد يعتبر انتهاكًا لشروط خدمة Discord. مع ذلك، لا توجد حالات معروفة لتعطيل حسابات المستخدمين لهذا السبب. استخدم على مسؤوليتك الخاصة. \n \nسيقوم Nocturne Mobile فقط باستخراج رمز الوصول الخاص بك، وسيتم تخزين كل شيء آخر محليًا.</string>
     <string name="dismiss">صرف</string>
     <string name="enable_discord_rpc">فعل Rich Presence</string>
     <string name="new_version_available">نسخة جديدة متوفرة</string>
@@ -316,3 +316,4 @@
     <string name="use_login_for_browse_desc">يمكن أن يؤثر ذلك على المحتوى الذي تراه، فعلى سبيل المثال، يعرض الألبومات المخصصة للمشتركين المميزين فقط إذا كنت مسجلاً الدخول باستخدام حساب مميز</string>
     <string name="action_login">تسجيل دخول</string>
 </resources>
+

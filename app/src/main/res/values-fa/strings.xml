@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="home">خانه</string>
     <string name="songs">ترانه‌ها</string>
@@ -238,3 +238,4 @@
     <string name="tempo_and_pitch">تمپو و زیر و بمی صدا</string>
     <string name="duplicates">تکراری ها</string>
 </resources>
+

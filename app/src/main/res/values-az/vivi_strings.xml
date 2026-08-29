@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Araşdır</string>
     <string name="local_history">Daxili</string>
@@ -74,3 +74,4 @@
     <string name="login_settings">Giriş parametrləri</string>
     <string name="general_settings">Ümumi parametrlər</string>
 </resources>
+

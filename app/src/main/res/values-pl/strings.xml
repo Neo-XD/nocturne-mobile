@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">Główna</string>
     <string name="songs">Utwory</string>
@@ -289,7 +289,7 @@
     <string name="disable_screenshot">Wyłącz zrzut ekranu</string>
     <string name="hide_explicit">Ukryj wulgarne treści</string>
     <string name="discord_integration">Integracja z Discordem</string>
-    <string name="discord_information">vivimusic używa biblioteki KizzyRPC do aktualizacji statusu konta Discord. Wiąże się to z korzystaniem z połączenia Discord Gateway, co może być postrzegane jako naruszenie warunków korzystania z usług Discord (TOS). Nie są jednak znane przypadki zawieszenia kont użytkowników z tego powodu. Używaj na własne ryzyko.\n\nvivimusic wyodrębni tylko twój token; wszystko inne jest przechowywane lokalnie.</string>
+    <string name="discord_information">Nocturne Mobile używa biblioteki KizzyRPC do aktualizacji statusu konta Discord. Wiąże się to z korzystaniem z połączenia Discord Gateway, co może być postrzegane jako naruszenie warunków korzystania z usług Discord (TOS). Nie są jednak znane przypadki zawieszenia kont użytkowników z tego powodu. Używaj na własne ryzyko.\n\nNocturne Mobile wyodrębni tylko twój token; wszystko inne jest przechowywane lokalnie.</string>
     <string name="dismiss">Odrzuć</string>
     <string name="options">Opcje</string>
     <string name="preview">Podgląd</string>
@@ -298,3 +298,4 @@
     <string name="use_login_for_browse_desc">Może mieć wpływ na to, jakie treści widzisz i np. pokazuje albumy tylko premium, jeśli jesteś zalogowany na konto Premium</string>
     <string name="action_login">Zaloguj</string>
 </resources>
+

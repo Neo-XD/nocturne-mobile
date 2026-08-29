@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">வீடு</string>
     <string name="songs">பாடல்கள்</string>
@@ -280,3 +280,4 @@
     </plurals>
     <string name="action_login">புகுபதிகை</string>
 </resources>
+

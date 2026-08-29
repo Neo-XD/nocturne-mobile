@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="no_title">Bez naslova</string>
     <string name="unknown_artist">Nepoznati izvođač</string>
@@ -179,3 +179,4 @@
     <string name="check_for_updates">Automatska provjera ažuriranja</string>
     <string name="integrations">Ugradnja</string>
 </resources>
+

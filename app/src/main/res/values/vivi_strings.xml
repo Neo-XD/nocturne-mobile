@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Explore</string>
     <string name="tab_explore">Explore</string>
@@ -116,11 +116,11 @@
     <string name="vivimusic_canvas_desc">Replaces the static album artwork in the player with a looping animated video when one is available for the current song</string>
     <string name="canvas_source">Canvas source</string>
     <string name="canvas_source_auto">Auto</string>
-    <string name="canvas_source_auto_desc">Tries Apple Music first, then falls back to ViviMusic and Tidal. Picks the best match for the current song automatically</string>
+    <string name="canvas_source_auto_desc">Tries Apple Music first, then falls back to Nocturne Mobile and Tidal. Picks the best match for the current song automatically</string>
     <string name="canvas_source_apple_music">Apple Music</string>
     <string name="canvas_source_apple_music_desc">Uses Apple Music&#8217;s animated visuals exclusively. Only shows a canvas if Apple Music has one for the playing song</string>
-    <string name="canvas_source_vivimusic">ViviMusic</string>
-    <string name="canvas_source_vivimusic_desc">Uses the ViviMusic curated canvas library exclusively. Only shows a canvas if one has been added for the playing song</string>
+    <string name="canvas_source_vivimusic">Nocturne Mobile</string>
+    <string name="canvas_source_vivimusic_desc">Uses the Nocturne Mobile curated canvas library exclusively. Only shows a canvas if one has been added for the playing song</string>
     <string name="canvas_source_tidal">Tidal</string>
     <string name="canvas_source_tidal_desc">Uses Tidal&#8217;s animated visuals exclusively. Only shows a canvas if Tidal has one for the playing song</string>
     <string name="show_album_canvas">Show Album Canvas</string>
@@ -400,7 +400,7 @@
     <string name="enable_scrobbling">Enable scrobbling</string>
     <string name="lastfm_now_playing">Send Now Playing</string>
     <string name="last_fm_send_likes">Send Likes/Unlikes</string>
-    <string name="last_fm_send_likes_description">Love/Unlove songs in Last.fm when they are Liked/Unliked in vivimusic</string>
+    <string name="last_fm_send_likes_description">Love/Unlove songs in Last.fm when they are Liked/Unliked in Nocturne Mobile</string>
     <string name="logging_in">Logging in…</string>
 
     <string name="scrobbling_configuration">Scrobbling Configuration</string>
@@ -441,7 +441,7 @@
     <string name="karaoke">Karaoke</string>
     <string name="apple_music_style">Apple Music</string>
     <string name="apple_music_style_letter">Apple Music V2 (Letter by Letter)</string>
-    <string name="vivimusic_1">Vivimusic (Fluid)</string>
+    <string name="vivimusic_1">Nocturne Mobile (Fluid)</string>
     <string name="apple_music_lyrics_blur">Apple Music Lyrics Blur</string>
     <string name="apple_music_lyrics_blur_desc">Apply blur to inactive lyrics lines for a premium focus effect</string>
     <string name="lyrics_v2_fluid">Lyrics V2 (Fluid)</string>
@@ -471,19 +471,19 @@
     <string name="wrapped_total_artists_subtitle">unique artists</string>
     <string name="wrapped_total_songs_title">You listened to</string>
     <string name="wrapped_total_songs_subtitle">unique songs</string>
-    <string name="wrapped_intro_title">vivimusic</string>
+    <string name="wrapped_intro_title">Nocturne Mobile</string>
     <string name="wrapped_intro_subtitle">it\'s time to see what you\'ve been listening to</string>
     <string name="wrapped_intro_button">let\'s go!</string>
-    <string name="wrapped_end_thanks">Thanks for listening with vivimusic!</string>
+    <string name="wrapped_end_thanks">Thanks for listening with Nocturne Mobile!</string>
     <string name="wrapped_end_create_playlist">Create Your Wrapped Playlist</string>
     <string name="wrapped_end_creating_playlist">Creating...</string>
     <string name="wrapped_end_playlist_saved">Playlist Saved</string>
-    <string name="wrapped_logo_content_description">vivimusic Logo</string>
+    <string name="wrapped_logo_content_description">Nocturne Mobile Logo</string>
     <string name="wrapped_year">2025</string>
     <string name="wrapped_ready_title">YOUR WRAPPED IS READY!</string>
     <string name="wrapped_ready_subtitle">Time to see what you loved this year.</string>
     <string name="wrapped_thank_you">Thank you for listening</string>
-    <string name="wrapped_special_thanks">Special thanks to Vividh for creating vivimusic</string>
+    <string name="wrapped_special_thanks">Special thanks to Nocturnedh for creating Nocturne Mobile</string>
     <string name="wrapped_close">Close wrapped</string>
     <string name="wrapped_playlist_title">Your %s Wrapped</string>
     <string name="wrapped_create_playlist">Create playlist</string>
@@ -514,7 +514,7 @@
     <string name="error_eq_apply_failed">Failed to apply EQ profile: %1$s</string>
 
     <!-- ViviEqualizer Strings -->
-    <string name="vivi_equalizer">ViviEqualizer</string>
+    <string name="vivi_equalizer">NocturneEqualizer</string>
     <string name="vivi_equalizer_desc">Pro-grade acoustic tuning &amp; effects</string>
     <string name="eq_simple">Simple</string>
     <string name="eq_advanced">Advanced</string>
@@ -522,7 +522,7 @@
     <string name="eq_label_mid">Mids</string>
     <string name="eq_label_treble">Treble</string>
     <string name="eq_preset_flat">Flat</string>
-    <string name="eq_preset_vivi_signature">Vivi Signature</string>
+    <string name="eq_preset_vivi_signature">Nocturne Signature</string>
     <string name="eq_preset_acoustic">Acoustic</string>
     <string name="eq_preset_spatial">3D Stage</string>
     <string name="eq_preset_bass_boost">Bass Boost</string>
@@ -539,9 +539,9 @@
     <string name="eq_preset_dirac_music">Dirac Music</string>
     <string name="eq_preset_dirac_movie">Dirac Movie</string>
     <string name="eq_preset_dirac_game">Dirac Game</string>
-    <string name="eq_enable_title">ViviEqualizer</string>
+    <string name="eq_enable_title">NocturneEqualizer</string>
     <string name="eq_enable_summary">Toggle professional audio processing</string>
-    <string name="eq_label_vivi">Vivi Signature</string>
+    <string name="eq_label_vivi">Nocturne Signature</string>
     <string name="eq_label_dolby">Dolby Atmos</string>
     <string name="eq_label_dirac">Dirac Audio</string>
     <string name="eq_reset">Reset</string>
@@ -559,9 +559,9 @@
     <string name="plays">plays</string>
     <string name="casting_to">Casting to %s</string>
     <string name="progress_percent">Progress %s%%</string>
-    <string name="listening_to_vivimusic">Listening to vivimusic</string>
+    <string name="listening_to_vivimusic">Listening to Nocturne Mobile</string>
     <string name="listen_on_youtube_music">Listen on YouTube Music</string>
-    <string name="visit_vivimusic">Visit vivimusic</string>
+    <string name="visit_vivimusic">Visit Nocturne Mobile</string>
     <string name="open">Open</string>
     <string name="failed_to_create_image">Failed to create image: %s</string>
     <string name="copied_title">Copied Title</string>
@@ -578,13 +578,13 @@
     <!-- Widget strings -->
     <string name="album_art">Album art</string>
     <string name="no_song_playing">No song playing</string>
-    <string name="tap_to_open">Tap to open vivimusic</string>
+    <string name="tap_to_open">Tap to open Nocturne Mobile</string>
     <string name="previous">Previous</string>
     <string name="play_pause">Play/Pause</string>
     <string name="next">Next</string>
     <string name="like">Like</string>
     <string name="not_playing">No song playing</string>
-    <string name="tap_to_play">Tap to open vivimusic</string>
+    <string name="tap_to_play">Tap to open Nocturne Mobile</string>
     <string name="widget_description">Music player widget with playback controls</string>
     <string name="queue_widget_description">Music player with queue preview</string>
     <string name="turntable_widget_description">Circular music widget with play and like controls</string>
@@ -743,7 +743,7 @@
     <string name="crash_share_logs">Share Logs</string>
     <string name="copy_logs">Copy Logs</string>
     <string name="crash_share_title">Share crash report</string>
-    <string name="crash_report_subject">vivimusic Crash Report</string>
+    <string name="crash_report_subject">Nocturne Mobile Crash Report</string>
     <string name="crash_close">Close</string>
     <string name="crash_no_log">No crash log available</string>
 
@@ -796,7 +796,7 @@
     <string name="delete_from_history">Delete from history</string>
     <string name="re_listen">Re-listen</string>
     <string name="hold_to_recognize">Hold search icon to recognize music</string>
-    <string name="play_on_app">Play on vivimusic</string>
+    <string name="play_on_app">Play on Nocturne Mobile</string>
     <string name="recognized_track">Recognized Track</string>
 
     <!-- CSV Import Strings -->
@@ -835,9 +835,9 @@
     <string name="discord_rpc_preview">Rich Presence Preview</string>
     <string name="discord_presence">Presence</string>
     <string name="discord_connect_description">Sign in with Discord to share what you\'re listening to</string>
-    <string name="discord_playing_vivimusic">Playing vivimusic</string>
-    <string name="discord_watching_vivimusic">Watching vivimusic</string>
-    <string name="discord_competing_vivimusic">Competing in vivimusic</string>
+    <string name="discord_playing_vivimusic">Playing Nocturne Mobile</string>
+    <string name="discord_watching_vivimusic">Watching Nocturne Mobile</string>
+    <string name="discord_competing_vivimusic">Competing in Nocturne Mobile</string>
     <string name="discord_activity_name">Activity name</string>
     <string name="discord_activity_name_description">Custom name for the activity (leave empty for default)</string>
     <string name="discord_advanced_mode">Advanced mode</string>
@@ -893,14 +893,14 @@
 
     <!-- Onboarding -->
     <string name="welcome_to">Welcome to</string>
-    <string name="welcome_to_vivi">Welcome to Vivi</string>
+    <string name="welcome_to_vivi">Welcome to Nocturne</string>
     <string name="accessibility">Accessibility</string>
     <string name="welcome_preparing_subtitle">Let\'s get everything ready for you.</string>
     <string name="get_started">Get Started</string>
 
     <string name="perm_required">Required</string>
     <string name="perm_permissions">Permissions</string>
-    <string name="perm_intro_text">These permissions are required for ViviMusic to function correctly. Please grant them to proceed.</string>
+    <string name="perm_intro_text">These permissions are required for Nocturne Mobile to function correctly. Please grant them to proceed.</string>
 
     <string name="perm_notif_title">Notifications</string>
     <string name="perm_notif_desc">Know immediately when your music is playing and control it from the notification bar.</string>
@@ -910,7 +910,7 @@
 
     <string name="feat_discover">Discover</string>
     <string name="feat_features">Features</string>
-    <string name="feat_intro">Explore everything ViviMusic has to offer for your music journey.</string>
+    <string name="feat_intro">Explore everything Nocturne Mobile has to offer for your music journey.</string>
 
     <string name="feat_lyrics_title">Smart Lyrics</string>
     <string name="feat_lyrics_desc">Enjoy synchronized, word-by-word lyrics for millions of songs.</string>
@@ -934,7 +934,7 @@
     <string name="welcome_update_status">Updated</string>
     <string name="welcome_update_intro">Ensuring you have the latest features and security improvements.</string>
     <string name="welcome_checking_updates">Checking for updates…</string>
-    <string name="welcome_up_to_date">ViviMusic is up to date!</string>
+    <string name="welcome_up_to_date">Nocturne Mobile is up to date!</string>
     <string name="welcome_update_available">New version is available: %s</string>
     <string name="welcome_everything_ready">Everything is now up to date</string>
     <string name="commits_title">Commits</string>
@@ -1016,9 +1016,9 @@
     <string name="font_plus_jakarta_sans_desc">A premium warm geometric sans-serif typeface.</string>
 
     <!-- YouTube Decryption / Cipher Settings -->
-    <string name="youtube_decryption_settings">Vivi-Extractor</string>
+    <string name="youtube_decryption_settings">Nocturne-Extractor</string>
     <string name="youtube_decryption_desc">Configure extractor settings</string>
-    <string name="youtube_decryption_support">Vivi-Extractor</string>
+    <string name="youtube_decryption_support">Nocturne-Extractor</string>
     <string name="youtube_decryption_support_desc">Automatically extracts YouTube playback configurations. Locked to Active.</string>
     <string name="auto_cipher_fetching">Automatic Updates</string>
     <string name="auto_cipher_fetching_desc">Fetch new extractor mappings in the background when issues are detected.</string>
@@ -1043,7 +1043,7 @@
     <string name="disabled">Disabled</string>
 
     <!-- Setup Wizard / Onboarding -->
-    <string name="setting_up_vivimusic">Setting up ViviMusic…</string>
+    <string name="setting_up_vivimusic">Setting up Nocturne Mobile…</string>
     <string name="skip">Skip</string>
 
     <!-- Data Saver -->
@@ -1058,7 +1058,7 @@
 
     <string name="tab_recommended">Recommended</string>
     <string name="tab_all_services">All services</string>
-    <string name="whats_new_title">What’s new in ViviMusic</string>
+    <string name="whats_new_title">What’s new in Nocturne Mobile</string>
     <string name="whats_new_desc">Discover new features, UI improvements, and updates</string>
     <string name="account_sync_desc_off">Sign in to sync your YouTube Music library, playlists, and recommendations</string>
     <string name="settings_for_account">Settings for account</string>
@@ -1076,3 +1076,4 @@
     <string name="action_view_update">View</string>
     <string name="new_version_found">New version found</string>
 </resources>
+

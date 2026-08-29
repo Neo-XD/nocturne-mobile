@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Открий</string>
     <string name="charts">Класации</string>
@@ -229,9 +229,10 @@
     <string name="google_cast">Google Cast</string>
     <string name="google_cast_description">Активиране на предаване на звук към Chromecast и други устройства поддържащи Cast</string>
     <string name="last_fm_send_likes">Изпращане на харесвания/нехаресвания</string>
-    <string name="last_fm_send_likes_description">Добавяне/премахване на любимо в Last.fm, когато харесате/премахнете песен в vivimusic</string>
+    <string name="last_fm_send_likes_description">Добавяне/премахване на любимо в Last.fm, когато харесате/премахнете песен в Nocturne Mobile</string>
     <string name="logging_in">Влизане…</string>
     <string name="hide_video_songs">Скриване на видео</string>
     <string name="details_desc">Преглед на информацията за песента</string>
     <string name="edit_desc">Промяна на заглавието или изпълнителя</string>
 </resources>
+

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Eksplore</string>
     <string name="local_history">Lokal</string>
@@ -132,3 +132,4 @@
     <string name="shuffle_playlist_first_desc">Kan en aleatoire, zwe tou sante depi playlist/album orizinal en premie, apre zwe bann cki similaire</string>
     <string name="show_wrapped_card">Montre Résumé</string>
 </resources>
+

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="lyrics_auto_scroll">Skrolla låttexter automatiskt</string>
     <string name="token_shown">Tryck igen för att kopiera eller redigera</string>
@@ -180,3 +180,4 @@
     <string name="show_uploaded_playlist">Visa spellista \"Uppladdade\"</string>
     <string name="shuffle_playlist_first">Blanda spellistan/albumet först</string>
 </resources>
+

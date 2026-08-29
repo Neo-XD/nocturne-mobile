@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">រុករក</string>
     <string name="local_history">លើឧបករណ៍</string>
@@ -21,3 +21,4 @@
     <string name="liked">ចូលចិត្ត</string>
     <string name="offline">បានទាញយក</string>
 </resources>
+

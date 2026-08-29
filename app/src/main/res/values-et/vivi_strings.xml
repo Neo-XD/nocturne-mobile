@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <plurals name="n_time">
         <item quantity="one">%d kord</item>
@@ -173,3 +173,4 @@
     <string name="delete_playlist_desc">Kustuta see esitlusloend jäädavalt</string>
     <string name="sync_playlist_desc">Sünkroniseeri esitlusloend Youtube Music\'ga</string>
 </resources>
+

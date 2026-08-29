@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+﻿<resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.Nocturne" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowContentOverlay">@null</item>
@@ -19,3 +19,4 @@
     <style name="Theme.Widget.vivimusic" parent="Theme.Widget.Nocturne" />
     <style name="Theme.vivimusic" parent="Theme.Nocturne" />
 </resources>
+

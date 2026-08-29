@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Jelajah</string>
     <string name="local_history">Lokal</string>
@@ -93,3 +93,4 @@
     <string name="tertiary_color_style">Warna tertiari</string>
     <string name="secondary_color_style">Sekunder</string>
 </resources>
+
