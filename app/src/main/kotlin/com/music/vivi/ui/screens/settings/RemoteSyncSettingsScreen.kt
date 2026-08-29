@@ -1,15 +1,15 @@
 package com.music.vivi.ui.screens.settings
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,7 +27,6 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.music.vivi.LocalPlayerAwareWindowInsets
-import com.music.vivi.R
 import com.music.vivi.sync.PlaybackDeviceTarget
 import com.music.vivi.sync.RemoteConnectionState
 import com.music.vivi.sync.RemoteSyncManager
@@ -58,11 +55,9 @@ fun RemoteSyncSettingsScreen(
 
     val savedHost by syncManager.hostFlow.collectAsState(initial = "192.168.1.10")
     val savedPort by syncManager.portFlow.collectAsState(initial = 8080)
-    val savedPin by syncManager.pinFlow.collectAsState(initial = "1234")
 
     var hostInput by remember(savedHost) { mutableStateOf(savedHost) }
     var portInput by remember(savedPort) { mutableStateOf(savedPort.toString()) }
-    var pinInput by remember(savedPin) { mutableStateOf(savedPin) }
 
     val isConnected = connectionState == RemoteConnectionState.CONNECTED
     val isConnecting = connectionState == RemoteConnectionState.CONNECTING
@@ -90,7 +85,7 @@ fun RemoteSyncSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Seamlessly control music playing on your desktop PC or select your active output device over local Wi-Fi or Tailscale.",
+                text = "Seamless zero-friction playback sync (Orchard style). Control music playing on your desktop PC or select your active output device over local Wi-Fi or Tailscale.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -108,7 +103,7 @@ fun RemoteSyncSettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Playback Device",
+                        text = "Active Playback Device",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium
                     )
@@ -208,7 +203,7 @@ fun RemoteSyncSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Connection",
+                            text = "Desktop Connection",
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
@@ -249,38 +244,25 @@ fun RemoteSyncSettingsScreen(
                             value = hostInput,
                             onValueChange = { hostInput = it },
                             label = { Text("Desktop IP / Tailscale Host") },
+                            placeholder = { Text("e.g. 192.168.1.10 or 100.x.y.z") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
                         )
 
-                        Row(
+                        OutlinedTextField(
+                            value = portInput,
+                            onValueChange = { portInput = it },
+                            label = { Text("Port (Default: 8080)") },
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = portInput,
-                                onValueChange = { portInput = it },
-                                label = { Text("Port") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-
-                            OutlinedTextField(
-                                value = pinInput,
-                                onValueChange = { pinInput = it },
-                                label = { Text("PIN") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                        }
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
 
                         Button(
                             onClick = {
                                 val port = portInput.toIntOrNull() ?: 8080
-                                syncManager.connect(hostInput.trim(), port, pinInput.trim())
+                                syncManager.connect(hostInput.trim(), port)
                             },
                             enabled = !isConnecting && hostInput.isNotBlank(),
                             modifier = Modifier.fillMaxWidth(),
@@ -288,7 +270,7 @@ fun RemoteSyncSettingsScreen(
                         ) {
                             Icon(Icons.Default.Link, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (isConnecting) "Connecting..." else "Pair & Connect")
+                            Text(if (isConnecting) "Connecting..." else "Connect to Desktop")
                         }
                     } else {
                         OutlinedButton(
@@ -401,14 +383,14 @@ fun RemoteSyncSettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.VolumeDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.VolumeDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Slider(
                                 value = volume.toFloat(),
                                 onValueChange = { syncManager.sendVolume(it) },
                                 valueRange = 0f..1f,
                                 modifier = Modifier.weight(1f)
                             )
-                            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

@@ -14,7 +14,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.*
 import timber.log.Timber
-import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,7 +65,6 @@ data class RemotePlaybackActionPayload(
 data class RemoteWireMessage(
     val type: String,
     val client_device_name: String? = null,
-    val pin_hash: String? = null,
     val success: Boolean? = null,
     val session_token: String? = null,
     val message: String? = null,
@@ -76,7 +74,6 @@ data class RemoteWireMessage(
 
 val RemoteSyncHostKey = stringPreferencesKey("remote_sync_host")
 val RemoteSyncPortKey = intPreferencesKey("remote_sync_port")
-val RemoteSyncPinKey = stringPreferencesKey("remote_sync_pin")
 val RemoteSyncAutoConnectKey = booleanPreferencesKey("remote_sync_auto_connect")
 val RemotePlaybackTargetKey = stringPreferencesKey("remote_playback_target")
 
@@ -90,10 +87,12 @@ class RemoteSyncManager @Inject constructor(
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(5, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
-        .pingInterval(10, TimeUnit.SECONDS)
+        .pingInterval(5, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
 
     private var webSocket: WebSocket? = null
+    private var reconnectJob: Job? = null
 
     private val _connectionState = MutableStateFlow(RemoteConnectionState.DISCONNECTED)
     val connectionState: StateFlow<RemoteConnectionState> = _connectionState.asStateFlow()
@@ -109,7 +108,6 @@ class RemoteSyncManager @Inject constructor(
 
     val hostFlow = context.dataStore.data.map { it[RemoteSyncHostKey] ?: "192.168.1.10" }
     val portFlow = context.dataStore.data.map { it[RemoteSyncPortKey] ?: 8080 }
-    val pinFlow = context.dataStore.data.map { it[RemoteSyncPinKey] ?: "1234" }
 
     init {
         scope.launch {
@@ -122,8 +120,7 @@ class RemoteSyncManager @Inject constructor(
                 if (autoConnect && _connectionState.value == RemoteConnectionState.DISCONNECTED) {
                     val host = prefs[RemoteSyncHostKey] ?: "192.168.1.10"
                     val port = prefs[RemoteSyncPortKey] ?: 8080
-                    val pin = prefs[RemoteSyncPinKey] ?: "1234"
-                    connect(host, port, pin)
+                    connect(host, port)
                 }
             }
         }
@@ -136,58 +133,44 @@ class RemoteSyncManager @Inject constructor(
         }
     }
 
-    fun connect(host: String, port: Int, pin: String) {
-        if (_connectionState.value == RemoteConnectionState.CONNECTING || _connectionState.value == RemoteConnectionState.CONNECTED) {
-            disconnect()
-        }
+    fun connect(host: String, port: Int = 8080) {
+        reconnectJob?.cancel()
+        disconnectInternal(clearAutoConnect = false)
 
+        val cleanHost = host.trim()
         scope.launch {
             context.dataStore.edit {
-                it[RemoteSyncHostKey] = host
+                it[RemoteSyncHostKey] = cleanHost
                 it[RemoteSyncPortKey] = port
-                it[RemoteSyncPinKey] = pin
                 it[RemoteSyncAutoConnectKey] = true
             }
         }
 
         _connectionState.value = RemoteConnectionState.CONNECTING
-        _statusMessage.value = "Connecting to $host:$port..."
+        _statusMessage.value = "Connecting to $cleanHost:$port..."
 
-        val wsUrl = if (host.startsWith("ws://") || host.startsWith("wss://")) {
-            host
+        val wsUrl = if (cleanHost.startsWith("ws://") || cleanHost.startsWith("wss://")) {
+            cleanHost
         } else {
-            "ws://$host:$port"
+            "ws://$cleanHost:$port"
         }
 
         val request = Request.Builder().url(wsUrl).build()
 
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(ws: WebSocket, response: Response) {
-                Timber.d("RemoteSync: WebSocket open, sending AuthResponse with PIN")
-                _statusMessage.value = "Authenticating..."
-                val pinHash = sha256Hex(pin)
-                val authMsg = RemoteWireMessage(
-                    type = "auth_response",
-                    client_device_name = "Nocturne Mobile (${android.os.Build.MODEL})",
-                    pin_hash = pinHash
-                )
-                ws.send(json.encodeToString(authMsg))
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                Timber.d("RemoteSync: Connected to $cleanHost:$port")
+                _connectionState.value = RemoteConnectionState.CONNECTED
+                _statusMessage.value = "Connected to $cleanHost:$port"
             }
 
-            override fun onMessage(ws: WebSocket, text: String) {
+            override fun onMessage(webSocket: WebSocket, text: String) {
                 try {
                     val msg = json.decodeFromString<RemoteWireMessage>(text)
                     when (msg.type) {
                         "auth_result" -> {
-                            if (msg.success == true) {
-                                _connectionState.value = RemoteConnectionState.CONNECTED
-                                _statusMessage.value = "Connected to $host:$port"
-                                Timber.d("RemoteSync: Authentication successful")
-                            } else {
-                                _connectionState.value = RemoteConnectionState.ERROR
-                                _statusMessage.value = msg.message ?: "Authentication failed (Invalid PIN)"
-                                ws.close(1000, "Auth failed")
-                            }
+                            _connectionState.value = RemoteConnectionState.CONNECTED
+                            _statusMessage.value = "Connected to $cleanHost:$port"
                         }
                         "sync_state" -> {
                             msg.state?.let { newState ->
@@ -200,14 +183,14 @@ class RemoteSyncManager @Inject constructor(
                 }
             }
 
-            override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-                Timber.e(t, "RemoteSync: WebSocket failure")
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                Timber.e(t, "RemoteSync: Connection failure")
                 _connectionState.value = RemoteConnectionState.ERROR
-                _statusMessage.value = "Connection failed: ${t.localizedMessage ?: "Unreachable"}"
+                _statusMessage.value = "Connection error: ${t.localizedMessage ?: "Unreachable"}"
             }
 
-            override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-                Timber.d("RemoteSync: WebSocket closed ($code: $reason)")
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                Timber.d("RemoteSync: Closed ($code: $reason)")
                 _connectionState.value = RemoteConnectionState.DISCONNECTED
                 _statusMessage.value = "Disconnected"
             }
@@ -215,12 +198,18 @@ class RemoteSyncManager @Inject constructor(
     }
 
     fun disconnect() {
+        disconnectInternal(clearAutoConnect = true)
+    }
+
+    private fun disconnectInternal(clearAutoConnect: Boolean) {
         webSocket?.close(1000, "User disconnected")
         webSocket = null
         _connectionState.value = RemoteConnectionState.DISCONNECTED
         _statusMessage.value = "Disconnected"
-        scope.launch {
-            context.dataStore.edit { it[RemoteSyncAutoConnectKey] = false }
+        if (clearAutoConnect) {
+            scope.launch {
+                context.dataStore.edit { it[RemoteSyncAutoConnectKey] = false }
+            }
         }
     }
 
@@ -251,10 +240,5 @@ class RemoteSyncManager @Inject constructor(
             )
             ws.send(json.encodeToString(wireMsg))
         }
-    }
-
-    private fun sha256Hex(input: String): String {
-        val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray(Charsets.UTF_8))
-        return bytes.joinToString("") { "%02x".format(it) }
     }
 }
