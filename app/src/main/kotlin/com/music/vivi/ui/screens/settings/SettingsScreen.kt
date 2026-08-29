@@ -1,4 +1,4 @@
-﻿/**
+/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -171,7 +171,8 @@ fun SettingsScreen(
                         title = { Text("Nocturne Remote Sync") },
                         description = { Text("Control desktop PC playback over Wi-Fi / Tailscale") },
                         onClick = { navController.navigate("settings/remote_sync") },
-                        isExpressive = true
+                        isExpressive = true,
+                        descriptionBelow = true
                     )
                 )
                 add(

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -136,7 +136,8 @@ fun AppNavigationBar(
     slimNav: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null,
     floatingNav: Boolean = false,
-    bottomInset: Dp = 0.dp
+    bottomInset: Dp = 0.dp,
+    enableFrostedGlass: Boolean = true
 ) {
     if (floatingNav) {
         FloatingNavigationBar(
@@ -150,7 +151,11 @@ fun AppNavigationBar(
             bottomInset = bottomInset
         )
     } else {
-        val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+        val containerColor = when {
+            pureBlack -> Color.Black
+            enableFrostedGlass -> MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
+            else -> MaterialTheme.colorScheme.surfaceContainer
+        }
         val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
         val haptics = LocalHapticFeedback.current
         val viewConfiguration = LocalViewConfiguration.current

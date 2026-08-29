@@ -1,4 +1,4 @@
-﻿/**
+/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -137,13 +137,19 @@ import coil3.toBitmap
 import com.music.innertube.YouTube
 import com.music.innertube.models.SongItem
 import com.music.innertube.models.WatchEndpoint
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import com.music.vivi.constants.AccountNameKey
 import com.music.vivi.constants.AppBarHeight
 import com.music.vivi.constants.AppLanguageKey
 import com.music.vivi.constants.DarkModeKey
 import com.music.vivi.constants.DefaultOpenTabKey
 import com.music.vivi.constants.DisableScreenshotKey
 import com.music.vivi.constants.DynamicThemeKey
+import com.music.vivi.constants.EnableFrostedGlassKey
 import com.music.vivi.constants.EnableHighRefreshRateKey
+import com.music.vivi.constants.HasPromptedSignInKey
 import com.music.vivi.constants.EnableSettingsPopupKey
 import com.music.vivi.constants.ListenTogetherInTopBarKey
 import com.music.vivi.constants.ListenTogetherUsernameKey
@@ -576,6 +582,63 @@ class MainActivity : ComponentActivity() {
                 val (floatingNav) = rememberPreference(FloatingNavBarKey, defaultValue = false)
                 val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
                 val (useAppleMiniPlayer) = rememberPreference(UseAppleMiniPlayerKey, defaultValue = false)
+                val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+                val accountName by rememberPreference(AccountNameKey, defaultValue = "")
+                var (hasPromptedSignIn, onHasPromptedSignInChange) = rememberPreference(HasPromptedSignInKey, defaultValue = false)
+                var showSignInDialog by rememberSaveable { mutableStateOf(!hasPromptedSignIn && accountName.isEmpty()) }
+
+                if (showSignInDialog) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            onHasPromptedSignInChange(true)
+                            showSignInDialog = false
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.google),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        },
+                        title = {
+                            Text(
+                                text = "Welcome to Nocturne",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = "Sign in with your Google or YouTube Music account to sync your playlists, favorites, and history, or continue as a guest.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    onHasPromptedSignInChange(true)
+                                    showSignInDialog = false
+                                    navController.navigate("login")
+                                }
+                            ) {
+                                Text("Sign in with Google")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = {
+                                    onHasPromptedSignInChange(true)
+                                    showSignInDialog = false
+                                }
+                            ) {
+                                Text("Continue as Guest")
+                            }
+                        },
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                }
                 val defaultOpenTab = remember {
                     dataStore[DefaultOpenTabKey].toEnum(defaultValue = NavigationTab.HOME)
                 }
@@ -1065,6 +1128,7 @@ class MainActivity : ComponentActivity() {
                                         onSearchLongClick = onSearchLongClick,
                                         floatingNav = floatingNav,
                                         bottomInset = bottomInset,
+                                        enableFrostedGlass = enableFrostedGlass,
                                         modifier = Modifier
                                             .align(Alignment.BottomCenter)
                                             .height(bottomInset + navPadding)

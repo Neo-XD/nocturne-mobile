@@ -1,4 +1,4 @@
-﻿/**
+/**
  * vivimusic Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -68,6 +68,7 @@ import com.music.vivi.constants.DensityScale
 import com.music.vivi.constants.DensityScaleKey
 import com.music.vivi.constants.DynamicThemeKey
 import com.music.vivi.constants.EnableDynamicIconKey
+import com.music.vivi.constants.EnableFrostedGlassKey
 import com.music.vivi.constants.EnableSettingsPopupKey
 import com.music.vivi.constants.EnableHighRefreshRateKey
 import com.music.vivi.constants.EnableLyricsThumbnailPlayPauseKey
@@ -170,6 +171,10 @@ fun AppearanceSettings(
     val (enableSettingsPopup, onEnableSettingsPopupChange) = rememberPreference(
         EnableSettingsPopupKey,
         defaultValue = false
+    )
+    val (enableFrostedGlass, onEnableFrostedGlassChange) = rememberPreference(
+        EnableFrostedGlassKey,
+        defaultValue = true
     )
     val (selectedThemeColorInt) = rememberPreference(
         SelectedThemeColorKey,
@@ -1193,6 +1198,31 @@ fun AppearanceSettings(
                             )
                         },
                         onClick = { onEnableSettingsPopupChange(!enableSettingsPopup) },
+                        isExpressive = true,
+                        descriptionBelow = true
+                    )
+                )
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.palette),
+                        title = { Text("Frosted Glass Effects") },
+                        description = { Text("Enable acrylic translucency and glassmorphism across bars and players") },
+                        trailingContent = {
+                            Switch(
+                                checked = enableFrostedGlass,
+                                onCheckedChange = onEnableFrostedGlassChange,
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (enableFrostedGlass) R.drawable.check else R.drawable.close
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        },
+                        onClick = { onEnableFrostedGlassChange(!enableFrostedGlass) },
                         isExpressive = true,
                         descriptionBelow = true
                     )
