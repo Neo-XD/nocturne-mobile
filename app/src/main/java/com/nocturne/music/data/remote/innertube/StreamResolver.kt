@@ -1,21 +1,53 @@
 package com.nocturne.music.data.remote.innertube
 
 import com.nocturne.music.core.model.ResolvedStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
+import org.schabi.newpipe.extractor.ServiceList
+import org.schabi.newpipe.extractor.stream.StreamInfo
 
 class StreamResolver(
     private val innerTubeService: InnerTubeService
 ) {
     private val clientCascade = listOf(
-        YouTubeClients.WEB_REMIX,
         YouTubeClients.ANDROID_VR,
         YouTubeClients.VISIONOS,
-        YouTubeClients.IOS_MUSIC
+        YouTubeClients.IOS_MUSIC,
+        YouTubeClients.WEB_REMIX
     )
 
-    suspend fun resolveStream(videoId: String): Result<ResolvedStream> {
-        var lastError: Throwable? = null
+    suspend fun resolveStream(videoId: String): Result<ResolvedStream> = withContext(Dispatchers.IO) {
+        // 1. Primary: Use NewPipeExtractor for YouTube audio streams (handles deciphering and audio streams)
+        try {
+            val url = "https://www.youtube.com/watch?v=$videoId"
+            val streamInfo = StreamInfo.getInfo(ServiceList.YouTube, url)
+            val audioStreams = streamInfo.audioStreams
 
+            if (!audioStreams.isNullOrEmpty()) {
+                // Pick highest bitrate audio stream (Opus 160kbps / AAC 128kbps)
+                val bestStream = audioStreams.maxByOrNull { it.averageBitrate } ?: audioStreams.first()
+                val streamUrl = bestStream.content
+
+                if (!streamUrl.isNullOrBlank()) {
+                    return@withContext Result.success(
+                        ResolvedStream(
+                            videoId = videoId,
+                            url = streamUrl,
+                            itag = bestStream.itag.toLong(),
+                            headers = mapOf(
+                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                            ),
+                            expiresAt = System.currentTimeMillis() / 1000 + 21600,
+                            streamClient = "NewPipeExtractor"
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+
+        // 2. Fallback: InnerTube multi-client cascade
+        var lastError: Throwable? = null
         for (client in clientCascade) {
             try {
                 val playerResult = innerTubeService.getPlayerResponse(client, videoId)
@@ -38,7 +70,6 @@ class StreamResolver(
                     ?: streamingData["formats"]?.jsonArray
                     ?: continue
 
-                // Find highest quality audio format (itag 140, 251, etc. or audio/mp4 / audio/webm)
                 val audioFormats = formats.mapNotNull { it.jsonObject }.filter { fmt ->
                     val mime = fmt["mimeType"]?.jsonPrimitive?.contentOrNull ?: ""
                     mime.startsWith("audio/")
@@ -47,15 +78,13 @@ class StreamResolver(
                 val bestFormat = audioFormats.maxByOrNull { fmt ->
                     val bitrate = fmt["bitrate"]?.jsonPrimitive?.longOrNull ?: 0L
                     val itag = fmt["itag"]?.jsonPrimitive?.longOrNull ?: 0L
-                    // Prefer 251 (Opus ~160k) or 140 (AAC 128k)
                     val itagBonus = if (itag == 251L) 100000L else if (itag == 140L) 50000L else 0L
                     bitrate + itagBonus
                 } ?: formats.firstOrNull()?.jsonObject ?: continue
 
-                val url = bestFormat["url"]?.jsonPrimitive?.contentOrNull
-                if (url != null) {
+                val streamUrl = bestFormat["url"]?.jsonPrimitive?.contentOrNull
+                if (streamUrl != null) {
                     val itag = bestFormat["itag"]?.jsonPrimitive?.longOrNull ?: 140L
-                    val approxDurationMs = bestFormat["approxDurationMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L
                     val loudnessDb = json["playerConfig"]
                         ?.jsonObject?.get("audioConfig")
                         ?.jsonObject?.get("loudnessDb")
@@ -64,10 +93,10 @@ class StreamResolver(
                     val expiresInSecs = streamingData["expiresInSeconds"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 21600L
                     val expiresAt = System.currentTimeMillis() / 1000 + expiresInSecs
 
-                    return Result.success(
+                    return@withContext Result.success(
                         ResolvedStream(
                             videoId = videoId,
-                            url = url,
+                            url = streamUrl,
                             itag = itag,
                             headers = mapOf("User-Agent" to client.userAgent),
                             expiresAt = expiresAt,
@@ -81,6 +110,6 @@ class StreamResolver(
             }
         }
 
-        return Result.failure(lastError ?: IllegalStateException("All clients failed to resolve stream for $videoId"))
+        Result.failure(lastError ?: IllegalStateException("All stream extraction methods failed for $videoId"))
     }
 }
