@@ -279,9 +279,9 @@
             android:label="@string/widget_music_player">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.music.vivi.widget.PLAY_PAUSE" />
-                <action android:name="com.music.vivi.widget.LIKE" />
-                <action android:name="com.music.vivi.widget.UPDATE_WIDGET" />
+                <action android:name="com.nocturne.music.widget.PLAY_PAUSE" />
+                <action android:name="com.nocturne.music.widget.LIKE" />
+                <action android:name="com.nocturne.music.widget.UPDATE_WIDGET" />
             </intent-filter>
 
             <meta-data
@@ -296,9 +296,9 @@
             android:label="@string/widget_turntable">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.music.vivi.widget.TURNTABLE_PLAY_PAUSE" />
-                <action android:name="com.music.vivi.widget.TURNTABLE_LIKE" />
-                <action android:name="com.music.vivi.widget.UPDATE_TURNTABLE_WIDGET" />
+                <action android:name="com.nocturne.music.widget.TURNTABLE_PLAY_PAUSE" />
+                <action android:name="com.nocturne.music.widget.TURNTABLE_LIKE" />
+                <action android:name="com.nocturne.music.widget.UPDATE_TURNTABLE_WIDGET" />
             </intent-filter>
 
             <meta-data
@@ -309,7 +309,7 @@
         <!-- Google Cast Options Provider -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="com.music.vivi.cast.CastOptionsProvider" />
+            android:value="com.nocturne.music.cast.CastOptionsProvider" />
     </application>
 
 </manifest>

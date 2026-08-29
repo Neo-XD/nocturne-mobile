@@ -1,6 +1,6 @@
-package com.music.vivi
+package com.nocturne.music
 
-import com.music.vivi.betterlyrics.TTMLParser
+import com.nocturne.music.betterlyrics.TTMLParser
 import org.junit.Test
 
 class TtmlTest {

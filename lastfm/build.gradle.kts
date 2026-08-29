@@ -1,10 +1,10 @@
-﻿plugins {
+plugins {
     id("com.android.library")
     alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "com.music.lastfm"
+    namespace = "com.nocturne.lastfm"
     compileSdk = 37
 
     defaultConfig {

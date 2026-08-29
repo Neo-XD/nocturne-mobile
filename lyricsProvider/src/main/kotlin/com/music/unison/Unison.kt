@@ -3,7 +3,7 @@ package com.music.unison
 import com.music.unison.models.LyricsData
 import com.music.unison.models.LyricsResponse
 import com.music.unison.models.SearchResponse
-import com.music.vivi.betterlyrics.TTMLParser
+import com.nocturne.music.betterlyrics.TTMLParser
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO

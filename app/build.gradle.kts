@@ -17,7 +17,7 @@ plugins {
 }
 
 android {
-    namespace = "com.music.vivi"
+    namespace = "com.nocturne.music"
     compileSdk = 37
 
     defaultConfig {

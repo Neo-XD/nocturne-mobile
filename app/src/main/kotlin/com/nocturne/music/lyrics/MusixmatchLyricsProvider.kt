@@ -1,0 +1,41 @@
+/**
+ * Nocturne Music Project (C) 2026
+ * Licensed under GPL-3.0 | See git history for contributors
+ */
+
+package com.nocturne.music.lyrics
+
+import android.content.Context
+import com.music.musixmatch.Musixmatch
+import com.nocturne.music.constants.EnableMusixmatchKey
+import com.nocturne.music.utils.dataStore
+import com.nocturne.music.utils.get
+
+object MusixmatchLyricsProvider : LyricsProvider {
+    override val name = "Musixmatch"
+
+    override fun isEnabled(context: Context): Boolean =
+        context.dataStore[EnableMusixmatchKey] ?: true
+
+    override suspend fun getLyrics(
+        id: String,
+        title: String,
+        artist: String,
+        duration: Int,
+        album: String?,
+    ): Result<String> =
+        Musixmatch.getLyrics(title, artist, duration, album)
+
+    override suspend fun getAllLyrics(
+        id: String,
+        title: String,
+        artist: String,
+        duration: Int,
+        album: String?,
+        callback: (String) -> Unit
+    ) {
+        Musixmatch.getAllLyrics(title, artist, duration, album, callback)
+    }
+}
+
+

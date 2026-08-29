@@ -1,4 +1,4 @@
-package com.music.vivi.ui.component
+package com.nocturne.music.ui.component
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable

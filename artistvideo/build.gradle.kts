@@ -1,11 +1,11 @@
-﻿plugins {
+plugins {
     id("com.android.library")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
 }
 
 android {
-    namespace = "com.music.vivi.artistvideo"
+    namespace = "com.nocturne.artistvideo"
     compileSdk = 37
 
     defaultConfig {

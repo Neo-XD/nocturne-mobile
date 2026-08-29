@@ -1,4 +1,4 @@
-package com.music.vivi.cast
+package com.nocturne.music.cast
 
 /**
  * Stub CastOptionsProvider for F-Droid builds.

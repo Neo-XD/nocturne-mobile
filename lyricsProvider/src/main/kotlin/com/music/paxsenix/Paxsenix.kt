@@ -1,7 +1,7 @@
 package com.music.paxsenix
 
 import android.content.Context
-import com.music.vivi.betterlyrics.TTMLParser
+import com.nocturne.music.betterlyrics.TTMLParser
 import com.music.paxsenix.models.AppleMusicSearchResponse
 import com.music.paxsenix.models.LyricsResponse
 import com.music.paxsenix.models.SearchResult

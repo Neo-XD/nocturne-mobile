@@ -1,4 +1,4 @@
-package com.music.vivi.playback
+package com.nocturne.music.playback
 
 import android.content.Context
 import android.net.Uri
@@ -18,9 +18,9 @@ import com.google.android.gms.cast.framework.SessionManager
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.common.images.WebImage
-import com.music.vivi.extensions.metadata
-import com.music.vivi.models.MediaMetadata as AppMediaMetadata
-import com.music.vivi.ui.utils.resize
+import com.nocturne.music.extensions.metadata
+import com.nocturne.music.models.MediaMetadata as AppMediaMetadata
+import com.nocturne.music.ui.utils.resize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

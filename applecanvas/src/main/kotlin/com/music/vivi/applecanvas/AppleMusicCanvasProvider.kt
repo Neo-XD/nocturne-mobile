@@ -1,7 +1,7 @@
-package com.music.vivi.applecanvas
+package com.nocturne.music.applecanvas
 
-import com.music.vivi.canvas.CanvasArtwork
-import com.music.vivi.canvas.normalizeForComparison
+import com.nocturne.canvas.CanvasArtwork
+import com.nocturne.canvas.normalizeForComparison
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp

@@ -1,10 +1,10 @@
-﻿plugins {
+plugins {
     id("com.android.library")
     alias(libs.plugins.kotlin.serialization)
 }
 
 android {
-    namespace = "com.music.spotify"
+    namespace = "com.nocturne.spotify"
     compileSdk = 37
 
     defaultConfig {

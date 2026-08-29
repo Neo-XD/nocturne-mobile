@@ -1,4 +1,4 @@
-package com.music.vivi.cast
+package com.nocturne.music.cast
 
 import android.content.Context
 import com.google.android.gms.cast.CastMediaControlIntent

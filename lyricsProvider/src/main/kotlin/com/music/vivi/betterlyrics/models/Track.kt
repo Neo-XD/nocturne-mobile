@@ -1,4 +1,4 @@
-package com.music.vivi.betterlyrics.models
+package com.nocturne.music.betterlyrics.models
 
 import kotlinx.serialization.Serializable
 

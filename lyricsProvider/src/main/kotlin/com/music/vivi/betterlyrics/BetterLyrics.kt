@@ -1,6 +1,6 @@
-package com.music.vivi.betterlyrics
+package com.nocturne.music.betterlyrics
 
-import com.music.vivi.betterlyrics.models.TTMLResponse
+import com.nocturne.music.betterlyrics.models.TTMLResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO

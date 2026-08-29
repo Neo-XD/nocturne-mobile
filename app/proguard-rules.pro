@@ -8,10 +8,10 @@
 ##──────────────────────────────────────────────────────────────────────────────
 ## 1. PoToken / WebView JS Interface
 ##──────────────────────────────────────────────────────────────────────────────
--keepclassmembers class com.music.vivi.utils.potoken.PoTokenWebView {
+-keepclassmembers class com.nocturne.music.utils.potoken.PoTokenWebView {
     @android.webkit.JavascriptInterface public *;
 }
--keep class com.music.vivi.utils.potoken.** { *; }
+-keep class com.nocturne.music.utils.potoken.** { *; }
 
 # Keep coroutine continuation for WebView callbacks
 -keepclassmembers class * {
@@ -116,11 +116,11 @@
 ##──────────────────────────────────────────────────────────────────────────────
 ## 10. Queue / Playback Persistence
 ##──────────────────────────────────────────────────────────────────────────────
--keep class com.music.vivi.models.PersistQueue { *; }
--keep class com.music.vivi.models.PersistPlayerState { *; }
--keep class com.music.vivi.models.QueueData { *; }
--keep class com.music.vivi.models.QueueType { *; }
--keep class com.music.vivi.playback.queues.** { *; }
+-keep class com.nocturne.music.models.PersistQueue { *; }
+-keep class com.nocturne.music.models.PersistPlayerState { *; }
+-keep class com.nocturne.music.models.QueueData { *; }
+-keep class com.nocturne.music.models.QueueType { *; }
+-keep class com.nocturne.music.playback.queues.** { *; }
 -keepclassmembers class * implements java.io.Serializable {
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
@@ -136,7 +136,7 @@
 ##──────────────────────────────────────────────────────────────────────────────
 ## 12. Google Cast
 ##──────────────────────────────────────────────────────────────────────────────
--keep class com.music.vivi.cast.** { *; }
+-keep class com.nocturne.music.cast.** { *; }
 -keep class com.google.android.gms.cast.** { *; }
 -keep class androidx.mediarouter.** { *; }
 -dontwarn com.google.re2j.**
@@ -144,8 +144,8 @@
 ##──────────────────────────────────────────────────────────────────────────────
 ## 13. Vibra Fingerprint (native JNI)
 ##──────────────────────────────────────────────────────────────────────────────
--keep class com.music.vivi.recognition.VibraSignature { *; }
--keepclassmembers class com.music.vivi.recognition.VibraSignature {
+-keep class com.nocturne.music.recognition.VibraSignature { *; }
+-keepclassmembers class com.nocturne.music.recognition.VibraSignature {
     native <methods>;
 }
 
@@ -159,24 +159,24 @@
 ##──────────────────────────────────────────────────────────────────────────────
 ## 15. Shazam Models
 ##──────────────────────────────────────────────────────────────────────────────
--keep class com.music.shazamkit.models.** { *; }
--keepclassmembers class com.music.shazamkit.models.** { *; }
--keepclassmembers class com.music.shazamkit.models.** {
+-keep class com.nocturne.shazamkit.models.** { *; }
+-keepclassmembers class com.nocturne.shazamkit.models.** { *; }
+-keepclassmembers class com.nocturne.shazamkit.models.** {
     *** Companion;
 }
--keepclasseswithmembers class com.music.shazamkit.models.** {
+-keepclasseswithmembers class com.nocturne.shazamkit.models.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
 ##──────────────────────────────────────────────────────────────────────────────
 ## 16. Listen Together
 ##──────────────────────────────────────────────────────────────────────────────
--keep class com.music.vivi.listentogether.** { *; }
--keepclassmembers class com.music.vivi.listentogether.** { *; }
--keepclassmembers class com.music.vivi.listentogether.** {
+-keep class com.nocturne.music.listentogether.** { *; }
+-keepclassmembers class com.nocturne.music.listentogether.** { *; }
+-keepclassmembers class com.nocturne.music.listentogether.** {
     *** Companion;
 }
--keepclasseswithmembers class com.music.vivi.listentogether.** {
+-keepclasseswithmembers class com.nocturne.music.listentogether.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 

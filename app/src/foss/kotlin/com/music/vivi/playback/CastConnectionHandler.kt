@@ -1,4 +1,4 @@
-package com.music.vivi.playback
+package com.nocturne.music.playback
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
@@ -44,7 +44,7 @@ class CastConnectionHandler(
     fun initialize(): Boolean = false
     fun disconnect() {}
     fun loadCurrentMedia() {}
-    fun loadMedia(metadata: com.music.vivi.models.MediaMetadata) {}
+    fun loadMedia(metadata: com.nocturne.music.models.MediaMetadata) {}
     fun play() {}
     fun pause() {}
     fun seekTo(position: Long) {}

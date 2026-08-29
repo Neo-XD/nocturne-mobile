@@ -3,7 +3,7 @@
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
-package com.music.vivi.ui.component
+package com.nocturne.music.ui.component
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -34,10 +34,10 @@ import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.framework.CastContext
-import com.music.vivi.LocalPlayerConnection
-import com.music.vivi.R
-import com.music.vivi.constants.EnableGoogleCastKey
-import com.music.vivi.utils.rememberPreference
+import com.nocturne.music.LocalPlayerConnection
+import com.nocturne.music.R
+import com.nocturne.music.constants.EnableGoogleCastKey
+import com.nocturne.music.utils.rememberPreference
 import timber.log.Timber
 
 /**
