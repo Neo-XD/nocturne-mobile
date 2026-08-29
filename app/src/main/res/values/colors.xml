@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="nocturne_background">#0E0E11</color>
-    <color name="nocturne_surface">#18181D</color>
-    <color name="nocturne_primary">#9D72FF</color>
-    <color name="nocturne_primary_variant">#7E4EE0</color>
-    <color name="nocturne_secondary">#2DD4BF</color>
-    <color name="nocturne_on_surface">#F5F5F7</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="ic_launcher_static_background">#000000</color>
+    
+    <!-- Widget colors for light mode -->
+    <color name="widget_text_primary">#1C1B1F</color>
+    <color name="widget_text_secondary">#49454F</color>
 </resources>
+
