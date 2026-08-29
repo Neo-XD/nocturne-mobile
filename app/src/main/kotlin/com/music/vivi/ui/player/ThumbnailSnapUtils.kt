@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  * 
  * Snap utilities for Thumbnail grid navigation
@@ -106,4 +106,5 @@ fun calculateDistanceToDesiredSnapPosition(
  */
 val LazyGridLayoutInfo.singleAxisViewportSize: Int
     get() = if (orientation == Orientation.Vertical) viewportSize.height else viewportSize.width
+
 

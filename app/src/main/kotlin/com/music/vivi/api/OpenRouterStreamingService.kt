@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -121,7 +121,7 @@ Output MUST be a JSON array with EXACTLY $lineCount strings."""
                 }
                 .addHeader("Content-Type", "application/json")
                 .addHeader("HTTP-Referer", "https://github.com/CryptoLiveApp/vivimusic")
-                .addHeader("X-Title", "vivimusic")
+                .addHeader("X-Title", "Nocturne")
                 .post(jsonBody.toString().toRequestBody(JSON))
                 .build()
 
@@ -260,4 +260,5 @@ Output MUST be a JSON array with EXACTLY $lineCount strings."""
         data class Error(val message: String) : StreamChunk()
     }
 }
+
 

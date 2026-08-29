@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -131,4 +131,5 @@ val ColorSaver = object : Saver<Color, Int> {
     override fun restore(value: Int): Color = Color(value)
     override fun SaverScope.save(value: Color): Int = value.toArgb()
 }
+
 

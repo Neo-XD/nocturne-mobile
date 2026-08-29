@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -26,4 +26,5 @@ class ArtistAlbumsViewModel @Inject constructor(
     val albums = database.artistAlbumsPreview(artistId)
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 }
+
 

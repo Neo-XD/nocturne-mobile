@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -468,4 +468,5 @@ private fun formatTime(timestamp: Long): String {
     val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
+
 

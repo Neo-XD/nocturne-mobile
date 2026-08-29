@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -16,4 +16,5 @@ operator fun File.div(child: String): File = File(this, child)
 fun InputStream.zipInputStream(): ZipInputStream = ZipInputStream(this)
 
 fun OutputStream.zipOutputStream(): ZipOutputStream = ZipOutputStream(this)
+
 

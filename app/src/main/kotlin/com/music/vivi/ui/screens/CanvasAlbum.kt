@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -150,4 +150,5 @@ private fun splitAndNormalizeArtists(raw: String): List<String> {
     ).map { it.replace(Regex("\\s+"), " ").trim().lowercase(Locale.ROOT) }
         .filter { it.isNotBlank() }
 }
+
 

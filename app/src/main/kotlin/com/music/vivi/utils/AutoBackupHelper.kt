@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -38,7 +38,7 @@ object AutoBackupHelper {
             val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
                 android.os.Environment.DIRECTORY_DOWNLOADS
             )
-            File(downloadsDir, "vivimusic")
+            File(downloadsDir, "Nocturne")
         }
         if (!dir.exists()) {
             dir.mkdirs()
@@ -114,7 +114,7 @@ object AutoBackupHelper {
                 val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
                     android.os.Environment.DIRECTORY_DOWNLOADS
                 )
-                val publicDir = File(downloadsDir, "vivimusic")
+                val publicDir = File(downloadsDir, "Nocturne")
                 if (!publicDir.exists()) {
                     publicDir.mkdirs()
                 }
@@ -207,7 +207,7 @@ object AutoBackupHelper {
                 val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
                     android.os.Environment.DIRECTORY_DOWNLOADS
                 )
-                val publicDir = File(downloadsDir, "vivimusic")
+                val publicDir = File(downloadsDir, "Nocturne")
                 if (publicDir.exists()) {
                     val files = publicDir.listFiles { file ->
                         file.isFile && file.name.startsWith("auto_backup_") && file.name.endsWith(".backup")
@@ -278,4 +278,5 @@ object AutoBackupHelper {
         }
     }
 }
+
 

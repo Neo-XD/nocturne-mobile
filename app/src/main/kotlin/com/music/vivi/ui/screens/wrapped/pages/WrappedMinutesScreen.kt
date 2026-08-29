@@ -1,5 +1,5 @@
 ﻿/**
- * vivimusic Project (C) 2026
+ * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
 
@@ -159,4 +159,5 @@ fun FormattedText(text: String, modifier: Modifier = Modifier, style: androidx.c
     }
     Text(annotatedString, modifier, style = style)
 }
+
 
