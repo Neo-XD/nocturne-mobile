@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Nocturne Music Logo / Note -->
+    <path
+        android:fillColor="#9D72FF"
+        android:pathData="M48,30v32.5a10.5,10.5 0 1,0 6,9.5v-26h18v-8z" />
+    <path
+        android:fillColor="#2DD4BF"
+        android:pathData="M66,38v24.5a10.5,10.5 0 1,0 6,9.5v-34z" />
+</vector>

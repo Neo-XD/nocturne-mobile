@@ -1,5 +1,6 @@
 package com.nocturne.music.core.di
 
+import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import com.nocturne.music.data.remote.innertube.InnerTubeService
 import com.nocturne.music.data.remote.innertube.StreamResolver
