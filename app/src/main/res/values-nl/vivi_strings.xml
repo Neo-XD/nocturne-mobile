@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Verken</string>
     <string name="charts">Hitlijsten</string>
@@ -211,7 +211,7 @@
     <string name="lyrics_line_spacing">Songtekst regel afstand</string>
     <string name="show_wrapped_card">Toon Wrapped</string>
     <string name="progress_percent">Vooruitgang %s%%</string>
-    <string name="visit_Nocturne Mobile">Bezoek Nocturne Mobile</string>
+    <string name="visit_vivimusic">Bezoek vivimusic</string>
     <string name="copied_title">Titel gekopieerd</string>
     <string name="copied_artist">Artiest gekopieerd</string>
     <string name="lyrics_glow_effect">Gloeiende songtekst</string>
@@ -273,4 +273,3 @@
     <string name="share_desc">Deel een link naar dit item</string>
     <string name="delete_desc">Dit item permanent verwijderen</string>
 </resources>
-

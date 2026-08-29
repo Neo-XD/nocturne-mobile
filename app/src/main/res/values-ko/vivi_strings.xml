@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">탐색</string>
     <string name="local_history">로컬</string>
@@ -74,4 +74,3 @@
     <string name="lyrics_line_spacing">가사 줄간격</string>
     <string name="karaoke">노래방</string>
 </resources>
-

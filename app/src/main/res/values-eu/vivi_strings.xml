@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Arakatu</string>
     <string name="charts">Arrakasta Zerrendak</string>
@@ -200,4 +200,3 @@
     <string name="audio_offload">Offload desgaitu</string>
     <string name="audio_offload_description">Erabili offload audio-bidea audioa erreproduzitzeko. Hau desgaitzeak energia-kontsumoa handitu dezake, baina erabilgarria izan daiteke audioa erreproduzitzean edo post-prozesamenduan arazoak badituzu</string>
 </resources>
-

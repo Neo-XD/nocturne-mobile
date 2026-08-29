@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="text_color">رنگ متن</string>
     <string name="clear_downloads_dialog">آیا مطمئن هستید که می خواهید همه موسیقی‌های دریافت شده را پاک کنید؟</string>
@@ -168,4 +168,3 @@
     <string name="about_artist">درباره</string>
     <string name="hide_player_thumbnail">پنهان کردن تصویر پخش کننده</string>
 </resources>
-

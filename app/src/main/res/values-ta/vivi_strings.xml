@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">ஆராய்</string>
     <string name="charts">பட்டியல்கள்</string>
@@ -24,4 +24,3 @@
     <string name="sync_playlist">ஒத்திசைவு பாடல்கள்</string>
     <string name="sync_disabled">ஒத்திசைவு முடக்கப்பட்டுள்ளது</string>
 </resources>
-

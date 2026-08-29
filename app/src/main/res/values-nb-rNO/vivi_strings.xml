@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="cancel">Avbryt</string>
     <string name="share_as_text">Del som tekst</string>
@@ -145,4 +145,3 @@
     <string name="skip_silence_desc">Hopp forbi stille deler av sanger</string>
     <string name="skip_silence_instant">Hopp over stillhet øyeblikkelig</string>
 </resources>
-

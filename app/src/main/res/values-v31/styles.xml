@@ -1,6 +1,6 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Widget Theme for Android 12+ with Dynamic Colors -->
-    <style name="Theme.Widget.Nocturne Mobile" parent="@android:style/Theme.DeviceDefault.DayNight" />
+    <style name="Theme.Widget.Nocturne" parent="@android:style/Theme.DeviceDefault.DayNight" />
+    <style name="Theme.Widget.vivimusic" parent="Theme.Widget.Nocturne" />
 </resources>
-

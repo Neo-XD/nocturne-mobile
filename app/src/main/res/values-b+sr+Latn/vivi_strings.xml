@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="likes">Lajkovi</string>
     <string name="local_history">Lokalna</string>
@@ -99,4 +99,3 @@
     <string name="primary_color_style">Primarna boja</string>
     <string name="tertiary_color_style">Tercijalna boja</string>
 </resources>
-

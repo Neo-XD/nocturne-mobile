@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Widget colors fallback for Android < 12 (API 31) -->
     <!-- Material 3 Primary Container (Light) -->
@@ -13,4 +13,3 @@
     <color name="widget_play_button_low_bg">@color/widget_primary_container</color>
     <color name="widget_play_button_low_icon">@color/widget_on_primary_container</color>
 </resources>
-

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">खोजें</string>
     <string name="local_history">स्थानीय</string>
@@ -9,4 +9,3 @@
     <string name="retry_button">पुन: प्रयास करें</string>
     <string name="album_cover_desc">एल्बम आवरण</string>
 </resources>
-

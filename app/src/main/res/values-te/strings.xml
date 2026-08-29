@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="reset">తిరిగి మొదటికి</string>
     <string name="artists">కళాకారులు</string>
@@ -280,4 +280,3 @@
     <string name="translation_models">అనువాద మోడల్స్</string>
     <string name="clear_translation_models">అనువాద నమూనాలను క్లియర్ చెయ్యండి</string>
 </resources>
-

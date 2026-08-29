@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Felfedezés</string>
     <string name="local_history">Helyi</string>
@@ -240,7 +240,7 @@
     <string name="enable_scrobbling">Scrobbling engedélyezése</string>
     <string name="lastfm_now_playing">\"Épp hallgatott\" állapot küldése</string>
     <string name="last_fm_send_likes">Kedvelések küldése</string>
-    <string name="last_fm_send_likes_description">Dalok kedvencnek jelölése/törlése a Last.fm-en, ha a Nocturne Mobile-ben kedveled/nem kedveled őket</string>
+    <string name="last_fm_send_likes_description">Dalok kedvencnek jelölése/törlése a Last.fm-en, ha a vivimusic-ben kedveled/nem kedveled őket</string>
     <string name="logging_in">Bejelentkezés…</string>
     <string name="scrobbling_configuration">Scrobbling beállítása</string>
     <string name="scrobble_min_track_duration">Ennél hosszabb számok scrobble-olása</string>
@@ -276,4 +276,3 @@
     <string name="delete_desc">Elem végleges eltávolítása</string>
     <string name="advanced_desc">Tempó és hangmagasság módosítása</string>
 </resources>
-

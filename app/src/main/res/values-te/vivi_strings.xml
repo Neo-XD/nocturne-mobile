@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">అన్వేషించండి</string>
     <string name="local_history">స్థానిక</string>
@@ -83,4 +83,3 @@
     <string name="default_style">డిఫాల్ట్</string>
     <string name="seek_seconds_addup_description">సక్రియమైనట్లయితే, ప్రతి సీక్ స్కిప్‌కి 5 అదనపు సెకండ్లను క్రమంగా జోడిస్తుంది</string>
 </resources>
-

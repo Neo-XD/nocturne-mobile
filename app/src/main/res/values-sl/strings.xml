@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home">Dom</string>
     <string name="songs">Skladbe</string>
@@ -42,4 +42,3 @@
     <string name="filter_artists">Izvajalci</string>
     <string name="filter_playlists">Seznami predvajanja</string>
 </resources>
-

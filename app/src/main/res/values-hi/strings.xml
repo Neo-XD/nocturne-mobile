@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="songs">गाने</string>
     <string name="home">मुख्य स्थान</string>
@@ -208,4 +208,3 @@
     <string name="login">लॉगिन</string>
     <string name="login_failed">लॉगिन असफल रहा</string>
 </resources>
-

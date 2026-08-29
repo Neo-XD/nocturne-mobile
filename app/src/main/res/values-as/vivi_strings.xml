@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">অনুসন্ধান কৰক</string>
     <string name="local_history">স্থানীয়</string>
@@ -49,4 +49,3 @@
     <string name="show_more">অধিক দেখুৱাওক</string>
     <string name="show_less">কম দেখুৱাওক</string>
 </resources>
-

@@ -1,9 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <!-- Upstream InnerTune strings -->
 <!-- Do not add new features here -->
 <!-- Try to re-use strings here, but be careful on its usage e.g. verb vs noun -->
-<!-- "InnerTune" is replaced with "Nocturne Mobile" -->
+<!-- "InnerTune" is replaced with "vivimusic" -->
 <!-- Translators: Do not modify this file for translations, use InnerTune's Weblate instead. -->
 
 <resources>
@@ -364,7 +364,7 @@
     <string name="restore_failed">Échec de la restauration de la sauvegarde</string>
 
     <string name="discord_integration">Intégration Discord</string>
-    <string name="discord_information">NOCTURNE MUSIC utilise la bibliothèque KizzyRPC pour définir le statut de votre compte Discord. Cela implique l\'utilisation de la passerelle Discord, ce qui peut être considéré comme une violation des conditions d\'utilisation de Discord. Cependant, aucun cas de suspension de compte utilisateur pour cette raison n\'a été recensé. Utilisez ce service à vos risques et périls. \n\NOCTURNE MUSIC extraira uniquement votre jeton ; toutes les autres données sont stockées localement.</string>
+    <string name="discord_information">Vivi Music utilise la bibliothèque KizzyRPC pour définir le statut de votre compte Discord. Cela implique l\'utilisation de la passerelle Discord, ce qui peut être considéré comme une violation des conditions d\'utilisation de Discord. Cependant, aucun cas de suspension de compte utilisateur pour cette raison n\'a été recensé. Utilisez ce service à vos risques et périls. \n\Vivi Music extraira uniquement votre jeton ; toutes les autres données sont stockées localement.</string>
     <string name="dismiss">Rejeter</string>
     <string name="options">Options</string>
     <string name="preview">Aperçu</string>
@@ -432,4 +432,3 @@
     <string name="never_backed_up">Jamais</string>
     <string name="autobackup_settings">Paramètres de sauvegarde automatique</string>
 </resources>
-

@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+﻿import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 import java.net.URL
 
@@ -18,12 +18,12 @@ plugins {
 
 android {
     namespace = "com.music.vivi"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.nocturne.music"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 74
         versionName = "6.0.5"
 
@@ -303,5 +303,6 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     implementation(libs.androidx.core.splashscreen)
 }
+
 
 

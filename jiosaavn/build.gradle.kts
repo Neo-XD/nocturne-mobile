@@ -5,7 +5,7 @@
 
 android {
     namespace = "com.music.jiosaavn"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
@@ -30,4 +30,5 @@ dependencies {
 
     coreLibraryDesugaring(libs.desugaring)
 }
+
 
