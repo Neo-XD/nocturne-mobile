@@ -62,6 +62,8 @@ class MusixmatchTest {
         assertEquals(expected, cleaned)
     }
 
+    // Ignored in CI, not deleted: it calls musixmatch.com and has no assertions, so it can never fail and only adds a third-party dependency to every pull request.
+    @org.junit.Ignore("hits the live Musixmatch API; a debug aid, not a test")
     @Test
     fun debugKaliUchis() = kotlinx.coroutines.runBlocking {
         println("STARTING DEBUG KALI UCHIS")

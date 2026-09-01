@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,8 +34,6 @@ import com.nocturne.music.sync.RemoteConnectionState
 import com.nocturne.music.sync.RemoteSyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 
 @HiltViewModel
 class RemoteSyncViewModel @Inject constructor(
@@ -408,7 +408,7 @@ fun RemoteSyncSettingsScreen(
 
                         OutlinedTextField(
                             value = pinInput,
-                            onValueChange = { pinInput = it.filter { c -> c.isDigit() }.take(6) },
+                            onValueChange = { pinInput = it.filter { c -> c.isDigit() }.take(8) },
                             label = { Text("Pairing PIN (shown on the desktop)") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -421,7 +421,7 @@ fun RemoteSyncSettingsScreen(
                                 val port = portInput.toIntOrNull() ?: 8080
                                 syncManager.connect(hostInput.trim(), port, pinInput.trim())
                             },
-                            enabled = !isConnecting && hostInput.isNotBlank() && pinInput.length == 6,
+                            enabled = !isConnecting && hostInput.isNotBlank() && pinInput.length >= 4,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {

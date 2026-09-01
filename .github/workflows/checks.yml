@@ -1,7 +1,6 @@
 name: Checks
 
-# Pull requests only. A full Android build on every branch push is how CI on a repo that has
-# never had any gets switched off again; add a push trigger for trunk later if it earns its keep.
+# Pull requests only: a full Android build on every push is how new CI gets switched off again.
 on:
   pull_request:
 
@@ -25,26 +24,22 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # setup-gradle rather than actions/cache: a cold 12-module build spends minutes resolving
-      # dependencies before it compiles anything, and this handles the cache layout correctly.
+      # setup-gradle rather than actions/cache, which gets the Gradle cache layout wrong.
       - uses: gradle/actions/setup-gradle@v4
 
       # A clone made on Windows loses the executable bit, and the run then fails at step one.
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # One flavour, not the abi x variant matrix, which nobody would wait for. The GMS path is
-      # therefore NOT compiled here: a GMS-only break passes this job.
+      # One flavour, not the abi x variant matrix; a GMS-only break therefore passes this job.
       - name: Lint
         run: ./gradlew --no-daemon lintUniversalFossDebug
 
-      # The flavour-qualified task only reaches :app, which has no tests at all, so the library
-      # modules that do have suites are named explicitly or this step is a no-op.
+      # Named explicitly because the flavour-qualified task only reaches :app, which has no tests.
       - name: Unit tests
         run: ./gradlew --no-daemon testUniversalFossDebugUnitTest :canvas:test :lyricsProvider:test
 
-      # Secrets are absent on fork pull requests, and the build must still succeed there; the
-      # empty-string fallback in app/build.gradle.kts is what makes that true.
+      # Absent on fork pull requests, where the empty-string fallback keeps the build working.
       - name: Assemble debug APK
         env:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}

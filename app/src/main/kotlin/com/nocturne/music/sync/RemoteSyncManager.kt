@@ -265,6 +265,13 @@ class RemoteSyncManager @Inject constructor(
     fun connect(host: String, port: Int = 8080, pin: String = lastPin) {
         disconnectInternal(clearAutoConnect = false)
 
+        // The discovery sheets carry no PIN field, so without a paired one there is nothing to send; attempting anyway burns a desktop lockout slot on a guess we already know is wrong.
+        if (pin.isBlank()) {
+            _connectionState.value = RemoteConnectionState.ERROR
+            _statusMessage.value = "Enter the desktop's pairing PIN in Remote Sync settings first"
+            return
+        }
+
         lastPin = pin
         var authRejected = false
         val cleanHost = host.trim()
