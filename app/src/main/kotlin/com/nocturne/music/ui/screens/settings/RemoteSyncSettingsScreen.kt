@@ -32,6 +32,8 @@ import com.nocturne.music.sync.RemoteConnectionState
 import com.nocturne.music.sync.RemoteSyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 
 @HiltViewModel
 class RemoteSyncViewModel @Inject constructor(
@@ -56,9 +58,11 @@ fun RemoteSyncSettingsScreen(
 
     val savedHost by syncManager.hostFlow.collectAsState(initial = "192.168.1.10")
     val savedPort by syncManager.portFlow.collectAsState(initial = 8080)
+    val savedPin by syncManager.pinFlow.collectAsState(initial = "")
 
     var hostInput by remember(savedHost) { mutableStateOf(savedHost) }
     var portInput by remember(savedPort) { mutableStateOf(savedPort.toString()) }
+    var pinInput by remember(savedPin) { mutableStateOf(savedPin) }
 
     val isConnected = connectionState == RemoteConnectionState.CONNECTED
     val isConnecting = connectionState == RemoteConnectionState.CONNECTING
@@ -402,12 +406,22 @@ fun RemoteSyncSettingsScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
+                        OutlinedTextField(
+                            value = pinInput,
+                            onValueChange = { pinInput = it.filter { c -> c.isDigit() }.take(6) },
+                            label = { Text("Pairing PIN (shown on the desktop)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
                         Button(
                             onClick = {
                                 val port = portInput.toIntOrNull() ?: 8080
-                                syncManager.connect(hostInput.trim(), port)
+                                syncManager.connect(hostInput.trim(), port, pinInput.trim())
                             },
-                            enabled = !isConnecting && hostInput.isNotBlank(),
+                            enabled = !isConnecting && hostInput.isNotBlank() && pinInput.length == 6,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {

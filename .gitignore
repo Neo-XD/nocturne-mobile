@@ -11,3 +11,7 @@ build/
 .cxx
 *.apk
 *.aab
+
+# IDE/Gradle build output — never committed.
+bin/
+*/bin/
