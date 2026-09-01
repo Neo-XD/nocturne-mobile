@@ -38,12 +38,10 @@ jobs:
       - name: Lint
         run: ./gradlew --no-daemon lintUniversalFossDebug
 
-      # The flavour-qualified task only reaches :app, which has no tests at all, so :canvas is named
-      # explicitly or this step is a no-op. :lyricsProvider is deliberately excluded: its
-      # MusixmatchTest.testConvertRichSyncToLrc already fails on trunk, and a gate that is red on
-      # day one is a gate everyone learns to ignore. Add it back once that test is fixed.
+      # The flavour-qualified task only reaches :app, which has no tests at all, so the library
+      # modules that do have suites are named explicitly or this step is a no-op.
       - name: Unit tests
-        run: ./gradlew --no-daemon testUniversalFossDebugUnitTest :canvas:test
+        run: ./gradlew --no-daemon testUniversalFossDebugUnitTest :canvas:test :lyricsProvider:test
 
       # Secrets are absent on fork pull requests, and the build must still succeed there; the
       # empty-string fallback in app/build.gradle.kts is what makes that true.

@@ -28,6 +28,7 @@ class MusixmatchTest {
                     WordEntry("is", 0.436),
                     WordEntry(" ", 0.559),
                     WordEntry("the", 0.627),
+                    WordEntry(" ", 1.227),
                     WordEntry("end", 1.287)
                 ),
                 x = "This is the end"
