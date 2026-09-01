@@ -193,15 +193,6 @@ fun UpdateSettings(
                     isExpressive = true
                 ),
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.stockpot_flavour),
-                    title = { Text(stringResource(R.string.flavour)) },
-                    description = {
-                        val variant = if (BuildConfig.CAST_AVAILABLE) "GMS" else "FOSS"
-                        Text(variant)
-                    },
-                    isExpressive = true
-                ),
-                Material3SettingsItem(
                     icon = painterResource(R.drawable.update),
                     title = { Text(stringResource(R.string.auto_update_check)) },
                     trailingContent = {
