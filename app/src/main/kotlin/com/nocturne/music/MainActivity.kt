@@ -1075,7 +1075,7 @@ class MainActivity : ComponentActivity() {
                                                 saveState = true
                                             }
                                             launchSingleTop = true
-                                            restoreState = true
+                                            // No restoreState: a tab tap opens that tab's root, not wherever the user last was inside it. saveState stays so the stacks survive if that is ever wanted back.
                                         }
                                     }
                                 }
@@ -1216,7 +1216,7 @@ class MainActivity : ComponentActivity() {
                                                 saveState = true
                                             }
                                             launchSingleTop = true
-                                            restoreState = true
+                                            // No restoreState: a tab tap opens that tab's root, not wherever the user last was inside it. saveState stays so the stacks survive if that is ever wanted back.
                                         }
                                     }
                                 }
