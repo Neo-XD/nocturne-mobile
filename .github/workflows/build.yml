@@ -41,10 +41,17 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Decode Release Keystore (if secret present)
+      - name: Ensure Android Keystores Available
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
+          # 1. Ensure default debug keystore exists
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+          # 2. Decode release keystore if secret is present
           if [ -n "$KEYSTORE_BASE64" ]; then
             mkdir -p app/keystore
             echo "$KEYSTORE_BASE64" | base64 -d > app/keystore/release.keystore

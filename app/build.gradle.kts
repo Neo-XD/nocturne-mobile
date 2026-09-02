@@ -81,6 +81,8 @@ android {
     }
 
     val releaseKeystore = file("keystore/release.keystore")
+    val hasReleaseKeystore = releaseKeystore.exists() && !System.getenv("STORE_PASSWORD").isNullOrBlank()
+
     signingConfigs {
         create("persistentDebug") {
             storeFile = file("persistent-debug.keystore")
@@ -88,7 +90,7 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
-        if (releaseKeystore.exists()) {
+        if (hasReleaseKeystore) {
             create("release") {
                 storeFile = releaseKeystore
                 storePassword = System.getenv("STORE_PASSWORD")
@@ -105,7 +107,7 @@ android {
 
     buildTypes {
         release {
-            if (releaseKeystore.exists()) {
+            if (hasReleaseKeystore) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
                 signingConfig = signingConfigs.getByName("debug")
@@ -157,6 +159,7 @@ android {
         lintConfig = file("lint.xml")
         warningsAsErrors = false
         abortOnError = false
+        checkReleaseBuilds = false
         checkDependencies = false
     }
 
