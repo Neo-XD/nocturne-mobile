@@ -103,11 +103,13 @@ class App : Application(), SingletonImageLoader.Factory {
             KuGou.useTraditionalChinese = true
         }
 
-        // Initialize LastFM with API keys from BuildConfig (GitHub Secrets)
-        LastFM.initialize(
-            apiKey = BuildConfig.LASTFM_API_KEY.takeIf { it.isNotEmpty() } ?: "",
-            secret = BuildConfig.LASTFM_SECRET.takeIf { it.isNotEmpty() } ?: ""
-        )
+        // Skipped entirely when unconfigured: initializing with a blank key authenticates against nothing and surfaces as a Last.fm outage rather than as missing credentials.
+        if (BuildConfig.LASTFM_API_KEY.isNotBlank() && BuildConfig.LASTFM_SECRET.isNotBlank()) {
+            LastFM.initialize(
+                apiKey = BuildConfig.LASTFM_API_KEY,
+                secret = BuildConfig.LASTFM_SECRET
+            )
+        }
 
         if (settings[ProxyEnabledKey] == true) {
             val username = settings[ProxyUsernameKey].orEmpty()

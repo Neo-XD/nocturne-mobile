@@ -386,12 +386,11 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    val flavorSuffix = if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) "Gms Edition" else "Foss Edition"
                     AssistChip(
                         onClick = {},
                         label = {
                             Text(
-                                text = "$flavorSuffix ${if (BuildConfig.VERSION_NAME.startsWith("v")) "" else "v"}${BuildConfig.VERSION_NAME}",
+                                text = "${if (BuildConfig.VERSION_NAME.startsWith("v")) "" else "v"}${BuildConfig.VERSION_NAME}",
                                 fontFamily = GoogleSansFlex
                             )
                         },

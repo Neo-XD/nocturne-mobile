@@ -28,6 +28,7 @@ class MusixmatchTest {
                     WordEntry("is", 0.436),
                     WordEntry(" ", 0.559),
                     WordEntry("the", 0.627),
+                    WordEntry(" ", 1.227),
                     WordEntry("end", 1.287)
                 ),
                 x = "This is the end"
@@ -61,6 +62,8 @@ class MusixmatchTest {
         assertEquals(expected, cleaned)
     }
 
+    // Ignored in CI, not deleted: it calls musixmatch.com and has no assertions, so it can never fail and only adds a third-party dependency to every pull request.
+    @org.junit.Ignore("hits the live Musixmatch API; a debug aid, not a test")
     @Test
     fun debugKaliUchis() = kotlinx.coroutines.runBlocking {
         println("STARTING DEBUG KALI UCHIS")

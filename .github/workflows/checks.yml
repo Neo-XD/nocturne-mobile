@@ -1,0 +1,47 @@
+name: Checks
+
+# Pull requests only: a full Android build on every push is how new CI gets switched off again.
+on:
+  pull_request:
+
+# A second push to the same PR makes the earlier run irrelevant.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Java 21: app/build.gradle.kts pins sourceCompatibility and jvmTarget to VERSION_21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # setup-gradle rather than actions/cache, which gets the Gradle cache layout wrong.
+      - uses: gradle/actions/setup-gradle@v4
+
+      # A clone made on Windows loses the executable bit, and the run then fails at step one.
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # One flavour, not the abi x variant matrix; a GMS-only break therefore passes this job.
+      - name: Lint
+        run: ./gradlew --no-daemon lintUniversalFossDebug
+
+      # Named explicitly because the flavour-qualified task only reaches :app, which has no tests.
+      - name: Unit tests
+        run: ./gradlew --no-daemon testUniversalFossDebugUnitTest :canvas:test :lyricsProvider:test
+
+      # Absent on fork pull requests, where the empty-string fallback keeps the build working.
+      - name: Assemble debug APK
+        env:
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
+        run: ./gradlew --no-daemon assembleUniversalFossDebug

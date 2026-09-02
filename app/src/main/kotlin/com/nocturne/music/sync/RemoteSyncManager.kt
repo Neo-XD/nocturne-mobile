@@ -74,6 +74,9 @@ data class RemotePlaybackActionPayload(
 data class RemoteWireMessage(
     val type: String,
     val client_device_name: String? = null,
+    val pin_hash: String? = null,
+    val nonce: String? = null,
+    val host_device_name: String? = null,
     val success: Boolean? = null,
     val session_token: String? = null,
     val message: String? = null,
@@ -99,6 +102,7 @@ private data class DiscoveryPayload(
 
 val RemoteSyncHostKey = stringPreferencesKey("remote_sync_host")
 val RemoteSyncPortKey = intPreferencesKey("remote_sync_port")
+val RemoteSyncPinKey = stringPreferencesKey("remote_sync_pin")
 val RemoteSyncAutoConnectKey = booleanPreferencesKey("remote_sync_auto_connect")
 val RemotePlaybackTargetKey = stringPreferencesKey("remote_playback_target")
 
@@ -136,12 +140,17 @@ class RemoteSyncManager @Inject constructor(
 
     val hostFlow = context.dataStore.data.map { it[RemoteSyncHostKey] ?: "192.168.1.10" }
     val portFlow = context.dataStore.data.map { it[RemoteSyncPortKey] ?: 8080 }
+    val pinFlow = context.dataStore.data.map { it[RemoteSyncPinKey].orEmpty() }
+    // Held in memory so the quick-connect sheets, which have no PIN field, can reuse the one entered when pairing.
+    private var lastPin: String = ""
 
     init {
         startLanDiscovery()
 
         scope.launch {
             context.dataStore.data.collectLatest { prefs ->
+                // Outside the auto-connect guard: the quick-connect sheets have no PIN field and rely on this being populated.
+                lastPin = prefs[RemoteSyncPinKey].orEmpty()
                 val targetStr = prefs[RemotePlaybackTargetKey] ?: PlaybackDeviceTarget.LOCAL.name
                 _playbackTarget.value = runCatching { PlaybackDeviceTarget.valueOf(targetStr) }
                     .getOrDefault(PlaybackDeviceTarget.LOCAL)
@@ -150,6 +159,7 @@ class RemoteSyncManager @Inject constructor(
                 if (autoConnect && _connectionState.value == RemoteConnectionState.DISCONNECTED) {
                     val host = prefs[RemoteSyncHostKey] ?: "192.168.1.10"
                     val port = prefs[RemoteSyncPortKey] ?: 8080
+
                     connect(host, port)
                 }
             }
@@ -246,15 +256,32 @@ class RemoteSyncManager @Inject constructor(
         }
     }
 
-    fun connect(host: String, port: Int = 8080) {
+    // Must match expected_pin_hash on the desktop: hex SHA-256 over "nonce:pin".
+    private fun pinProof(nonce: String, pin: String): String =
+        java.security.MessageDigest.getInstance("SHA-256")
+            .digest("$nonce:$pin".toByteArray())
+            .joinToString("") { "%02x".format(it) }
+
+    fun connect(host: String, port: Int = 8080, pin: String = lastPin) {
         disconnectInternal(clearAutoConnect = false)
 
+        // The discovery sheets carry no PIN field, so without a paired one there is nothing to send; attempting anyway burns a desktop lockout slot on a guess we already know is wrong.
+        if (pin.isBlank()) {
+            _connectionState.value = RemoteConnectionState.ERROR
+            _statusMessage.value = "Enter the desktop's pairing PIN in Remote Sync settings first"
+            return
+        }
+
+        lastPin = pin
+        var authRejected = false
         val cleanHost = host.trim()
         scope.launch {
             context.dataStore.edit {
                 it[RemoteSyncHostKey] = cleanHost
                 it[RemoteSyncPortKey] = port
-                it[RemoteSyncAutoConnectKey] = true
+                // Quick-connect passes no PIN, so writing a blank one here would erase the paired value.
+                if (pin.isNotBlank()) it[RemoteSyncPinKey] = pin
+
             }
         }
 
@@ -272,22 +299,38 @@ class RemoteSyncManager @Inject constructor(
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Timber.d("RemoteSync: Connected to $cleanHost:$port")
-                _connectionState.value = RemoteConnectionState.CONNECTED
-                _statusMessage.value = "Connected to $cleanHost:$port"
-                val authMsg = RemoteWireMessage(
-                    type = "auth_response",
-                    client_device_name = "Nocturne Mobile (${android.os.Build.MODEL})"
-                )
-                webSocket.send(json.encodeToString(authMsg))
+                _statusMessage.value = "Pairing with $cleanHost:$port"
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
                 try {
                     val msg = json.decodeFromString<RemoteWireMessage>(text)
                     when (msg.type) {
+                        "auth_challenge" -> {
+                            val nonce = msg.nonce.orEmpty()
+                            webSocket.send(
+                                json.encodeToString(
+                                    RemoteWireMessage(
+                                        type = "auth_response",
+                                        client_device_name = "Nocturne Mobile (${android.os.Build.MODEL})",
+                                        pin_hash = pinProof(nonce, pin)
+                                    )
+                                )
+                            )
+                        }
                         "auth_result" -> {
-                            _connectionState.value = RemoteConnectionState.CONNECTED
-                            _statusMessage.value = "Connected to $cleanHost:$port"
+                            if (msg.success == true) {
+                                _connectionState.value = RemoteConnectionState.CONNECTED
+                                _statusMessage.value = "Connected to $cleanHost:$port"
+                                scope.launch {
+                                    context.dataStore.edit { it[RemoteSyncAutoConnectKey] = true }
+                                }
+                            } else {
+                                authRejected = true
+                                _connectionState.value = RemoteConnectionState.ERROR
+                                _statusMessage.value = msg.message ?: "Pairing rejected"
+                                webSocket.close(1000, "auth failed")
+                            }
                         }
                         "sync_state" -> {
                             msg.state?.let { newState ->
@@ -308,6 +351,7 @@ class RemoteSyncManager @Inject constructor(
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Timber.d("RemoteSync: Closed ($code: $reason)")
+                if (authRejected) return
                 _connectionState.value = RemoteConnectionState.DISCONNECTED
                 _statusMessage.value = "Disconnected"
             }

@@ -888,7 +888,6 @@
     <string name="namespace">Namespace</string>
     <string name="telegram_channel">Telegram</string>
     <string name="version_info">Version Info</string>
-    <string name="flavour">Flavour</string>
     <string name="version_title">Version</string>
 
     <!-- Onboarding -->
