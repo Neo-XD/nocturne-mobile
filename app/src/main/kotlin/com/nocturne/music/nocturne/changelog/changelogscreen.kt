@@ -99,7 +99,7 @@ import java.util.Locale
 fun ChangelogScreen(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
-    versionTag: String = "v${BuildConfig.VERSION_NAME}"
+    versionTag: String = if (BuildConfig.VERSION_NAME.startsWith("v")) BuildConfig.VERSION_NAME else "v${BuildConfig.VERSION_NAME}"
 ) {
     val context = LocalContext.current
     var changelogSections by remember { mutableStateOf<List<ChangelogSection>>(emptyList()) }
@@ -143,7 +143,7 @@ fun ChangelogScreen(
                 } else {
                     val changelogUrl = URL("https://github.com/Neo-XD/nocturne-mobile/releases/download/$tag/changelog.json")
                     val connection = changelogUrl.openConnection() as HttpURLConnection
-                    connection.setRequestProperty("User-Agent", "ViviMusic-Changelog-App")
+                    connection.setRequestProperty("User-Agent", "NocturneMusic-Changelog-App")
                     connection.setRequestProperty("Accept", "application/json")
                     
                     if (connection.responseCode == 200) {
@@ -195,15 +195,30 @@ fun ChangelogScreen(
                             showingCached = false
                         }
                     } else {
-                        Log.e("ChangelogScreen", "HTTP Error ${connection.responseCode} for $tag")
-                        withContext(Dispatchers.Main) { hasError = true; isLoading = false }
+                        Log.e("ChangelogScreen", "HTTP Error ${connection.responseCode} for $tag, loading fallback")
+                        val fallback = getLocalFallbackChangelog(tag)
+                        withContext(Dispatchers.Main) {
+                            changelogSections = fallback.sections
+                            updateImage = fallback.image
+                            updateDescription = fallback.description
+                            updateWarning = fallback.warning
+                            isLoading = false
+                            hasError = false
+                            showingCached = true
+                        }
                     }
                 }
             } catch (e: Exception) {
-                Log.e("ChangelogScreen", "Error fetching changelog: ${e.message}")
+                Log.e("ChangelogScreen", "Error fetching changelog: ${e.message}, loading fallback")
+                val fallback = getLocalFallbackChangelog(tag)
                 withContext(Dispatchers.Main) {
-                    hasError = true
+                    changelogSections = fallback.sections
+                    updateImage = fallback.image
+                    updateDescription = fallback.description
+                    updateWarning = fallback.warning
                     isLoading = false
+                    hasError = false
+                    showingCached = true
                 }
             }
         }
@@ -216,7 +231,7 @@ fun ChangelogScreen(
             try {
                 val releasesUrl = URL("https://api.github.com/repos/Neo-XD/nocturne-mobile/releases")
                 val connection = releasesUrl.openConnection() as HttpURLConnection
-                connection.setRequestProperty("User-Agent", "ViviMusic-Changelog-App")
+                connection.setRequestProperty("User-Agent", "NocturneMusic-Changelog-App")
                 connection.setRequestProperty("Accept", "application/vnd.github+json")
                 
                 if (connection.responseCode == 200) {
@@ -537,4 +552,32 @@ private fun loadChangelogFromCache(context: Context, versionTag: String): Cached
             warning = cacheData.optString("warning", null).takeIf { !it.isNullOrBlank() }
         )
     } catch (e: Exception) { null }
+}
+
+private fun getLocalFallbackChangelog(tag: String): CachedChangelogData {
+    return CachedChangelogData(
+        sections = listOf(
+            ChangelogSection("✨ New Features", listOf(
+                "The Nocturne Rebrand: Complete transition to Nocturne Music with new brand identity, UI, and com.nocturne.music package.",
+                "Zero-PIN Remote Device Sync: Automated LAN discovery & instant WebSocket pairing with Nocturne Desktop PC.",
+                "Full Remote Controller Mode: Route song clicks, queue dispatches, play/pause, seek, and volume directly to Desktop PC.",
+                "Bidirectional Playback Handoff: 1-tap seamless playback session transfer between Phone and Desktop with live seek position.",
+                "Dynamic Ambient Themes: Real-time dynamic Gradient, Blur, Apple Music fluid blur, and Live Mesh backgrounds."
+            )),
+            ChangelogSection("⚡ Improvements", listOf(
+                "Live Now Playing & high-resolution album artwork synchronized across full player, mini player, and carousel.",
+                "Flexible release build configuration with automatic fallback to debug certificate for local builds."
+            )),
+            ChangelogSection("🐛 Bug Fixes", listOf(
+                "Settings branding cleanup and full removal of legacy identifiers.",
+                "Database migration schemas aligned with com.nocturne.music.db.InternalDatabase."
+            )),
+            ChangelogSection("⚠️ Known Bugs", listOf(
+                "Remote playback sync on Android is in beta and may experience latency when recovering from background suspension."
+            ))
+        ),
+        image = null,
+        description = "Nocturne Mobile v0.2m Release",
+        warning = null
+    )
 }

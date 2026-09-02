@@ -1,0 +1,38 @@
+{
+  "version": "v0.2m",
+  "description": "Nocturne Mobile v0.2m Release Notes",
+  "warning": null,
+  "image": null,
+  "changelog": [
+    {
+      "title": "✨ New Features",
+      "items": [
+        "The Nocturne Rebrand: Complete transition to Nocturne Music with new brand identity, UI, and com.nocturne.music package namespace.",
+        "Zero-PIN Remote Device Sync: Automated UDP discovery and WebSocket pairing with Nocturne Desktop PC.",
+        "Full Remote Controller Mode: Route song clicks, queue dispatches, play/pause, seek, and volume directly to Desktop PC.",
+        "Bidirectional Playback Handoff: 1-tap seamless playback session transfer between Phone and Desktop with live seek position.",
+        "Dynamic Ambient Themes: Real-time dynamic Gradient, Blur, Apple Music fluid blur, and Live Mesh backgrounds."
+      ]
+    },
+    {
+      "title": "⚡ Improvements",
+      "items": [
+        "Live Now Playing & high-resolution album artwork synchronized across full player, mini player, and carousel.",
+        "Flexible release build configuration with automatic fallback to debug certificate for local builds."
+      ]
+    },
+    {
+      "title": "🐛 Bug Fixes",
+      "items": [
+        "Settings branding cleanup and full removal of legacy identifiers.",
+        "Database migration schemas aligned with com.nocturne.music.db.InternalDatabase."
+      ]
+    },
+    {
+      "title": "⚠️ Known Bugs",
+      "items": [
+        "Remote playback sync on Android is in beta and may experience latency when recovering from background suspension."
+      ]
+    }
+  ]
+}
