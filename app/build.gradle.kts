@@ -99,6 +99,7 @@ android {
             }
         }
         getByName("debug") {
+            storeFile = file("debug.keystore")
             keyAlias = "androiddebugkey"
             keyPassword = "android"
             storePassword = "android"

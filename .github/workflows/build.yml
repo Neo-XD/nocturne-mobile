@@ -45,13 +45,19 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          # 1. Ensure default debug keystore exists
-          mkdir -p ~/.android
-          if [ ! -f ~/.android/debug.keystore ]; then
-            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          # 1. Ensure bundled debug keystore exists in app/
+          if [ ! -f app/debug.keystore ]; then
+            keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-          # 2. Decode release keystore if secret is present
+          # 2. Also ensure default system debug keystore exists for compatibility
+          mkdir -p ~/.android ~/.config/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            cp app/debug.keystore ~/.android/debug.keystore 2>/dev/null || keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          cp ~/.android/debug.keystore ~/.config/.android/debug.keystore 2>/dev/null || true
+
+          # 3. Decode release keystore if secret is present
           if [ -n "$KEYSTORE_BASE64" ]; then
             mkdir -p app/keystore
             echo "$KEYSTORE_BASE64" | base64 -d > app/keystore/release.keystore
