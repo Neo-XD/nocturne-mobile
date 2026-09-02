@@ -278,7 +278,7 @@ fun RemoteSyncSettingsScreen(
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable {
-                                            syncManager.connect(device.ip, device.port)
+                                            syncManager.connect(device.ip, device.port, pinInput.trim())
                                             syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
                                         },
                                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -316,7 +316,7 @@ fun RemoteSyncSettingsScreen(
 
                                         Button(
                                             onClick = {
-                                                syncManager.connect(device.ip, device.port)
+                                                syncManager.connect(device.ip, device.port, pinInput.trim())
                                                 syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
                                             },
                                             shape = RoundedCornerShape(8.dp),

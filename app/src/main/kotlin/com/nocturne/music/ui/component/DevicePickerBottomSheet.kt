@@ -32,6 +32,8 @@ fun DevicePickerBottomSheet(
     val connectionState by syncManager.connectionState.collectAsState()
     val playbackTarget by syncManager.playbackTarget.collectAsState()
     val discoveredDevices by syncManager.discoveredDevices.collectAsState()
+    // This sheet has no PIN field, so the paired PIN is named here rather than left to a default.
+    val pairedPin by syncManager.pinFlow.collectAsState(initial = "")
     val isConnected = connectionState == RemoteConnectionState.CONNECTED
 
     ModalBottomSheet(
@@ -170,7 +172,7 @@ fun DevicePickerBottomSheet(
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
                                     if (!isConnected) {
-                                        syncManager.connect(device.ip, device.port)
+                                        syncManager.connect(device.ip, device.port, pairedPin)
                                     }
                                     syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
                                     onDismiss()
@@ -221,7 +223,7 @@ fun DevicePickerBottomSheet(
                                 } else {
                                     Button(
                                         onClick = {
-                                            syncManager.connect(device.ip, device.port)
+                                            syncManager.connect(device.ip, device.port, pairedPin)
                                             syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
                                             onDismiss()
                                         },

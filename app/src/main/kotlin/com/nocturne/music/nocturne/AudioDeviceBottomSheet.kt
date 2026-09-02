@@ -180,6 +180,8 @@ fun AudioDeviceBottomSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier)
     val remoteConnectionState by syncManager.connectionState.collectAsState()
     val playbackTarget by syncManager.playbackTarget.collectAsState()
     val discoveredDevices by syncManager.discoveredDevices.collectAsState()
+    // This sheet has no PIN field, so the paired PIN is named here rather than left to a default.
+    val pairedPin by syncManager.pinFlow.collectAsState(initial = "")
     var showDevicePopup by remember { mutableStateOf(false) }
 
     val bluetoothLauncher = rememberLauncherForActivityResult(
@@ -579,7 +581,7 @@ fun AudioDeviceBottomSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier)
                                     // Transfer current phone playback to Desktop PC!
                                     if (discoveredDevices.isNotEmpty() && !isRemoteConnected) {
                                         val firstPc = discoveredDevices.first()
-                                        syncManager.connect(firstPc.ip, firstPc.port)
+                                        syncManager.connect(firstPc.ip, firstPc.port, pairedPin)
                                     }
                                     val localMeta = playerConnection?.mediaMetadata?.value
                                     val localPos = playerConnection?.player?.currentPosition ?: 0L
