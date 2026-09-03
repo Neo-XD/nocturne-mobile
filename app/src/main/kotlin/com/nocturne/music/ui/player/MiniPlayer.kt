@@ -124,6 +124,7 @@ import com.nocturne.music.listentogether.ListenTogetherManager
 import com.nocturne.music.models.MediaMetadata
 import com.nocturne.music.playback.CastConnectionHandler
 import com.nocturne.music.playback.PlayerConnection
+import com.nocturne.music.playback.rememberIsPlayingOnActiveTarget
 import com.nocturne.music.ui.screens.settings.DarkMode
 import com.nocturne.music.ui.theme.PlayerColorExtractor
 import com.nocturne.music.utils.rememberEnumPreference
@@ -345,9 +346,9 @@ private fun NewMiniPlayer(
                                 
                                 if (shouldDismiss) {
                                     if (currentOffset > 0 && canSkipPrevious) {
-                                        playerConnection.player.seekToPreviousMediaItem()
+                                        playerConnection.seekToPreviousMediaItem()
                                     } else if (currentOffset <= 0 && canSkipNext) {
-                                        playerConnection.player.seekToNext()
+                                        playerConnection.seekToNextMediaItem()
                                     }
                                 }
                                 coroutineScope.launch {
@@ -468,24 +469,7 @@ private fun NewMiniPlayerPlayButton(
     outlineColor: Color,
     listenTogetherManager: ListenTogetherManager?
 ) {
-    val isPlaying by playerConnection.isPlaying.collectAsState()
-    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
-
-    val remoteSyncManager = com.nocturne.music.sync.LocalRemoteSyncManager.current
-    val remotePlaybackTarget by remoteSyncManager?.playbackTarget?.collectAsState() ?: remember { mutableStateOf(com.nocturne.music.sync.PlaybackDeviceTarget.LOCAL) }
-    val remoteConnectionState by remoteSyncManager?.connectionState?.collectAsState() ?: remember { mutableStateOf(com.nocturne.music.sync.RemoteConnectionState.DISCONNECTED) }
-    val remoteRoomState by remoteSyncManager?.remoteRoomState?.collectAsState() ?: remember { mutableStateOf(null) }
-
-    val isRemoteDesktop = remotePlaybackTarget == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
-                          remoteConnectionState == com.nocturne.music.sync.RemoteConnectionState.CONNECTED
-
-    val effectiveIsPlaying = if (isRemoteDesktop && remoteRoomState != null) {
-        remoteRoomState!!.is_playing
-    } else if (isCasting) {
-        castIsPlaying
-    } else {
-        isPlaying
-    }
+    val effectiveIsPlaying = rememberIsPlayingOnActiveTarget(playerConnection)
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
     val isMuted by playerConnection.isMuted.collectAsState()
 
@@ -541,14 +525,7 @@ private fun NewMiniPlayerPlayButton(
                         playerConnection.toggleMute()
                         return@clickable
                     }
-                    if (isCasting) {
-                        if (castIsPlaying) castHandler?.pause() else castHandler?.play()
-                    } else if (playbackState == Player.STATE_ENDED) {
-                        playerConnection.player.seekTo(0, 0)
-                        playerConnection.player.playWhenReady = true
-                    } else {
-                        playerConnection.togglePlayPause()
-                    }
+                    playerConnection.togglePlayPause()
                 }
         ) {
             mediaMetadata?.let { metadata ->
@@ -749,9 +726,9 @@ private fun LegacyMiniPlayer(
 
                                 if (shouldChangeSong) {
                                     if (currentOffset > 0 && canSkipPrevious) {
-                                        playerConnection.player.seekToPreviousMediaItem()
+                                        playerConnection.seekToPreviousMediaItem()
                                     } else if (currentOffset <= 0 && canSkipNext) {
-                                        playerConnection.player.seekToNext()
+                                        playerConnection.seekToNextMediaItem()
                                     }
                                 }
                                 coroutineScope.launch { offsetXAnimatable.animateTo(0f, animationSpec) }
@@ -837,9 +814,7 @@ private fun LegacyPlayPauseButton(
     playerConnection: PlayerConnection,
     listenTogetherManager: ListenTogetherManager?
 ) {
-    val isPlaying by playerConnection.isPlaying.collectAsState()
-    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
-    val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
+    val effectiveIsPlaying = rememberIsPlayingOnActiveTarget(playerConnection)
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
     val isMuted by playerConnection.isMuted.collectAsState()
 
@@ -850,14 +825,7 @@ private fun LegacyPlayPauseButton(
                 playerConnection.toggleMute()
                 return@IconButton
             }
-            if (isCasting) {
-                if (castIsPlaying) castHandler?.pause() else castHandler?.play()
-            } else if (playbackState == Player.STATE_ENDED) {
-                playerConnection.player.seekTo(0, 0)
-                playerConnection.player.playWhenReady = true
-            } else {
-                playerConnection.togglePlayPause()
-            }
+            playerConnection.togglePlayPause()
         },
     ) {
         Icon(

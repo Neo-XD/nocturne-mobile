@@ -360,6 +360,9 @@ class PlayerConnection(
                 } else {
                     castHandler.play()
                 }
+            } else if (player.playbackState == Player.STATE_ENDED) {
+                player.seekTo(0, 0)
+                player.playWhenReady = true
             } else {
                 player.togglePlayPause()
             }
@@ -467,6 +470,54 @@ class PlayerConnection(
     }
 
     var onRestartSong: (() -> Unit)? = null
+
+    /** Next item, without seekToNext's prepare-and-play follow-up that the compact players never applied. */
+    fun seekToNextMediaItem() {
+        val sync = remoteSyncManager
+        if (sync != null &&
+            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP &&
+            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendNext()
+            return
+        }
+        try {
+            player.seekToNext()
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Error in seekToNextMediaItem")
+        }
+    }
+
+    /** Media3's own previous behaviour, restart-then-skip, as the v2 player applied it directly. */
+    fun seekToPreviousOrRestart() {
+        val sync = remoteSyncManager
+        if (sync != null &&
+            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP &&
+            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendPrevious()
+            return
+        }
+        try {
+            player.seekToPrevious()
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Error in seekToPreviousOrRestart")
+        }
+    }
+
+    /** Previous item, without seekToPrevious's restart-if-3s-in rule that the compact players never applied. */
+    fun seekToPreviousMediaItem() {
+        val sync = remoteSyncManager
+        if (sync != null &&
+            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP &&
+            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
+            sync.sendPrevious()
+            return
+        }
+        try {
+            player.seekToPreviousMediaItem()
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Error in seekToPreviousMediaItem")
+        }
+    }
 
     fun seekToPrevious() {
         val sync = remoteSyncManager

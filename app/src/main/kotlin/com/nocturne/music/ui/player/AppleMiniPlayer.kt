@@ -52,6 +52,7 @@ import com.nocturne.music.listentogether.ListenTogetherManager
 import com.nocturne.music.models.MediaMetadata
 import com.nocturne.music.playback.CastConnectionHandler
 import com.nocturne.music.playback.PlayerConnection
+import com.nocturne.music.playback.rememberIsPlayingOnActiveTarget
 import com.nocturne.music.ui.screens.settings.DarkMode
 import com.nocturne.music.utils.rememberEnumPreference
 import com.nocturne.music.utils.rememberPreference
@@ -196,9 +197,9 @@ fun AppleMiniPlayer(
 
                                 if (shouldChangeSong) {
                                     if (currentOffset > 0 && canSkipPreviousLocal) {
-                                        playerConnection.player.seekToPreviousMediaItem()
+                                        playerConnection.seekToPreviousMediaItem()
                                     } else if (currentOffset <= 0 && canSkipNextLocal) {
-                                        playerConnection.player.seekToNext()
+                                        playerConnection.seekToNextMediaItem()
                                     }
                                 }
                                 coroutineScope.launch {
@@ -333,20 +334,10 @@ fun AppleMiniPlayer(
                                 playerConnection.toggleMute()
                                 return@clickable
                             }
-                            if (isCasting) {
-                                val castIsPlaying = castHandler?.castIsPlaying?.value ?: false
-                                if (castIsPlaying) castHandler?.pause() else castHandler?.play()
-                            } else if (playbackState == Player.STATE_ENDED) {
-                                playerConnection.player.seekTo(0, 0)
-                                playerConnection.player.playWhenReady = true
-                            } else {
-                                playerConnection.togglePlayPause()
-                            }
+                            playerConnection.togglePlayPause()
                         }
                 ) {
-                    val isPlaying by playerConnection.isPlaying.collectAsState()
-                    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
-                    val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
+                    val effectiveIsPlaying = rememberIsPlayingOnActiveTarget(playerConnection)
                     val isMuted by playerConnection.isMuted.collectAsState()
 
                     Icon(
