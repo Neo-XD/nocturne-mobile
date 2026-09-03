@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Material_3-757575?style=for-the-badge&logo=materialdesign&logoColor=white">
 </p>
 
-**Nocturne Mobile** is a native Android music client built as the mobile counterpart to [Nocturne Music](https://github.com/Neo-XD/nocturne-music), while also working completely on its own.
+**Nocturne Mobile** is a native Android music client built as the mobile counterpart to [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music), while also working completely on its own.
 
 Stream and manage your music, take your library with you, and enjoy a Nocturne experience designed specifically for Android.
 
@@ -23,19 +23,14 @@ Stream and manage your music, take your library with you, and enjoy a Nocturne e
 
 ## Features
 
-* **Native Android experience** — built specifically for Android rather than wrapping a website
-* **YouTube Music integration** — search, browse, and play music from YouTube Music
-* **Ad-free playback** — music playback without YouTube's audio advertisements
-* **Background playback** — keep listening while using other apps
-* **Your library** — access playlists, liked songs, artists, and albums
-* **Search & discovery** — find songs, albums, artists, and playlists
-* **Queue management** — control what plays next with a proper music queue
-* **Synced lyrics** — follow along with your music
-* **Last.fm scrobbling** — automatically track your listening history
-* **Nocturne ecosystem integration** — designed to work alongside Nocturne Music
-* **Standalone support** — No desktop app required
-
-> More features are actively being added as Nocturne Mobile develops.
+* Built specifically for Android using Kotlin rather than wrapping a website.
+* Search, browse, and play all your favourite songs directly from YouTube Music.
+* Ever get annoyed by the constant ads? Enjoy Ad-Free Listening on Nocturne Mobile!
+* Don't let the beats stop with background playback.
+* Access all your playlists, liked songs, artists, and albums directly from YouTube Music 
+* Sing along with your music with **Synced Lyrics**
+* Scrobble your songs with last.fm integration.
+* Part of the Nocturne Ecosystem and is designed to work alongside [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music)
 
 ---
 
@@ -55,15 +50,15 @@ Download the latest APK from the [Releases](https://github.com/Neo-XD/nocturne-m
 
 ## Part of the Nocturne Ecosystem
 
-Nocturne Mobile was built alongside **[Nocturne Music](https://github.com/Neo-XD/nocturne-music)**, the desktop version of Nocturne available for Linux and Windows.
+Nocturne Mobile was built alongside **[Nocturne Desktop](https://github.com/Neo-XD/nocturne-music)**, the desktop version of Nocturne available for Windows, Mac and Linux.
 
 The two applications share the same goal:
 
-> A fast, native, customizable YouTube Music experience without Electron.
+> A fast, native, customizable YouTube Music experience without the bloat of **Electron**.
 
 | Platform | Project                                                    |
 | -------- | ---------------------------------------------------------- |
-| Desktop  | [Nocturne Music](https://github.com/Neo-XD/nocturne-music) |
+| Desktop  | [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music) |
 | Android  | Nocturne Mobile                                            |
 
 Nocturne Mobile can work independently, but is designed to feel like part of the same ecosystem.
@@ -83,11 +78,9 @@ Open the project in Android Studio or build it using Gradle.
 
 ### Last.fm Credentials
 
-Last.fm credentials are read from the environment and are never committed to the repository.
+> The Local Builds of nocturne do not have the required api keys for scrobbling.
 
-Scrobbling remains disabled without them, while everything else continues to build and run normally.
-
-For local builds, add your credentials to `local.properties`:
+To scrobble with your local build, add your credentials to `local.properties`:
 
 ```properties
 LASTFM_API_KEY=your_key
