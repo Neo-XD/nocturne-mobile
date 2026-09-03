@@ -164,8 +164,11 @@ android {
 
     lint {
         lintConfig = file("lint.xml")
+        // Ratchet: the 1287 issues present when this landed are recorded in the baseline and pass,
+        // while anything new fails the build. Shrinking the baseline is the cleanup track's work.
+        baseline = file("lint-baseline.xml")
         warningsAsErrors = false
-        abortOnError = false
+        abortOnError = true
         checkReleaseBuilds = false
         checkDependencies = false
     }
@@ -316,6 +319,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation(libs.work.runtime.ktx)
     implementation(libs.androidx.core.splashscreen)
+
+    testImplementation(libs.junit)
 }
 
 

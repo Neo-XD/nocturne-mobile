@@ -252,12 +252,6 @@ class RemoteSyncManager @Inject constructor(
         }
     }
 
-    // Must match expected_pin_hash on the desktop: hex SHA-256 over "nonce:pin".
-    private fun pinProof(nonce: String, pin: String): String =
-        java.security.MessageDigest.getInstance("SHA-256")
-            .digest("$nonce:$pin".toByteArray())
-            .joinToString("") { "%02x".format(it) }
-
     fun connect(host: String, port: Int = 8080, pin: String) {
         disconnectInternal(clearAutoConnect = false)
 
