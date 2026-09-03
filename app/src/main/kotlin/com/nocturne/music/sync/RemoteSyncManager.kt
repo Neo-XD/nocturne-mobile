@@ -141,16 +141,12 @@ class RemoteSyncManager @Inject constructor(
     val hostFlow = context.dataStore.data.map { it[RemoteSyncHostKey] ?: "192.168.1.10" }
     val portFlow = context.dataStore.data.map { it[RemoteSyncPortKey] ?: 8080 }
     val pinFlow = context.dataStore.data.map { it[RemoteSyncPinKey].orEmpty() }
-    // Held in memory so the quick-connect sheets, which have no PIN field, can reuse the one entered when pairing.
-    private var lastPin: String = ""
 
     init {
         startLanDiscovery()
 
         scope.launch {
             context.dataStore.data.collectLatest { prefs ->
-                // Outside the auto-connect guard: the quick-connect sheets have no PIN field and rely on this being populated.
-                lastPin = prefs[RemoteSyncPinKey].orEmpty()
                 val targetStr = prefs[RemotePlaybackTargetKey] ?: PlaybackDeviceTarget.LOCAL.name
                 _playbackTarget.value = runCatching { PlaybackDeviceTarget.valueOf(targetStr) }
                     .getOrDefault(PlaybackDeviceTarget.LOCAL)
@@ -160,7 +156,7 @@ class RemoteSyncManager @Inject constructor(
                     val host = prefs[RemoteSyncHostKey] ?: "192.168.1.10"
                     val port = prefs[RemoteSyncPortKey] ?: 8080
 
-                    connect(host, port)
+                    connect(host, port, prefs[RemoteSyncPinKey].orEmpty())
                 }
             }
         }
@@ -262,26 +258,23 @@ class RemoteSyncManager @Inject constructor(
             .digest("$nonce:$pin".toByteArray())
             .joinToString("") { "%02x".format(it) }
 
-    fun connect(host: String, port: Int = 8080, pin: String = lastPin) {
+    fun connect(host: String, port: Int = 8080, pin: String) {
         disconnectInternal(clearAutoConnect = false)
 
-        // The discovery sheets carry no PIN field, so without a paired one there is nothing to send; attempting anyway burns a desktop lockout slot on a guess we already know is wrong.
-        if (pin.isBlank()) {
+        // The desktop only accepts 4 to 8 digits, so sending anything else spends a lockout slot on a guess already known to be wrong.
+        if (pin.length !in 4..8 || !pin.all { it.isDigit() }) {
             _connectionState.value = RemoteConnectionState.ERROR
-            _statusMessage.value = "Enter the desktop's pairing PIN in Remote Sync settings first"
+            _statusMessage.value = "Enter the desktop's 4-8 digit pairing PIN in Remote Sync settings first"
             return
         }
 
-        lastPin = pin
         var authRejected = false
         val cleanHost = host.trim()
         scope.launch {
             context.dataStore.edit {
                 it[RemoteSyncHostKey] = cleanHost
                 it[RemoteSyncPortKey] = port
-                // Quick-connect passes no PIN, so writing a blank one here would erase the paired value.
-                if (pin.isNotBlank()) it[RemoteSyncPinKey] = pin
-
+                it[RemoteSyncPinKey] = pin
             }
         }
 
