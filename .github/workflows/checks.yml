@@ -32,12 +32,33 @@ jobs:
         run: chmod +x ./gradlew
 
       # One flavour, not the abi x variant matrix; a GMS-only break therefore passes this job.
+      # Fails on any issue absent from app/lint-baseline.xml. New warnings still pass: the two
+      # dependency-freshness checks report new warnings as upstream publishes releases, which
+      # would turn this job red for reasons unrelated to the change.
       - name: Lint
         run: ./gradlew --no-daemon lintUniversalFossDebug
 
-      # Named explicitly because the flavour-qualified task only reaches :app, which has no tests.
+      # A failing lint run that does not say what failed is a gate people switch off.
+      - name: Upload lint report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results-universalFossDebug
+          path: app/build/reports/lint-results-universalFossDebug.*
+          if-no-files-found: ignore
+
+      # :canvas and :lyricsProvider are named explicitly because the flavour-qualified task
+      # reaches only :app, whose first unit tests cover the pairing PIN proof.
       - name: Unit tests
         run: ./gradlew --no-daemon testUniversalFossDebugUnitTest :canvas:test :lyricsProvider:test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: '**/build/reports/tests/**'
+          if-no-files-found: ignore
 
       # Absent on fork pull requests, where the empty-string fallback keeps the build working.
       - name: Assemble debug APK
