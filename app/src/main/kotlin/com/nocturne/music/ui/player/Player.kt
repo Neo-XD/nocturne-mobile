@@ -187,6 +187,7 @@ import com.nocturne.music.extensions.toggleRepeatMode
 import com.nocturne.music.listentogether.RoomRole
 import com.nocturne.music.models.MediaMetadata
 import com.nocturne.music.playback.ExoDownloadService
+import com.nocturne.music.playback.rememberIsPlayingOnActiveTarget
 import com.nocturne.music.nocturne.getConnectedBluetoothDeviceName
 import com.nocturne.music.nocturne.isBuds
 import com.nocturne.music.nocturne.isSpeaker
@@ -374,7 +375,6 @@ fun BottomSheetPlayer(
     val isCasting by castHandler?.isCasting?.collectAsState() ?: remember { mutableStateOf(false) }
     val castPosition by castHandler?.castPosition?.collectAsState() ?: remember { mutableLongStateOf(0L) }
     val castDuration by castHandler?.castDuration?.collectAsState() ?: remember { mutableLongStateOf(0L) }
-    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
     val castVolume by castHandler?.castVolume?.collectAsState() ?: remember { mutableFloatStateOf(1f) }
 
     // Remote Sync state
@@ -401,14 +401,7 @@ fun BottomSheetPlayer(
         }
     }
     
-    // Use Remote Desktop state when connected, otherwise Cast or local player
-    val effectiveIsPlaying = if (isRemoteDesktop && remoteRoomState != null) {
-        remoteRoomState!!.is_playing
-    } else if (isCasting) {
-        castIsPlaying
-    } else {
-        isPlaying
-    }
+    val effectiveIsPlaying = rememberIsPlayingOnActiveTarget(playerConnection)
 
     // Use State objects for position/duration to pass to MiniPlayer without causing recomposition
     // These states persist across playback state changes to ensure continuous progress updates
@@ -1881,12 +1874,8 @@ fun BottomSheetPlayer(
                         onValueChangeFinished = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
+                                    playerConnection.seekTo(it)
+                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
                                     position = it
                                 }
                                 sliderPosition = null
@@ -1912,12 +1901,8 @@ fun BottomSheetPlayer(
                             },
                             onValueChangeFinished = {
                                 sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
+                                    playerConnection.seekTo(it)
+                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
                                     position = it
                                 }
                                 sliderPosition = null
@@ -1939,12 +1924,8 @@ fun BottomSheetPlayer(
                             },
                             onValueChangeFinished = {
                                 sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
+                                    playerConnection.seekTo(it)
+                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
                                     position = it
                                 }
                                 sliderPosition = null
@@ -1986,12 +1967,8 @@ fun BottomSheetPlayer(
                         onValueChangeFinished = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition?.let {
-                                    if (isCasting) {
-                                        castHandler?.seekTo(it)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(it)
-                                    }
+                                    playerConnection.seekTo(it)
+                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
                                     position = it
                                 }
                                 sliderPosition = null
@@ -2232,18 +2209,7 @@ fun BottomSheetPlayer(
                                         playerConnection.toggleMute()
                                         return@FilledIconButton
                                     }
-                                    if (isCasting) {
-                                        if (castIsPlaying) {
-                                            castHandler?.pause()
-                                        } else {
-                                            castHandler?.play()
-                                        }
-                                    } else if (playbackState == STATE_ENDED) {
-                                        playerConnection.player.seekTo(0, 0)
-                                        playerConnection.player.playWhenReady = true
-                                    } else {
-                                        playerConnection.togglePlayPause()
-                                    }
+                                    playerConnection.togglePlayPause()
                                 },
                                 shape = RoundedCornerShape(50),
                                 interactionSource = playPauseInteractionSource,
@@ -2363,18 +2329,7 @@ fun BottomSheetPlayer(
                                             playerConnection.toggleMute()
                                             return@clickable
                                         }
-                                        if (isCasting) {
-                                            if (castIsPlaying) {
-                                                castHandler?.pause()
-                                            } else {
-                                                castHandler?.play()
-                                            }
-                                        } else if (playbackState == STATE_ENDED) {
-                                            playerConnection.player.seekTo(0, 0)
-                                            playerConnection.player.playWhenReady = true
-                                        } else {
-                                            playerConnection.player.togglePlayPause()
-                                        }
+                                        playerConnection.togglePlayPause()
                                     },
                             ) {
                                 Image(

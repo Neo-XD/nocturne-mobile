@@ -49,6 +49,7 @@ import com.nocturne.music.constants.PlayerThumbnailShadowElevationKey
 import com.nocturne.music.constants.EnableGoogleCastKey
 import com.nocturne.music.constants.HidePlayerThumbnailKey
 import com.nocturne.music.models.MediaMetadata
+import com.nocturne.music.playback.rememberIsPlayingOnActiveTarget
 import com.nocturne.music.ui.component.BottomSheetState
 import com.nocturne.music.ui.component.PlayerSliderTrack
 import com.nocturne.music.ui.theme.PlayerSliderColors
@@ -129,7 +130,6 @@ fun PlayerV2(
     val isCasting by castHandler?.isCasting?.collectAsState() ?: remember { mutableStateOf(false) }
     val castPosition by castHandler?.castPosition?.collectAsState() ?: remember { mutableLongStateOf(0L) }
     val castDuration by castHandler?.castDuration?.collectAsState() ?: remember { mutableLongStateOf(0L) }
-    val castIsPlaying by castHandler?.castIsPlaying?.collectAsState() ?: remember { mutableStateOf(false) }
     val castIsBuffering by castHandler?.castIsBuffering?.collectAsState() ?: remember { mutableStateOf(false) }
     val castVolume by castHandler?.castVolume?.collectAsState() ?: remember { mutableFloatStateOf(1f) }
 
@@ -157,13 +157,7 @@ fun PlayerV2(
         }
     }
 
-    val effectiveIsPlaying = if (isRemoteDesktop && remoteRoomState != null) {
-        remoteRoomState!!.is_playing
-    } else if (isCasting) {
-        castIsPlaying
-    } else {
-        isPlaying
-    }
+    val effectiveIsPlaying = rememberIsPlayingOnActiveTarget(playerConnection)
     var lastManualSeekTime by remember { mutableLongStateOf(0L) }
     
     androidx.activity.compose.BackHandler(enabled = playerState != PlayerInternalState.COVER) {
@@ -446,8 +440,8 @@ fun PlayerV2(
                                         .clip(RoundedCornerShape(12.dp))
                                         .SwipeGesture(
                                             enabled = (playerState == PlayerInternalState.COVER && !isListenTogetherGuest),
-                                            onSwipeLeft = { if (canSkipNext) playerConnection.player.seekToNext() },
-                                            onSwipeRight = { if (canSkipPrevious) playerConnection.player.seekToPrevious() }
+                                            onSwipeLeft = { if (canSkipNext) playerConnection.seekToNextMediaItem() },
+                                            onSwipeRight = { if (canSkipPrevious) playerConnection.seekToPreviousOrRestart() }
                                         )
                                 ) {
                                     if (hidePlayerThumbnail) {
@@ -801,12 +795,8 @@ fun PlayerV2(
                         onValueChangeFinished = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition?.let { pos ->
-                                    if (isCasting) {
-                                        castHandler?.seekTo(pos)
-                                        lastManualSeekTime = System.currentTimeMillis()
-                                    } else {
-                                        playerConnection.player.seekTo(pos)
-                                    }
+                                    playerConnection.seekTo(pos)
+                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
                                     position = pos
                                     sliderPosition = null
                                 }
@@ -850,7 +840,7 @@ fun PlayerV2(
                             onClick = {
                                 if (!isListenTogetherGuest) {
                                     if (isCasting) castHandler?.skipToPrevious()
-                                    else if (canSkipPrevious) playerConnection.player.seekToPrevious()
+                                    else if (canSkipPrevious) playerConnection.seekToPreviousOrRestart()
                                 }
                             },
                             enabled = !isListenTogetherGuest && canSkipPrevious,
@@ -865,10 +855,8 @@ fun PlayerV2(
                             onClick = {
                                 if (isListenTogetherGuest) {
                                     playerConnection.toggleMute()
-                                } else if (isCasting) {
-                                    if (castIsPlaying) castHandler?.pause() else castHandler?.play()
                                 } else {
-                                    playerConnection.player.togglePlayPause()
+                                    playerConnection.togglePlayPause()
                                 }
                             },
                             modifier = Modifier.size(88.dp)
@@ -894,7 +882,7 @@ fun PlayerV2(
                             onClick = {
                                 if (!isListenTogetherGuest) {
                                     if (isCasting) castHandler?.skipToNext()
-                                    else if (canSkipNext) playerConnection.player.seekToNext()
+                                    else if (canSkipNext) playerConnection.seekToNextMediaItem()
                                 }
                             },
                             enabled = !isListenTogetherGuest && canSkipNext,
