@@ -16,7 +16,17 @@ import com.nocturne.music.models.toMediaMetadata
 import com.nocturne.music.ui.utils.resize
 
 val MediaItem.metadata: MediaMetadata?
-    get() = localConfiguration?.tag as? MediaMetadata
+    get() = (localConfiguration?.tag as? MediaMetadata)
+        ?: mediaId.takeIf { it.isNotEmpty() }?.let { id ->
+            MediaMetadata(
+                id = id,
+                title = mediaMetadata.title?.toString().orEmpty(),
+                artists = listOfNotNull(mediaMetadata.artist?.toString()?.let { MediaMetadata.Artist(null, it) }),
+                duration = 0,
+                thumbnailUrl = mediaMetadata.extras?.getString("artwork_uri") ?: mediaMetadata.artworkUri?.toString(),
+                album = mediaMetadata.albumTitle?.toString()?.let { MediaMetadata.Album("", it) }
+            )
+        }
 
 fun Song.toMediaItem() = MediaItem.Builder()
     .setMediaId(song.id)

@@ -461,6 +461,7 @@ enum class PlayerButtonsStyle {
 
 enum class PlayerBackgroundStyle {
     DEFAULT,
+    GLASSY_WARP,
     GRADIENT,
     BLUR,
     GLOW_ANIMATED,
@@ -474,6 +475,12 @@ val HistoryDuration = floatPreferencesKey("historyDuration")
 val PlayerButtonsStyleKey = stringPreferencesKey("player_buttons_style")
 val PlayerBackgroundStyleKey = stringPreferencesKey("playerBackgroundStyle")
 val MiniPlayerBackgroundStyleKey = stringPreferencesKey("miniPlayerBackgroundStyle")
+val PlayerBackgroundBlurRadiusKey = floatPreferencesKey("player_bg_blur_radius")
+val PlayerBackgroundDimKey = floatPreferencesKey("player_bg_dim")
+val PlayerBackgroundSaturationKey = floatPreferencesKey("player_bg_saturation")
+val PlayerBackgroundMotionSpeedKey = floatPreferencesKey("player_bg_motion_speed")
+val PlayerGlassBorderKey = booleanPreferencesKey("player_glass_border")
+val DynamicAppBackgroundKey = booleanPreferencesKey("dynamic_app_background")
 val ShowLyricsKey = booleanPreferencesKey("showLyrics")
 val SwipeLyricsKey = booleanPreferencesKey("swipeLyrics")
 val EnableLyricsThumbnailPlayPauseKey = booleanPreferencesKey("enableLyricsThumbnailPlayPause")

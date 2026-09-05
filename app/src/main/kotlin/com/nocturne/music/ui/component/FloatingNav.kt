@@ -55,6 +55,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nocturne.music.ui.screens.Screens
+import androidx.compose.foundation.BorderStroke
+import com.nocturne.music.constants.EnableFrostedGlassKey
+import com.nocturne.music.utils.rememberPreference
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
@@ -72,6 +75,14 @@ fun FloatingNavigationBar(
     val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
     val outlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     
+    val (frostedGlass) = rememberPreference(EnableFrostedGlassKey, true)
+    val glassBorderBrush = rememberNocturneGlassBorderBrush()
+    val navContainerColor = if (frostedGlass && !pureBlack) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
+    } else {
+        containerColor
+    }
+
     // Left items are all main screens EXCEPT Search
     val leftItems = remember(navigationItems) {
         navigationItems.filter { it != Screens.Search }
@@ -91,8 +102,14 @@ fun FloatingNavigationBar(
             modifier = Modifier
                 .height(64.dp)
                 .shadow(elevation = 6.dp, shape = CircleShape)
-                .background(containerColor, shape = CircleShape)
-                .border(width = 1.dp, color = outlineColor, shape = CircleShape)
+                .background(navContainerColor, shape = CircleShape)
+                .then(
+                    if (frostedGlass && !pureBlack) {
+                        Modifier.border(BorderStroke(1.dp, glassBorderBrush), CircleShape)
+                    } else {
+                        Modifier.border(width = 1.dp, color = outlineColor, shape = CircleShape)
+                    }
+                )
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -121,8 +138,14 @@ fun FloatingNavigationBar(
             modifier = Modifier
                 .size(64.dp)
                 .shadow(elevation = 6.dp, shape = CircleShape)
-                .background(containerColor, shape = CircleShape)
-                .border(width = 1.dp, color = outlineColor, shape = CircleShape),
+                .background(navContainerColor, shape = CircleShape)
+                .then(
+                    if (frostedGlass && !pureBlack) {
+                        Modifier.border(BorderStroke(1.dp, glassBorderBrush), CircleShape)
+                    } else {
+                        Modifier.border(width = 1.dp, color = outlineColor, shape = CircleShape)
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             FloatingNavItem(

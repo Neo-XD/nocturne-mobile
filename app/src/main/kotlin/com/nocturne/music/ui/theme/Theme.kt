@@ -37,7 +37,7 @@ import androidx.compose.ui.text.font.FontFamily
 val DefaultThemeColor = Color(0xFFED5564)
 
 @Composable
-fun vivimusicTheme(
+fun NocturneTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pureBlack: Boolean = false,
     themeColor: Color = DefaultThemeColor,
@@ -94,6 +94,19 @@ fun vivimusicTheme(
         content = content
     )
 }
+
+@Composable
+fun vivimusicTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    pureBlack: Boolean = false,
+    themeColor: Color = DefaultThemeColor,
+    content: @Composable () -> Unit,
+) = NocturneTheme(
+    darkTheme = darkTheme,
+    pureBlack = pureBlack,
+    themeColor = themeColor,
+    content = content
+)
 
 fun Bitmap.extractThemeColor(): Color {
     val colorsToPopulation = Palette.from(this)

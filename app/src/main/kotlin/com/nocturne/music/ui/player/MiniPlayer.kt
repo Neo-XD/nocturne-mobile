@@ -52,6 +52,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.nocturne.music.ui.component.GlassyWarpBackground
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableLongState
@@ -1159,6 +1160,15 @@ internal fun MiniPlayerBackgroundLayer(
                 )
                 Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
             }
+        }
+        PlayerBackgroundStyle.GLASSY_WARP -> {
+            GlassyWarpBackground(
+                thumbnailUrl = mediaMetadata?.thumbnailUrl,
+                blurRadius = 45.dp,
+                dimAlpha = 0.35f,
+                saturation = 1.6f,
+                motionSpeed = 1.0f
+            )
         }
         else -> {}
     }

@@ -40,6 +40,7 @@ import com.nocturne.music.ui.screens.search.OnlineSearchResult
 import com.nocturne.music.ui.screens.search.SearchScreen
 import com.nocturne.music.ui.screens.settings.AboutScreen
 import com.nocturne.music.ui.screens.settings.AppearanceSettings
+import com.nocturne.music.ui.screens.settings.PlayerThemeCustomizerScreen
 import com.nocturne.music.ui.screens.settings.CanvasSelection
 import com.nocturne.music.ui.screens.settings.FontSelectionScreen
 import com.nocturne.music.ui.screens.settings.BackupAndRestore
@@ -351,6 +352,10 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("settings/appearance/theme") {
         ThemeScreen(navController)
+    }
+
+    composable("settings/appearance/player_customizer") {
+        PlayerThemeCustomizerScreen(navController)
     }
 
     composable("settings/appearance/canvas") {

@@ -146,7 +146,9 @@ import com.nocturne.music.constants.AppLanguageKey
 import com.nocturne.music.constants.DarkModeKey
 import com.nocturne.music.constants.DefaultOpenTabKey
 import com.nocturne.music.constants.DisableScreenshotKey
+import com.nocturne.music.constants.DynamicAppBackgroundKey
 import com.nocturne.music.constants.DynamicThemeKey
+import com.nocturne.music.ui.component.GlassyWarpBackground
 import com.nocturne.music.constants.EnableFrostedGlassKey
 import com.nocturne.music.constants.EnableHighRefreshRateKey
 import com.nocturne.music.constants.HasPromptedSignInKey
@@ -590,6 +592,19 @@ class MainActivity : ComponentActivity() {
                 val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
                 val (useAppleMiniPlayer) = rememberPreference(UseAppleMiniPlayerKey, defaultValue = false)
                 val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+                val (dynamicAppBackground) = rememberPreference(DynamicAppBackgroundKey, defaultValue = false)
+
+                if (dynamicAppBackground) {
+                    val playingTrackMetadata by playerConnection?.mediaMetadata?.collectAsState() ?: remember { mutableStateOf(null) }
+                    GlassyWarpBackground(
+                        thumbnailUrl = playingTrackMetadata?.thumbnailUrl,
+                        blurRadius = 80.dp,
+                        dimAlpha = if (useDarkTheme) 0.5f else 0.3f,
+                        saturation = 1.6f,
+                        motionSpeed = 1.0f
+                    )
+                }
+
                 val accountName by rememberPreference(AccountNameKey, defaultValue = "")
                 var (hasPromptedSignIn, onHasPromptedSignInChange) = rememberPreference(HasPromptedSignInKey, defaultValue = false)
                 var showSignInDialog by rememberSaveable { mutableStateOf(!hasPromptedSignIn && accountName.isEmpty()) }
@@ -947,7 +962,11 @@ class MainActivity : ComponentActivity() {
                     com.nocturne.music.sync.LocalRemoteSyncManager provides remoteSyncManager,
                 ) {
                     Scaffold(
-                        containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface,
+                        containerColor = if (dynamicAppBackground) {
+                            if (pureBlack) Color.Black.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                        } else {
+                            if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface
+                        },
                         topBar = {
                             AnimatedVisibility(
                                 visible = shouldShowTopBar,

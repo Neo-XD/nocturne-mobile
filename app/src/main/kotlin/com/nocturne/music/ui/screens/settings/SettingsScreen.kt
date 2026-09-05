@@ -111,127 +111,142 @@ fun SettingsScreen(
             modifier = Modifier.padding(start = 8.dp, top = 24.dp, bottom = 16.dp)
         )
 
-        // All Settings Items combined
+        // Appearance & Playback
         Material3SettingsGroup(
+            title = "Appearance & Playback",
             itemMinHeight = 64.dp,
-            items = buildList {
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(if (isUpdateAvailable) R.drawable.vivimusicnotification else R.drawable.network_update),
-                        title = { Text(stringResource(R.string.system_update)) },
-                        description = {
-                            if (isUpdateAvailable) {
-                                Text(
-                                    text = stringResource(R.string.update_available),
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            } else {
-                                Text(stringResource(R.string.app_update_uptodate))
-                            }
-                        },
-                        onClick = { navController.navigate("settings/update") },
-                        isExpressive = true
-                    )
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.palette),
+                    title = { Text(stringResource(R.string.appearance)) },
+                    onClick = { navController.navigate("settings/appearance") },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.play),
+                    title = { Text(stringResource(R.string.player_and_audio)) },
+                    onClick = { navController.navigate("settings/player") },
+                    isExpressive = true
                 )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.palette),
-                        title = { Text(stringResource(R.string.appearance)) },
-                        onClick = { navController.navigate("settings/appearance") },
-                        isExpressive = true
-                    )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Connectivity & Sync
+        Material3SettingsGroup(
+            title = "Connectivity & Sync",
+            itemMinHeight = 64.dp,
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.cast),
+                    title = { Text("Nocturne Remote Sync") },
+                    description = { Text("Control desktop PC playback over Wi-Fi / Tailscale") },
+                    onClick = { navController.navigate("settings/remote_sync") },
+                    isExpressive = true,
+                    descriptionBelow = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.group),
+                    title = { Text(stringResource(R.string.listen_together)) },
+                    onClick = { navController.navigate(Screens.ListenTogether.route) },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.google),
+                    title = { Text(stringResource(R.string.account)) },
+                    onClick = { navController.navigate("settings/account") },
+                    isExpressive = true
                 )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.play),
-                        title = { Text(stringResource(R.string.player_and_audio)) },
-                        onClick = { navController.navigate("settings/player") },
-                        isExpressive = true
-                    )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Content & Features
+        Material3SettingsGroup(
+            title = "Content & Features",
+            itemMinHeight = 64.dp,
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.language),
+                    title = { Text(stringResource(R.string.content)) },
+                    onClick = { navController.navigate("settings/content") },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.translate),
+                    title = { Text(stringResource(R.string.ai_lyrics_translation)) },
+                    onClick = { navController.navigate("settings/ai") },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.energy_savings_leaf),
+                    title = { Text(stringResource(R.string.data_saver)) },
+                    onClick = { navController.navigate("settings/datasaver") },
+                    isExpressive = true
                 )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.google),
-                        title = { Text(stringResource(R.string.account)) },
-                        onClick = { navController.navigate("settings/account") },
-                        isExpressive = true
-                    )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Storage & Privacy
+        Material3SettingsGroup(
+            title = "Storage & Privacy",
+            itemMinHeight = 64.dp,
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.storage),
+                    title = { Text(stringResource(R.string.storage)) },
+                    onClick = { navController.navigate("settings/storage") },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.restore),
+                    title = { Text(stringResource(R.string.backup_restore)) },
+                    onClick = { navController.navigate("settings/backup_restore") },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.security),
+                    title = { Text(stringResource(R.string.privacy)) },
+                    onClick = { navController.navigate("settings/privacy") },
+                    isExpressive = true
                 )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.group),
-                        title = { Text(stringResource(R.string.listen_together)) },
-                        onClick = { navController.navigate(Screens.ListenTogether.route) },
-                        isExpressive = true
-                    )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Updates & About
+        Material3SettingsGroup(
+            title = "Updates & About",
+            itemMinHeight = 64.dp,
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.network_update),
+                    title = { Text(stringResource(R.string.system_update)) },
+                    description = {
+                        if (isUpdateAvailable) {
+                            Text(
+                                text = stringResource(R.string.update_available),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            Text(stringResource(R.string.app_update_uptodate))
+                        }
+                    },
+                    onClick = { navController.navigate("settings/update") },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.info),
+                    title = { Text(stringResource(R.string.about)) },
+                    onClick = { navController.navigate("settings/about") },
+                    isExpressive = true
                 )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.cast),
-                        title = { Text("Nocturne Remote Sync") },
-                        description = { Text("Control desktop PC playback over Wi-Fi / Tailscale") },
-                        onClick = { navController.navigate("settings/remote_sync") },
-                        isExpressive = true,
-                        descriptionBelow = true
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.language),
-                        title = { Text(stringResource(R.string.content)) },
-                        onClick = { navController.navigate("settings/content") },
-                        isExpressive = true
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.translate),
-                        title = { Text(stringResource(R.string.ai_lyrics_translation)) },
-                        onClick = { navController.navigate("settings/ai") },
-                        isExpressive = true
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.security),
-                        title = { Text(stringResource(R.string.privacy)) },
-                        onClick = { navController.navigate("settings/privacy") },
-                        isExpressive = true
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.storage),
-                        title = { Text(stringResource(R.string.storage)) },
-                        onClick = { navController.navigate("settings/storage") },
-                        isExpressive = true
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.energy_savings_leaf),
-                        title = { Text(stringResource(R.string.data_saver)) },
-                        onClick = { navController.navigate("settings/datasaver") },
-                        isExpressive = true
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.restore),
-                        title = { Text(stringResource(R.string.backup_restore)) },
-                        onClick = { navController.navigate("settings/backup_restore") },
-                        isExpressive = true
-                    )
-                )
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.info),
-                        title = { Text(stringResource(R.string.about)) },
-                        onClick = { navController.navigate("settings/about") },
-                        isExpressive = true
-                    )
-                )
-            }
+            )
         )
         
         Spacer(modifier = Modifier.height(50.dp))

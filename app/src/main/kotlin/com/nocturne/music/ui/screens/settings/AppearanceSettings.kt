@@ -66,6 +66,7 @@ import com.nocturne.music.constants.CropAlbumArtKey
 import com.nocturne.music.constants.DefaultOpenTabKey
 import com.nocturne.music.constants.DensityScale
 import com.nocturne.music.constants.DensityScaleKey
+import com.nocturne.music.constants.DynamicAppBackgroundKey
 import com.nocturne.music.constants.DynamicThemeKey
 import com.nocturne.music.constants.EnableDynamicIconKey
 import com.nocturne.music.constants.EnableFrostedGlassKey
@@ -176,7 +177,7 @@ fun AppearanceSettings(
         EnableFrostedGlassKey,
         defaultValue = true
     )
-    val (selectedThemeColorInt) = rememberPreference(
+    val (selectedThemeColorInt, onSelectedThemeColorChange) = rememberPreference(
         SelectedThemeColorKey,
         defaultValue = DefaultThemeColor.toArgb()
     )
@@ -728,6 +729,7 @@ fun AppearanceSettings(
             valueText = {
                 when (it) {
                     PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                    PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Liquid Mesh)"
                     PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                     PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                     PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
@@ -751,6 +753,7 @@ fun AppearanceSettings(
             valueText = {
                 when (it) {
                     PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                    PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Liquid Mesh)"
                     PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                     PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                     PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
@@ -1134,6 +1137,48 @@ fun AppearanceSettings(
                         isExpressive = true
                     )
                 )
+                val isMonochrome = selectedThemeColorInt == 0xFF000000.toInt()
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.contrast),
+                        title = { Text("Monochrome Theme") },
+                        description = { Text("Minimalist achromatic grayscale & pure black theme") },
+                        trailingContent = {
+                            Switch(
+                                checked = isMonochrome,
+                                onCheckedChange = { enableMonochrome ->
+                                    if (enableMonochrome) {
+                                        onSelectedThemeColorChange(0xFF000000.toInt())
+                                        onDynamicThemeChange(false)
+                                    } else {
+                                        onSelectedThemeColorChange(DefaultThemeColor.toArgb())
+                                        onDynamicThemeChange(true)
+                                    }
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (isMonochrome) R.drawable.check else R.drawable.close
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        },
+                        onClick = {
+                            if (!isMonochrome) {
+                                onSelectedThemeColorChange(0xFF000000.toInt())
+                                onDynamicThemeChange(false)
+                            } else {
+                                onSelectedThemeColorChange(DefaultThemeColor.toArgb())
+                                onDynamicThemeChange(true)
+                            }
+                        },
+                        isExpressive = true,
+                        descriptionBelow = true
+                    )
+                )
                 add(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.alphabet_cyrillic),
@@ -1254,6 +1299,35 @@ fun AppearanceSettings(
                         )
                     )
                 }
+                val (dynamicAppBackground, onDynamicAppBackgroundChange) = rememberPreference(
+                    DynamicAppBackgroundKey,
+                    defaultValue = false
+                )
+                add(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.gradient),
+                        title = { Text("Dynamic Album Art App Background") },
+                        description = { Text("App background dynamically adapts to the playing song with blurred liquid warping") },
+                        trailingContent = {
+                            Switch(
+                                checked = dynamicAppBackground,
+                                onCheckedChange = onDynamicAppBackgroundChange,
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (dynamicAppBackground) R.drawable.check else R.drawable.close
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        },
+                        onClick = { onDynamicAppBackgroundChange(!dynamicAppBackground) },
+                        isExpressive = true,
+                        descriptionBelow = true
+                    )
+                )
             }
         )
 
@@ -1315,6 +1389,7 @@ fun AppearanceSettings(
                             Text(
                                 when (miniPlayerBackground) {
                                     PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                                    PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Liquid Mesh)"
                                     PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                                     PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                                     PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
@@ -1388,6 +1463,7 @@ fun AppearanceSettings(
                         Text(
                             when (playerBackground) {
                                 PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                                PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Customizer)"
                                 PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                                 PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                                 PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
@@ -1396,7 +1472,7 @@ fun AppearanceSettings(
                             }
                         )
                     },
-                    onClick = { showPlayerBackgroundDialog = true },
+                    onClick = { navController.navigate("settings/appearance/player_customizer") },
                     isExpressive = true
                 ),
                 Material3SettingsItem(

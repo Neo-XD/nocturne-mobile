@@ -168,6 +168,11 @@ import com.nocturne.music.constants.EnableLyricsThumbnailPlayPauseKey
 import com.nocturne.music.constants.KeepScreenOn
 import com.nocturne.music.constants.PlayerBackgroundStyle
 import com.nocturne.music.constants.PlayerBackgroundStyleKey
+import com.nocturne.music.constants.PlayerBackgroundBlurRadiusKey
+import com.nocturne.music.constants.PlayerBackgroundDimKey
+import com.nocturne.music.constants.PlayerBackgroundSaturationKey
+import com.nocturne.music.constants.PlayerBackgroundMotionSpeedKey
+import com.nocturne.music.ui.component.GlassyWarpBackground
 import com.nocturne.music.constants.PlayerButtonsStyle
 import com.nocturne.music.constants.PlayerButtonsStyleKey
 import com.nocturne.music.constants.PlayerHorizontalPadding
@@ -292,7 +297,7 @@ fun BottomSheetPlayer(
 
     val shouldUseDarkButtonColors = remember(playerBackground, useDarkTheme) {
         when (playerBackground) {
-            PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.GLOW_ANIMATED, PlayerBackgroundStyle.APPLE_MUSIC, PlayerBackgroundStyle.LIVE_MESH -> true
+            PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.GLOW_ANIMATED, PlayerBackgroundStyle.APPLE_MUSIC, PlayerBackgroundStyle.LIVE_MESH, PlayerBackgroundStyle.GLASSY_WARP -> true
             PlayerBackgroundStyle.DEFAULT -> useDarkTheme
         }
     }
@@ -309,7 +314,7 @@ fun BottomSheetPlayer(
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
             
             when (playerBackground) {
-                PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.GLOW_ANIMATED, PlayerBackgroundStyle.APPLE_MUSIC, PlayerBackgroundStyle.LIVE_MESH -> {
+                PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.GLOW_ANIMATED, PlayerBackgroundStyle.APPLE_MUSIC, PlayerBackgroundStyle.LIVE_MESH, PlayerBackgroundStyle.GLASSY_WARP -> {
                     insetsController.isAppearanceLightStatusBars = false
                 }
                 PlayerBackgroundStyle.DEFAULT -> {
@@ -559,6 +564,7 @@ fun BottomSheetPlayer(
             PlayerBackgroundStyle.GLOW_ANIMATED -> Color.White
             PlayerBackgroundStyle.APPLE_MUSIC -> Color.White
             PlayerBackgroundStyle.LIVE_MESH -> Color.White
+            PlayerBackgroundStyle.GLASSY_WARP -> Color.White
         },
         label = "TextBackgroundColor"
     )
@@ -571,6 +577,7 @@ fun BottomSheetPlayer(
             PlayerBackgroundStyle.GLOW_ANIMATED -> Color.Black
             PlayerBackgroundStyle.APPLE_MUSIC -> Color.Black
             PlayerBackgroundStyle.LIVE_MESH -> Color.Black
+            PlayerBackgroundStyle.GLASSY_WARP -> Color.Black
         },
         label = "icBackgroundColor"
     )
@@ -674,7 +681,8 @@ fun BottomSheetPlayer(
         playerBackground == PlayerBackgroundStyle.GRADIENT ||
         playerBackground == PlayerBackgroundStyle.GLOW_ANIMATED ||
         playerBackground == PlayerBackgroundStyle.APPLE_MUSIC ||
-        playerBackground == PlayerBackgroundStyle.LIVE_MESH -> {
+        playerBackground == PlayerBackgroundStyle.LIVE_MESH ||
+        playerBackground == PlayerBackgroundStyle.GLASSY_WARP -> {
             when (playerButtonsStyle) {
                 PlayerButtonsStyle.DEFAULT -> Pair(Color.White, Color.Black)
                 PlayerButtonsStyle.PRIMARY -> Pair(
@@ -857,7 +865,7 @@ fun BottomSheetPlayer(
     val bottomSheetBackgroundColor = when (playerBackground) {
         PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT, PlayerBackgroundStyle.GLOW_ANIMATED, PlayerBackgroundStyle.APPLE_MUSIC ->
             MaterialTheme.colorScheme.surfaceContainer
-        PlayerBackgroundStyle.LIVE_MESH ->
+        PlayerBackgroundStyle.LIVE_MESH, PlayerBackgroundStyle.GLASSY_WARP ->
             Color.Black
         else ->
             if (useBlackBackground) Color.Black
@@ -1339,6 +1347,21 @@ fun BottomSheetPlayer(
                                 }
                             }
                         }
+                    }
+                    PlayerBackgroundStyle.GLASSY_WARP -> {
+                        val (blurRadius) = rememberPreference(PlayerBackgroundBlurRadiusKey, defaultValue = 75f)
+                        val (dimAmount) = rememberPreference(PlayerBackgroundDimKey, defaultValue = 0.35f)
+                        val (saturation) = rememberPreference(PlayerBackgroundSaturationKey, defaultValue = 1.6f)
+                        val (motionSpeed) = rememberPreference(PlayerBackgroundMotionSpeedKey, defaultValue = 1.0f)
+
+                        GlassyWarpBackground(
+                            thumbnailUrl = effectiveMediaMetadata?.thumbnailUrl,
+                            blurRadius = blurRadius.dp,
+                            dimAlpha = dimAmount,
+                            saturation = saturation,
+                            motionSpeed = motionSpeed,
+                            backgroundAlpha = backgroundAlpha
+                        )
                     }
                     PlayerBackgroundStyle.DEFAULT -> {
                         // Nothing

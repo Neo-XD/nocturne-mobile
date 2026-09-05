@@ -195,7 +195,7 @@ fun SettingDialoge(
                                 text = if (isLoggedIn) {
                                     accountEmail.ifEmpty { "Logged In" }
                                 } else {
-                                    "vivimusictest@gmail.com"
+                                    "guest@nocturne.app"
                                 },
                                 fontWeight = FontWeight.Light,
                                 color = onSecondaryColor,
@@ -288,6 +288,7 @@ fun SettingDialoge(
 
                 // Extra Options List
                 val extraOptions = listOf(
+                    Option("Nocturne Sync", R.drawable.cast),
                     Option("Settings", R.drawable.settings),
                     Option("About", R.drawable.info)
                 )
@@ -298,10 +299,10 @@ fun SettingDialoge(
                         textColor = onPrimaryColor,
                         trailingText = if (option.title == "About") BuildConfig.VERSION_NAME else null,
                         onClick = {
-                            if (option.title == "Settings") {
-                                onNavigate("settings")
-                            } else if (option.title == "About") {
-                                onNavigate("settings/about")
+                            when (option.title) {
+                                "Nocturne Sync" -> onNavigate("settings/remote_sync")
+                                "Settings" -> onNavigate("settings")
+                                "About" -> onNavigate("settings/about")
                             }
                         }
                     )
@@ -313,7 +314,7 @@ fun SettingDialoge(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
                 ) {
-                    TextButton(onClick = { uriHandler.openUri("https://vivimusicapp.netlify.app/privacy") }) {
+                    TextButton(onClick = { uriHandler.openUri("https://github.com/Neo-XD/nocturne-mobile") }) {
                         Text(
                             text = "Privacy Policy",
                             fontWeight = FontWeight.Light,
@@ -324,8 +325,8 @@ fun SettingDialoge(
                         )
                     }
                 
-                    Text(text = "�", color = onPrimaryColor)
-                    TextButton(onClick = { uriHandler.openUri("https://vivimusicapp.netlify.app/terms") }) {
+                    Text(text = "•", color = onPrimaryColor)
+                    TextButton(onClick = { uriHandler.openUri("https://github.com/Neo-XD/nocturne-mobile") }) {
                         Text(
                             text = "Terms of Service",
                             fontWeight = FontWeight.Light,

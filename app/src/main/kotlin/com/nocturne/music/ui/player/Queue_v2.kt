@@ -75,7 +75,7 @@ fun QueueV2(
     val repeatMode by playerConnection.repeatMode.collectAsState()
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsState()
     
-    var locked by rememberPreference(QueueEditLockKey, true)
+    var locked by rememberPreference(QueueEditLockKey, false)
 
     // Sleep Timer
     var showSleepTimerDialog by remember { mutableStateOf(false) }
@@ -168,6 +168,7 @@ fun QueueV2(
                         )
                     )
                 }
+                playerConnection.service.saveQueueToDisk(immediate = true)
                 dragInfo = null
             }
         }
