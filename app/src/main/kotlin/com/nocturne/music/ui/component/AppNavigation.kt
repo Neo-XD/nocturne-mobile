@@ -21,6 +21,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -153,15 +155,29 @@ fun AppNavigationBar(
     } else {
         val containerColor = when {
             pureBlack -> Color.Black
-            enableFrostedGlass -> MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f)
+            enableFrostedGlass -> MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.70f)
             else -> MaterialTheme.colorScheme.surfaceContainer
         }
         val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
         val haptics = LocalHapticFeedback.current
         val viewConfiguration = LocalViewConfiguration.current
+        val glassBorderBrush = rememberNocturneGlassBorderBrush()
         
         NavigationBar(
-            modifier = modifier,
+            modifier = modifier.then(
+                if (enableFrostedGlass && !pureBlack) {
+                    Modifier.drawBehind {
+                        drawLine(
+                            brush = glassBorderBrush,
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, 0f),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+            ),
             containerColor = containerColor,
             contentColor = contentColor
         ) {

@@ -338,9 +338,24 @@ fun PlayerMenu(
                             context.startActivity(android.content.Intent.createChooser(intent, null))
                             onDismiss()
                         }
+                    ),
+                    NewAction(
+                        icon = {
+                            Icon(
+                                painter = painterResource(R.drawable.sync),
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        text = stringResource(R.string.nocturne_sync),
+                        onClick = {
+                            onDismiss()
+                            navController.navigate("settings/remote_sync")
+                        }
                     )
                 ),
-                columns = if (isListenTogetherGuest) 2 else 3,
+                columns = if (isListenTogetherGuest) 3 else 4,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp)
             )
         }

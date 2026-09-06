@@ -148,6 +148,9 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
+import com.nocturne.music.constants.EnableFrostedGlassKey
+import com.nocturne.music.ui.component.NocturneGlassBox
+import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
 import com.nocturne.music.ui.component.Icon as MIcon
 
 /**
@@ -179,7 +182,7 @@ fun MiniPlayer(
     val progressState = remember { ProgressState(positionState, durationState) }
 
     if (useAppleMiniPlayer) {
-        AppleMiniPlayer(
+        HybridMiniPlayer(
             progressState = progressState,
             modifier = modifier
         )
@@ -302,9 +305,18 @@ private fun NewMiniPlayer(
         onGradientColorsChange = onGradientColorsChange
     )
     
+    // Frosted glass
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val glassBorderBrush = rememberNocturneGlassBorderBrush()
+
     // Memoize colors
-    val backgroundColor = if (pureBlack && useDarkTheme) Color.Black else MaterialTheme.colorScheme.surfaceContainer
     val isDynamicBackground = miniPlayerBackground != PlayerBackgroundStyle.DEFAULT
+    val backgroundColor = when {
+        isDynamicBackground && !enableFrostedGlass -> Color.Transparent
+        enableFrostedGlass && !pureBlack -> MaterialTheme.colorScheme.surface.copy(alpha = 0.70f)
+        pureBlack && useDarkTheme -> Color.Black
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
     
     val primaryColor = if (isDynamicBackground) Color.White else MaterialTheme.colorScheme.primary
     val outlineColor = if (isDynamicBackground) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline
@@ -361,14 +373,20 @@ private fun NewMiniPlayer(
                 } else baseModifier
             }
     ) {
+        val pillShape = RoundedCornerShape(32.dp)
         Box(
             modifier = Modifier
                 .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                 .height(64.dp)
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                .clip(RoundedCornerShape(32.dp))
+                .clip(pillShape)
                 .background(color = backgroundColor)
-                .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                .then(
+                    if (enableFrostedGlass && !isDynamicBackground && !pureBlack)
+                        Modifier.border(1.dp, glassBorderBrush, pillShape)
+                    else
+                        Modifier.border(1.dp, outlineColor.copy(alpha = 0.3f), pillShape)
+                )
         ) {
             // Background Layers
             MiniPlayerBackgroundLayer(
@@ -617,8 +635,232 @@ private fun NewMiniPlayerSongInfo(
 }
 
 // ============================================================================
+// HYBRID MINI PLAYER — Apple art style + Nocturne controls + Frosted glass
+// ============================================================================
+
+/**
+ * Hybrid mini player combining:
+ *  - Apple Music-style large album art thumbnail (square-rounded, left-aligned)
+ *  - Nocturne new mini player circular progress ring around play/pause
+ *  - Like + audio device quick action buttons
+ *  - Frosted glass pill container
+ */
+@Composable
+private fun HybridMiniPlayer(
+    progressState: ProgressState,
+    modifier: Modifier = Modifier
+) {
+    val playerConnection = LocalPlayerConnection.current ?: return
+
+    val pureBlack by rememberPreference(PureBlackMiniPlayerKey, defaultValue = false)
+    val isSystemInDarkTheme = isSystemInDarkTheme()
+    val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
+    val useDarkTheme = remember(darkTheme, isSystemInDarkTheme) {
+        if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
+    }
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val miniPlayerBackground by rememberEnumPreference(MiniPlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.DEFAULT)
+
+    val playbackState by playerConnection.playbackState.collectAsState()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val canSkipNext by playerConnection.canSkipNext.collectAsState()
+    val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
+
+    val castHandler = remember(playerConnection) {
+        try { playerConnection.service.castConnectionHandler } catch (e: Exception) { null }
+    }
+    val isCasting by castHandler?.isCasting?.collectAsState() ?: remember { mutableStateOf(false) }
+
+    val listenTogetherManager = LocalListenTogetherManager.current
+    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+
+    val context = LocalContext.current
+    val isBluetoothConnected = isBluetoothHeadphoneConnected(context)
+    var showAudioDeviceBottomSheet by remember { mutableStateOf(false) }
+
+    val swipeSensitivity by rememberPreference(SwipeSensitivityKey, 0.73f)
+    val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
+    val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
+
+    val coroutineScope = rememberCoroutineScope()
+    val configuration = LocalConfiguration.current
+    val isTabletLandscape = remember(configuration.screenWidthDp, configuration.orientation) {
+        configuration.screenWidthDp >= 600 && configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    }
+
+    val offsetXAnimatable = remember { Animatable(0f) }
+    var dragStartTime by remember { mutableLongStateOf(0L) }
+    var totalDragDistance by remember { mutableFloatStateOf(0f) }
+    val animationSpec = remember { spring<Float>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow) }
+    val autoSwipeThreshold = remember(swipeSensitivity) {
+        (600 / (1f + kotlin.math.exp(-(-11.44748 * swipeSensitivity + 9.04945)))).roundToInt()
+    }
+
+    val (gradientColors, onGradientColorsChange) = remember { mutableStateOf<List<Color>>(emptyList()) }
+    MiniPlayerColorExtractor(
+        mediaMetadata = mediaMetadata,
+        miniPlayerBackground = miniPlayerBackground,
+        onGradientColorsChange = onGradientColorsChange
+    )
+
+    val isDynamicBackground = miniPlayerBackground != PlayerBackgroundStyle.DEFAULT
+    val backgroundColor = when {
+        isDynamicBackground && !enableFrostedGlass -> Color.Transparent
+        enableFrostedGlass && !pureBlack -> MaterialTheme.colorScheme.surface.copy(alpha = 0.70f)
+        pureBlack && useDarkTheme -> Color.Black
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
+    val primaryColor = if (isDynamicBackground) Color.White else MaterialTheme.colorScheme.primary
+    val outlineColor = if (isDynamicBackground) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline
+    val onSurfaceColor = if (isDynamicBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val errorColor = MaterialTheme.colorScheme.error
+    val glassBorderBrush = rememberNocturneGlassBorderBrush()
+    val pillShape = RoundedCornerShape(20.dp)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(MiniPlayerHeight)
+            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
+            .padding(horizontal = 12.dp)
+            .let { base ->
+                if (swipeThumbnail) base.pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragStartTime = System.currentTimeMillis(); totalDragDistance = 0f },
+                        onDragCancel = { coroutineScope.launch { offsetXAnimatable.animateTo(0f, animationSpec) } },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDragDistance += dragAmount
+                            coroutineScope.launch { offsetXAnimatable.snapTo(offsetXAnimatable.value + dragAmount) }
+                        },
+                        onDragEnd = {
+                            val duration = System.currentTimeMillis() - dragStartTime
+                            val velocity = if (duration > 0) (totalDragDistance / duration) * 1000 else 0f
+                            val isFling = kotlin.math.abs(velocity) > 750
+                            val offset = offsetXAnimatable.value
+                            val shouldSkip = isFling || kotlin.math.abs(offset) > autoSwipeThreshold
+                            if (shouldSkip) {
+                                if (offset > 0 && canSkipPrevious) playerConnection.seekToPreviousMediaItem()
+                                else if (offset <= 0 && canSkipNext) playerConnection.seekToNextMediaItem()
+                            }
+                            coroutineScope.launch { offsetXAnimatable.animateTo(0f, animationSpec) }
+                        }
+                    )
+                } else base
+            }
+    ) {
+        NocturneGlassBox(
+            modifier = Modifier
+                .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
+                .height(72.dp)
+                .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) },
+            shape = pillShape,
+            backgroundColor = backgroundColor,
+            borderBrush = if (enableFrostedGlass && !pureBlack) {
+                glassBorderBrush
+            } else {
+                Brush.linearGradient(listOf(outlineColor.copy(alpha = 0.3f), outlineColor.copy(alpha = 0.3f)))
+            }
+        ) {
+            // This stays under the content. The translucent glass surface remains visible for the
+            // default style, while artwork-driven styles can still paint their own motion/color.
+            MiniPlayerBackgroundLayer(
+                style = miniPlayerBackground,
+                mediaMetadata = mediaMetadata,
+                gradientColors = gradientColors
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
+            ) {
+                // ── Apple-style large album art ──────────────────────────
+                val artShape = RoundedCornerShape(12.dp)
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(artShape)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)))
+                    mediaMetadata?.let { meta ->
+                        AsyncImage(
+                            model = meta.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // ── Song info ────────────────────────────────────────────
+                NewMiniPlayerSongInfo(
+                    mediaMetadata = mediaMetadata,
+                    onSurfaceColor = onSurfaceColor,
+                    errorColor = errorColor,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // ── Play/pause with circular progress ────────────────────
+                NewMiniPlayerPlayButton(
+                    progressState = progressState,
+                    playbackState = playbackState,
+                    isCasting = isCasting,
+                    castHandler = castHandler,
+                    playerConnection = playerConnection,
+                    mediaMetadata = mediaMetadata,
+                    primaryColor = primaryColor,
+                    outlineColor = outlineColor,
+                    listenTogetherManager = listenTogetherManager
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // ── Apple-style output control ───────────────────────────
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(primaryColor.copy(alpha = 0.10f))
+                        .clickable { showAudioDeviceBottomSheet = true }
+                ) {
+                    Icon(
+                        imageVector = if (isBluetoothConnected) Icons.Default.Headphones else Icons.Default.Speaker,
+                        contentDescription = stringResource(R.string.audio_devices),
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(2.dp))
+                // ── Like button ──────────────────────────────────────────
+                mediaMetadata?.let {
+                    FavoriteButton(
+                        songId = it.id,
+                        onSurfaceColor = onSurfaceColor,
+                        errorColor = errorColor,
+                        outlineColor = outlineColor
+                    )
+                }
+            }
+        }
+    }
+
+    if (showAudioDeviceBottomSheet) {
+        AudioDeviceBottomSheet(onDismiss = { showAudioDeviceBottomSheet = false })
+    }
+}
+
+// ============================================================================
 // LEGACY MINI PLAYER DESIGN
 // ============================================================================
+
 
 @Composable
 private fun LegacyMiniPlayer(

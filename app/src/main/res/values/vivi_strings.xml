@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="explore">Explore</string>
     <string name="tab_explore">Explore</string>
@@ -1036,6 +1036,10 @@
     <string name="cipher_rate_limited">Manual update rate limit reached. Please wait before updating again.</string>
 
     <!-- Floating Navigation Bar -->
+    <string name="navigation_bar">Navigation bar</string>
+    <string name="navigation_bar_style">Navigation bar style</string>
+    <string name="nav_style_docked">Docked</string>
+    <string name="nav_style_floating">Floating</string>
     <string name="floating_navbar">Floating navigation bar</string>
     <string name="floating_navbar_desc">Show suspended centered navigation bar at the bottom</string>
     <string name="enabled">Enabled</string>
@@ -1074,5 +1078,6 @@
     <string name="account_settings_desc_about">Version information and legal details</string>
     <string name="action_view_update">View</string>
     <string name="new_version_found">New version found</string>
+    <string name="nocturne_sync">Nocturne Sync</string>
 </resources>
 

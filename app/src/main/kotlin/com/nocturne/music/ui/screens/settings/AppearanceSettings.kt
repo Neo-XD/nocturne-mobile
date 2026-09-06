@@ -765,6 +765,27 @@ fun AppearanceSettings(
     }
 
 
+    var showNavBarStyleDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if (showNavBarStyleDialog) {
+        EnumDialog(
+            onDismiss = { showNavBarStyleDialog = false },
+            onSelect = { isFloating ->
+                onFloatingNavBarChange(isFloating)
+                showNavBarStyleDialog = false
+            },
+            title = stringResource(R.string.navigation_bar_style),
+            current = floatingNavBar,
+            values = listOf(false, true),
+            valueText = { isFloating ->
+                if (isFloating) stringResource(R.string.nav_style_floating)
+                else stringResource(R.string.nav_style_docked)
+            }
+        )
+    }
+
     var showDefaultOpenTabDialog by rememberSaveable {
         mutableStateOf(false)
     }
@@ -2070,6 +2091,45 @@ fun AppearanceSettings(
             )
         )
 
+        Material3SettingsGroup(
+            title = stringResource(R.string.navigation_bar),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.nav_bar),
+                    title = { Text(stringResource(R.string.navigation_bar_style)) },
+                    description = {
+                        Text(
+                            if (floatingNavBar) stringResource(R.string.nav_style_floating)
+                            else stringResource(R.string.nav_style_docked)
+                        )
+                    },
+                    onClick = { showNavBarStyleDialog = true },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.nav_bar),
+                    title = { Text(stringResource(R.string.slim_navbar)) },
+                    trailingContent = {
+                        Switch(
+                            checked = slimNav,
+                            onCheckedChange = onSlimNavChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (slimNav) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onSlimNavChange(!slimNav) },
+                    isExpressive = true
+                )
+            )
+        )
+
         Spacer(modifier = Modifier.height(27.dp))
 
         Material3SettingsGroup(
@@ -2148,50 +2208,6 @@ fun AppearanceSettings(
                     },
                     onClick = { onSwipeToRemoveSongChange(!swipeToRemoveSong) },
                     isExpressive = true
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.nav_bar),
-                    title = { Text(stringResource(R.string.slim_navbar)) },
-                    trailingContent = {
-                        Switch(
-                            checked = slimNav,
-                            onCheckedChange = onSlimNavChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (slimNav) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onSlimNavChange(!slimNav) },
-                    isExpressive = true
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.nav_bar),
-                    title = { Text(stringResource(R.string.floating_navbar)) },
-                    description = { Text(stringResource(R.string.floating_navbar_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = floatingNavBar,
-                            onCheckedChange = onFloatingNavBarChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (floatingNavBar) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onFloatingNavBarChange(!floatingNavBar) },
-                    isExpressive = true,
-                    descriptionBelow = true
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.group_outlined),

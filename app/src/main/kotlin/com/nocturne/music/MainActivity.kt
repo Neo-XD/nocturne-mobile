@@ -1185,7 +1185,7 @@ class MainActivity : ComponentActivity() {
                                             // Use graphicsLayer for background color changes
                                             .graphicsLayer {
                                                 val progress = playerBottomSheetState.progress
-                                                alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || floatingNav) 0f else 1f
+                                                alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || floatingNav || (enableFrostedGlass && !pureBlack)) 0f else 1f
                                             }
                                             .background(baseBg)
                                     )
@@ -1207,7 +1207,7 @@ class MainActivity : ComponentActivity() {
                                         // Use graphicsLayer for background color changes
                                         .graphicsLayer {
                                             val progress = playerBottomSheetState.progress
-                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar)) 0f else 1f
+                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || (enableFrostedGlass && !pureBlack)) 0f else 1f
                                         }
                                         .background(baseBg)
                                 )
