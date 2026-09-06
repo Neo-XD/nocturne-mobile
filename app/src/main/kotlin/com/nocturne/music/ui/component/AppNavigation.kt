@@ -35,6 +35,10 @@ import androidx.compose.ui.unit.dp
 import com.nocturne.music.ui.screens.Screens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import dev.chrisbanes.haze.hazeEffect
+import com.nocturne.music.ui.component.LocalHazeState
+import com.nocturne.music.ui.component.rememberNocturneHazeStyle
+import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
 
 @Immutable
 private data class NavItemState(
@@ -162,22 +166,32 @@ fun AppNavigationBar(
         val haptics = LocalHapticFeedback.current
         val viewConfiguration = LocalViewConfiguration.current
         val glassBorderBrush = rememberNocturneGlassBorderBrush()
+        val hazeState = LocalHazeState.current
+        val hazeStyle = rememberNocturneHazeStyle()
         
         NavigationBar(
-            modifier = modifier.then(
-                if (enableFrostedGlass && !pureBlack) {
-                    Modifier.drawBehind {
-                        drawLine(
-                            brush = glassBorderBrush,
-                            start = Offset(0f, 0f),
-                            end = Offset(size.width, 0f),
-                            strokeWidth = 1.dp.toPx()
-                        )
+            modifier = modifier
+                .then(
+                    if (enableFrostedGlass && !pureBlack) {
+                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                    } else {
+                        Modifier
                     }
-                } else {
-                    Modifier
-                }
-            ),
+                )
+                .then(
+                    if (enableFrostedGlass && !pureBlack) {
+                        Modifier.drawBehind {
+                            drawLine(
+                                brush = glassBorderBrush,
+                                start = Offset(0f, 0f),
+                                end = Offset(size.width, 0f),
+                                strokeWidth = 1.dp.toPx()
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                ),
             containerColor = containerColor,
             contentColor = contentColor
         ) {

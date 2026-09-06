@@ -60,6 +60,9 @@ import com.nocturne.music.constants.EnableFrostedGlassKey
 import com.nocturne.music.utils.rememberPreference
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import dev.chrisbanes.haze.hazeEffect
+import com.nocturne.music.ui.component.LocalHazeState
+import com.nocturne.music.ui.component.rememberNocturneHazeStyle
 
 @Composable
 fun FloatingNavigationBar(
@@ -77,6 +80,8 @@ fun FloatingNavigationBar(
     
     val (frostedGlass) = rememberPreference(EnableFrostedGlassKey, true)
     val glassBorderBrush = rememberNocturneGlassBorderBrush()
+    val hazeState = LocalHazeState.current
+    val hazeStyle = rememberNocturneHazeStyle()
     val navContainerColor = if (frostedGlass && !pureBlack) {
         MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
     } else {
@@ -102,6 +107,13 @@ fun FloatingNavigationBar(
             modifier = Modifier
                 .height(64.dp)
                 .shadow(elevation = 6.dp, shape = CircleShape)
+                .then(
+                    if (frostedGlass && !pureBlack) {
+                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                    } else {
+                        Modifier
+                    }
+                )
                 .background(navContainerColor, shape = CircleShape)
                 .then(
                     if (frostedGlass && !pureBlack) {
@@ -138,6 +150,13 @@ fun FloatingNavigationBar(
             modifier = Modifier
                 .size(64.dp)
                 .shadow(elevation = 6.dp, shape = CircleShape)
+                .then(
+                    if (frostedGlass && !pureBlack) {
+                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                    } else {
+                        Modifier
+                    }
+                )
                 .background(navContainerColor, shape = CircleShape)
                 .then(
                     if (frostedGlass && !pureBlack) {

@@ -151,6 +151,9 @@ import kotlin.math.roundToInt
 import com.nocturne.music.constants.EnableFrostedGlassKey
 import com.nocturne.music.ui.component.NocturneGlassBox
 import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
+import com.nocturne.music.ui.component.LocalHazeState
+import com.nocturne.music.ui.component.rememberNocturneHazeStyle
+import dev.chrisbanes.haze.hazeEffect
 import com.nocturne.music.ui.component.Icon as MIcon
 
 /**
@@ -374,12 +377,20 @@ private fun NewMiniPlayer(
             }
     ) {
         val pillShape = RoundedCornerShape(32.dp)
+        val hazeState = LocalHazeState.current
+        val hazeStyle = rememberNocturneHazeStyle()
         Box(
             modifier = Modifier
                 .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                 .height(64.dp)
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
                 .clip(pillShape)
+                .then(
+                    if (enableFrostedGlass && !isDynamicBackground && !pureBlack)
+                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                    else
+                        Modifier
+                )
                 .background(color = backgroundColor)
                 .then(
                     if (enableFrostedGlass && !isDynamicBackground && !pureBlack)
