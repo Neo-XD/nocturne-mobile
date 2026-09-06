@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -16,6 +16,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardElevation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +26,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+
+/**
+ * Global haze state for frosted glass blur.
+ * The main content area provides this as a source; navbars + miniplayer consume it.
+ */
+val LocalHazeState = compositionLocalOf { HazeState() }
 
 /**
  * Standard Nocturne Specular Border gradient creating the acrylic glass edge reflection.
@@ -44,6 +55,25 @@ fun rememberNocturneGlassBorderBrush(
             ),
             start = Offset.Zero,
             end = Offset.Infinite
+        )
+    }
+}
+
+/**
+ * Returns the standard Nocturne glass HazeStyle used everywhere.
+ */
+@Composable
+fun rememberNocturneHazeStyle(
+    blurRadius: Dp = 28.dp,
+    tintAlpha: Float = 0.15f,
+    noiseFactor: Float = 0.08f
+): HazeStyle {
+    val tintColor = MaterialTheme.colorScheme.surface.copy(alpha = tintAlpha)
+    return remember(blurRadius, tintAlpha, noiseFactor) {
+        HazeStyle(
+            blurRadius = blurRadius,
+            tint = HazeTint(tintColor),
+            noiseFactor = noiseFactor
         )
     }
 }
@@ -104,6 +134,7 @@ fun NocturneGlassCard(
 
 /**
  * High-performance frosted glass container box.
+ * Uses Haze for real backdrop blur instead of just transparency.
  */
 @Composable
 fun NocturneGlassBox(
@@ -114,9 +145,12 @@ fun NocturneGlassBox(
     borderBrush: Brush = rememberNocturneGlassBorderBrush(),
     content: @Composable BoxScope.() -> Unit
 ) {
+    val hazeState = LocalHazeState.current
+    val hazeStyle = rememberNocturneHazeStyle()
     Box(
         modifier = modifier
             .clip(shape)
+            .hazeEffect(state = hazeState, style = hazeStyle)
             .then(
                 if (showBorder) {
                     Modifier.border(BorderStroke(1.dp, borderBrush), shape)

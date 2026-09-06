@@ -224,6 +224,9 @@ import com.nocturne.music.viewmodels.HomeViewModel
 import com.nocturne.music.ui.screens.search.suggestions.SuggestionsViewModel
 import com.valentinilk.shimmer.LocalShimmerTheme
 import dagger.hilt.android.AndroidEntryPoint
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import com.nocturne.music.ui.component.LocalHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -949,6 +952,10 @@ class MainActivity : ComponentActivity() {
 
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
 
+                // One shared Haze graph lets overlays (mini-player and navigation) blur the
+                // content rendered underneath them instead of falling back to translucency.
+                val appHazeState = remember { HazeState() }
+
                 CompositionLocalProvider(
                     LocalDatabase provides database,
                     LocalContentColor provides if (pureBlack) Color.White else contentColorFor(MaterialTheme.colorScheme.surface),
@@ -960,6 +967,7 @@ class MainActivity : ComponentActivity() {
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalSnackbarHostState provides snackbarHostState,
                     com.nocturne.music.sync.LocalRemoteSyncManager provides remoteSyncManager,
+                    LocalHazeState provides appHazeState,
                 ) {
                     Scaffold(
                         containerColor = if (dynamicAppBackground) {
@@ -1217,7 +1225,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                     ) {
-                        Row(Modifier.fillMaxSize()) {
+                        Row(Modifier.fillMaxSize().hazeSource(state = appHazeState)) {
                             val onRailItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
                                 { screen: Screens, isSelected: Boolean ->
                                     if (playerBottomSheetState.isExpanded) {
