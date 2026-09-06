@@ -358,6 +358,10 @@ fun NavGraphBuilder.navigationBuilder(
         PlayerThemeCustomizerScreen(navController)
     }
 
+    composable("settings/player_appearance") {
+        PlayerThemeCustomizerScreen(navController)
+    }
+
     composable("settings/appearance/canvas") {
         CanvasSelection(navController, scrollBehavior)
     }

@@ -159,6 +159,7 @@ import com.nocturne.music.utils.makeTimeString
 import com.nocturne.music.utils.rememberEnumPreference
 import com.nocturne.music.utils.rememberPreference
 import com.nocturne.music.utils.reportException
+import com.nocturne.music.utils.PlaylistOrderCache
 import com.nocturne.music.viewmodels.LocalPlaylistViewModel
 import com.yalantis.ucrop.UCrop
 import io.ktor.client.plugins.ClientRequestException
@@ -441,21 +442,29 @@ fun LocalPlaylistScreen(
     LaunchedEffect(reorderableState.isAnyItemDragging) {
         if (!reorderableState.isAnyItemDragging) {
             dragInfo?.let { (from, to) ->
-                database.transaction {
-                    move(viewModel.playlistId, from, to)
-                }
+                if (from != to) {
+                    val browseId = viewModel.playlist.value?.playlist?.browseId
 
-                // Sync order with YT Music
-                if (viewModel.playlist.value?.playlist?.browseId != null) {
-                    viewModel.viewModelScope.launch(Dispatchers.IO) {
-                        val playlistSongMap = database.playlistSongMaps(viewModel.playlistId, 0)
-                        val successorIndex = if (from > to) to else to + 1
-                        val successorSetVideoId = playlistSongMap.getOrNull(successorIndex)?.setVideoId
+                    // Capture setVideoIds BEFORE modifying database
+                    val fromSong = songs.getOrNull(from)
+                    val movingSetVideoId = fromSong?.map?.setVideoId
+                    val successorIndex = if (from > to) to else to + 1
+                    val successorSetVideoId = songs.getOrNull(successorIndex)?.map?.setVideoId
 
-                        playlistSongMap.getOrNull(from)?.setVideoId?.let { setVideoId ->
+                    database.transaction {
+                        move(viewModel.playlistId, from, to)
+                    }
+
+                    // Cache updated order to disk immediately
+                    val newOrder = mutableSongs.map { it.song.id }
+                    PlaylistOrderCache.saveCustomOrder(context, viewModel.playlistId, newOrder)
+
+                    // Sync order with YT Music in background
+                    if (browseId != null && movingSetVideoId != null) {
+                        viewModel.viewModelScope.launch(Dispatchers.IO) {
                             YouTube.moveSongPlaylist(
-                                viewModel.playlist.value?.playlist?.browseId!!,
-                                setVideoId,
+                                browseId,
+                                movingSetVideoId,
                                 successorSetVideoId
                             )
                         }

@@ -26,6 +26,7 @@ val PureBlackMiniPlayerKey = booleanPreferencesKey("pureBlackMiniPlayer")
 val MiniPlayerOutlineKey = booleanPreferencesKey("miniPlayerOutline")
 val SelectedFontKey = stringPreferencesKey("selected_font")
 val EnableFrostedGlassKey = booleanPreferencesKey("enable_frosted_glass")
+val GlassBlurRadiusKey = floatPreferencesKey("glass_blur_radius")
 val HasPromptedSignInKey = booleanPreferencesKey("has_prompted_sign_in")
 
 enum class AppFont(val value: String) {

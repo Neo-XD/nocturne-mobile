@@ -115,12 +115,21 @@ fun SettingsScreen(
         Material3SettingsGroup(
             title = "Appearance & Playback",
             itemMinHeight = 64.dp,
+            collapsible = false,
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.palette),
                     title = { Text(stringResource(R.string.appearance)) },
                     onClick = { navController.navigate("settings/appearance") },
                     isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.gradient),
+                    title = { Text("Player Appearance") },
+                    description = { Text("Theme customizer, player background, slider style, and navigation bar") },
+                    onClick = { navController.navigate("settings/appearance/player_customizer") },
+                    isExpressive = true,
+                    descriptionBelow = true
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.play),
@@ -137,6 +146,7 @@ fun SettingsScreen(
         Material3SettingsGroup(
             title = "Connectivity & Sync",
             itemMinHeight = 64.dp,
+            collapsible = false,
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.cast),
@@ -167,6 +177,7 @@ fun SettingsScreen(
         Material3SettingsGroup(
             title = "Content & Features",
             itemMinHeight = 64.dp,
+            collapsible = false,
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.language),
@@ -195,6 +206,7 @@ fun SettingsScreen(
         Material3SettingsGroup(
             title = "Storage & Privacy",
             itemMinHeight = 64.dp,
+            collapsible = false,
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.storage),
@@ -223,6 +235,7 @@ fun SettingsScreen(
         Material3SettingsGroup(
             title = "Updates & About",
             itemMinHeight = 64.dp,
+            collapsible = false,
             items = listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.network_update),

@@ -30,6 +30,8 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
+import com.nocturne.music.constants.GlassBlurRadiusKey
+import com.nocturne.music.utils.rememberPreference
 
 /**
  * Global haze state for frosted glass blur.
@@ -61,13 +63,15 @@ fun rememberNocturneGlassBorderBrush(
 
 /**
  * Returns the standard Nocturne glass HazeStyle used everywhere.
+ * Blur radius is user-configurable via the Appearance settings slider (default 50dp).
  */
 @Composable
 fun rememberNocturneHazeStyle(
-    blurRadius: Dp = 28.dp,
     tintAlpha: Float = 0.15f,
     noiseFactor: Float = 0.08f
 ): HazeStyle {
+    val (blurRadiusPref) = rememberPreference(GlassBlurRadiusKey, defaultValue = 50f)
+    val blurRadius = blurRadiusPref.dp
     val tintColor = MaterialTheme.colorScheme.surface.copy(alpha = tintAlpha)
     return remember(blurRadius, tintAlpha, noiseFactor) {
         HazeStyle(

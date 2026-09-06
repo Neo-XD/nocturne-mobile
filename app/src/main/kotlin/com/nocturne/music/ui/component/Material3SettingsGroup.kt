@@ -43,62 +43,121 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.graphicsLayer
+
 /**
  * A Material 3 Expressive style settings group component
  * @param title The title of the settings group
  * @param items List of settings items to display
+ * @param itemMinHeight Minimum height for settings items
+ * @param collapsible Whether this group can be collapsed/expanded by clicking its header
+ * @param defaultExpanded Initial expanded state if collapsible
  */
 @Composable
 fun Material3SettingsGroup(
     title: String? = null,
     items: List<Material3SettingsItem>,
-    itemMinHeight: Dp? = null
+    itemMinHeight: Dp? = null,
+    collapsible: Boolean = true,
+    defaultExpanded: Boolean = true
 ) {
+    var expanded by rememberSaveable(title) { mutableStateOf(defaultExpanded) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
     ) {
         // Section title
         title?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
-            )
-        }
-
-        // Settings items
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            items.forEachIndexed { index, item ->
-                val shape = if (item.isExpressive) {
-                    listItemShape(index, items.size)
-                } else {
-                    when {
-                        items.size == 1 -> RoundedCornerShape(24.dp)
-                        index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp)
-                        index == items.size - 1 -> RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
-                        else -> RoundedCornerShape(6.dp)
-                    }
-                }
-
-                Card(
+            if (collapsible) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .animateContentSize(),
-                    shape = shape,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { expanded = !expanded }
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    if (item.isExpressive) {
-                        ExpressiveSettingsItemRow(item = item, minHeight = itemMinHeight)
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    val rotation by animateFloatAsState(
+                        targetValue = if (expanded) 180f else 0f,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "expand_icon_rotation"
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.expand_more),
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        modifier = Modifier
+                            .size(20.dp)
+                            .graphicsLayer { rotationZ = rotation },
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                )
+            }
+        }
+
+        // Settings items with animated visibility if collapsible
+        AnimatedVisibility(
+            visible = !collapsible || expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items.forEachIndexed { index, item ->
+                    val shape = if (item.isExpressive) {
+                        listItemShape(index, items.size)
                     } else {
-                        Material3SettingsItemRow(item = item, minHeight = itemMinHeight)
+                        when {
+                            items.size == 1 -> RoundedCornerShape(24.dp)
+                            index == 0 -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 6.dp, bottomEnd = 6.dp)
+                            index == items.size - 1 -> RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+                            else -> RoundedCornerShape(6.dp)
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize(),
+                        shape = shape,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        if (item.isExpressive) {
+                            ExpressiveSettingsItemRow(item = item, minHeight = itemMinHeight)
+                        } else {
+                            Material3SettingsItemRow(item = item, minHeight = itemMinHeight)
+                        }
                     }
                 }
             }

@@ -70,6 +70,7 @@ import com.nocturne.music.constants.DynamicAppBackgroundKey
 import com.nocturne.music.constants.DynamicThemeKey
 import com.nocturne.music.constants.EnableDynamicIconKey
 import com.nocturne.music.constants.EnableFrostedGlassKey
+import com.nocturne.music.constants.GlassBlurRadiusKey
 import com.nocturne.music.constants.EnableSettingsPopupKey
 import com.nocturne.music.constants.EnableHighRefreshRateKey
 import com.nocturne.music.constants.EnableLyricsThumbnailPlayPauseKey
@@ -342,7 +343,7 @@ fun AppearanceSettings(
     )
     val (floatingNavBar, onFloatingNavBarChange) = rememberPreference(
         FloatingNavBarKey,
-        defaultValue = false
+        defaultValue = true
     )
 
     // Density scale preferences
@@ -1293,6 +1294,34 @@ fun AppearanceSettings(
                         descriptionBelow = true
                     )
                 )
+                // Blur radius slider — only shown when frosted glass is on
+                if (enableFrostedGlass) {
+                    val (blurRadius, onBlurRadiusChange) = rememberPreference(
+                        GlassBlurRadiusKey,
+                        defaultValue = 50f
+                    )
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.sliders),
+                            title = { Text("Blur Intensity") },
+                            description = {
+                                Column {
+                                    Text("${blurRadius.roundToInt()} dp — drag to adjust glass blur strength")
+                                    Slider(
+                                        value = blurRadius,
+                                        onValueChange = onBlurRadiusChange,
+                                        valueRange = 10f..100f,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 4.dp)
+                                    )
+                                }
+                            },
+                            isExpressive = true,
+                            descriptionBelow = true
+                        )
+                    )
+                }
                 // Only show dynamic theme option when using the default/dynamic color
                 // When a custom color is selected, dynamic theme is automatically disabled
                 if (!isUsingCustomColor) {
@@ -1440,61 +1469,12 @@ fun AppearanceSettings(
             title = stringResource(R.string.player),
             items = listOfNotNull(
                 Material3SettingsItem(
-                    icon = painterResource(R.drawable.palette),
-                    title = { Text(stringResource(R.string.player_design)) },
-                    description = {
-                        Text(
-                            when (currentPlayerDesign) {
-                                PlayerDesignOption.CLASSIC -> stringResource(R.string.classic_player)
-                                PlayerDesignOption.NEW -> stringResource(R.string.new_player_design)
-                                PlayerDesignOption.V2 -> stringResource(R.string.player_v2)
-                            }
-                        )
-                    },
-                    onClick = { showPlayerDesignDialog = true },
-                    isExpressive = true
-                ),
-                if (!useNewPlayerDesign && !usePlayerV2) {
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.tune),
-                        title = { Text(stringResource(R.string.show_audio_quality_badge)) },
-                        trailingContent = {
-                            Switch(
-                                checked = showAudioQualityBadge,
-                                onCheckedChange = onShowAudioQualityBadgeChange,
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (showAudioQualityBadge) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
-                            )
-                        },
-                        onClick = { onShowAudioQualityBadgeChange(!showAudioQualityBadge) },
-                        isExpressive = true
-                    )
-                } else null,
-                Material3SettingsItem(
                     icon = painterResource(R.drawable.gradient),
-                    title = { Text(stringResource(R.string.player_background_style)) },
-                    description = {
-                        Text(
-                            when (playerBackground) {
-                                PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                                PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Customizer)"
-                                PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                                PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                                PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
-                                PlayerBackgroundStyle.APPLE_MUSIC -> stringResource(R.string.apple_music)
-                                PlayerBackgroundStyle.LIVE_MESH -> stringResource(R.string.live_mesh)
-                            }
-                        )
-                    },
+                    title = { Text("Player Appearance & Theme") },
+                    description = { Text("Customize background, blur, slider style, and navigation bar") },
                     onClick = { navController.navigate("settings/appearance/player_customizer") },
-                    isExpressive = true
+                    isExpressive = true,
+                    descriptionBelow = true
                 ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.hide_image),
@@ -1620,23 +1600,6 @@ fun AppearanceSettings(
                         )
                     },
                     onClick = { showPlayerButtonsStyleDialog = true },
-                    isExpressive = true
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.sliders),
-                    title = { Text(stringResource(R.string.player_slider_style)) },
-                    description = {
-                        Text(
-                            when (sliderStyle) {
-                                SliderStyle.DEFAULT -> stringResource(R.string.default_)
-                                SliderStyle.WAVY -> if (squigglySlider) stringResource(R.string.squiggly) else stringResource(
-                                    R.string.wavy
-                                )
-                                SliderStyle.SLIM -> stringResource(R.string.slim)
-                            }
-                        )
-                    },
-                    onClick = { showSliderOptionDialog = true },
                     isExpressive = true
                 ),
                 Material3SettingsItem(
@@ -2087,45 +2050,6 @@ fun AppearanceSettings(
                     onClick = { onEnableLyricsThumbnailPlayPauseChange(!enableLyricsThumbnailPlayPause) },
                     isExpressive = true,
                     descriptionBelow = true
-                )
-            )
-        )
-
-        Material3SettingsGroup(
-            title = stringResource(R.string.navigation_bar),
-            items = listOf(
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.nav_bar),
-                    title = { Text(stringResource(R.string.navigation_bar_style)) },
-                    description = {
-                        Text(
-                            if (floatingNavBar) stringResource(R.string.nav_style_floating)
-                            else stringResource(R.string.nav_style_docked)
-                        )
-                    },
-                    onClick = { showNavBarStyleDialog = true },
-                    isExpressive = true
-                ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.nav_bar),
-                    title = { Text(stringResource(R.string.slim_navbar)) },
-                    trailingContent = {
-                        Switch(
-                            checked = slimNav,
-                            onCheckedChange = onSlimNavChange,
-                            thumbContent = {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (slimNav) R.drawable.check else R.drawable.close
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    },
-                    onClick = { onSlimNavChange(!slimNav) },
-                    isExpressive = true
                 )
             )
         )

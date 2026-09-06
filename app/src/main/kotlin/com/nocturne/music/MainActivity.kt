@@ -591,7 +591,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 val (slimNav) = rememberPreference(SlimNavBarKey, defaultValue = false)
-                val (floatingNav) = rememberPreference(FloatingNavBarKey, defaultValue = false)
+                val (floatingNav) = rememberPreference(FloatingNavBarKey, defaultValue = true)
                 val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
                 val (useAppleMiniPlayer) = rememberPreference(UseAppleMiniPlayerKey, defaultValue = false)
                 val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)

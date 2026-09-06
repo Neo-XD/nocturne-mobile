@@ -33,6 +33,8 @@ import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
 
+import com.nocturne.music.utils.PlaylistOrderCache
+
 @HiltViewModel
 class LocalPlaylistViewModel
 @Inject
@@ -93,21 +95,35 @@ constructor(
 
     init {
         viewModelScope.launch {
-            // Trigger sync in background if it's a YouTube synced playlist
-            playlist.first { it != null }?.playlist?.browseId?.let { browseId ->
-                syncUtils.syncPlaylist(browseId, playlistId)
-            }
-        }
-
-        viewModelScope.launch {
-            val sortedSongs =
-                playlistSongs.first().sortedWith(compareBy({ it.map.position }, { it.map.id }))
-            database.transaction {
-                sortedSongs.forEachIndexed { index, playlistSong ->
-                    if (playlistSong.map.position != index) {
-                        update(playlistSong.map.copy(position = index))
+            // 1. If user has a disk-cached custom order, restore it locally
+            val cachedOrder = PlaylistOrderCache.getCustomOrder(context, playlistId)
+            if (cachedOrder != null) {
+                val currentSongs = database.playlistSongs(playlistId).first()
+                val songMapBySongId = currentSongs.associateBy { it.song.id }
+                database.transaction {
+                    cachedOrder.forEachIndexed { index, songId ->
+                        songMapBySongId[songId]?.let { playlistSong ->
+                            if (playlistSong.map.position != index) {
+                                update(playlistSong.map.copy(position = index))
+                            }
+                        }
                     }
                 }
+            } else {
+                val sortedSongs =
+                    playlistSongs.first().sortedWith(compareBy({ it.map.position }, { it.map.id }))
+                database.transaction {
+                    sortedSongs.forEachIndexed { index, playlistSong ->
+                        if (playlistSong.map.position != index) {
+                            update(playlistSong.map.copy(position = index))
+                        }
+                    }
+                }
+            }
+
+            // 2. Trigger sync in background if it's a YouTube synced playlist
+            playlist.first { it != null }?.playlist?.browseId?.let { browseId ->
+                syncUtils.syncPlaylist(browseId, playlistId)
             }
         }
     }

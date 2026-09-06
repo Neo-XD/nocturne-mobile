@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -80,6 +80,12 @@ import com.nocturne.music.constants.PlayerBackgroundSaturationKey
 import com.nocturne.music.constants.PlayerBackgroundStyle
 import com.nocturne.music.constants.PlayerBackgroundStyleKey
 import com.nocturne.music.constants.PlayerGlassBorderKey
+import com.nocturne.music.constants.SliderStyle
+import com.nocturne.music.constants.SliderStyleKey
+import com.nocturne.music.constants.SquigglySliderKey
+import com.nocturne.music.constants.ShowAudioQualityBadgeKey
+import com.nocturne.music.constants.FloatingNavBarKey
+import com.nocturne.music.constants.SlimNavBarKey
 import com.nocturne.music.ui.component.GlassyWarpBackground
 import com.nocturne.music.ui.component.NocturneGlassCard
 import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
@@ -123,6 +129,26 @@ fun PlayerThemeCustomizerScreen(
         PlayerGlassBorderKey,
         defaultValue = true
     )
+    val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
+        SliderStyleKey,
+        defaultValue = SliderStyle.SLIM
+    )
+    val (squigglySlider, onSquigglySliderChange) = rememberPreference(
+        SquigglySliderKey,
+        defaultValue = false
+    )
+    val (showAudioQualityBadge, onShowAudioQualityBadgeChange) = rememberPreference(
+        ShowAudioQualityBadgeKey,
+        defaultValue = false
+    )
+    val (floatingNavBar, onFloatingNavBarChange) = rememberPreference(
+        FloatingNavBarKey,
+        defaultValue = true
+    )
+    val (slimNav, onSlimNavChange) = rememberPreference(
+        SlimNavBarKey,
+        defaultValue = false
+    )
 
     // Sample artwork fallback if no track is playing
     val sampleArtwork = currentMetadata?.thumbnailUrl
@@ -152,7 +178,7 @@ fun PlayerThemeCustomizerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Player Theme Customizer",
+                text = "Player Appearance",
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -165,6 +191,11 @@ fun PlayerThemeCustomizerScreen(
                     onSaturationChange(1.6f)
                     onMotionSpeedChange(1.0f)
                     onGlassBorderChange(true)
+                    onSliderStyleChange(SliderStyle.SLIM)
+                    onSquigglySliderChange(false)
+                    onShowAudioQualityBadgeChange(false)
+                    onFloatingNavBarChange(true)
+                    onSlimNavChange(false)
                 }
             ) {
                 Text(
@@ -329,22 +360,48 @@ fun PlayerThemeCustomizerScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
 
-                            Text(
-                                text = sampleArtist,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.7f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = sampleArtist,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                if (showAudioQualityBadge) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "FLAC 24-bit",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                            color = Color.White,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
+                            val progressHeight = when (sliderStyle) {
+                                SliderStyle.SLIM -> 3.dp
+                                SliderStyle.WAVY -> 6.dp
+                                else -> 5.dp
+                            }
                             LinearProgressIndicator(
                                 progress = { 0.42f },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(2.dp)),
+                                    .height(progressHeight)
+                                    .clip(RoundedCornerShape(progressHeight / 2)),
                                 color = MaterialTheme.colorScheme.primary,
                                 trackColor = Color.White.copy(alpha = 0.2f),
                             )
@@ -580,11 +637,243 @@ fun PlayerThemeCustomizerScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // -------------------------------------------------------------
+        // PLAYER SLIDER STYLE
+        // -------------------------------------------------------------
+        Text(
+            text = "Player Slider Style",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "Visual design for the playback seekbar in the full player",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        val sliderStyles = listOf(
+            Triple(SliderStyle.DEFAULT, false, "Default"),
+            Triple(SliderStyle.WAVY, false, "Wavy"),
+            Triple(SliderStyle.WAVY, true, "Squiggly"),
+            Triple(SliderStyle.SLIM, false, "Slim")
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(sliderStyles) { (style, isSquiggly, label) ->
+                val isSelected = (sliderStyle == style) && (style != SliderStyle.WAVY || squigglySlider == isSquiggly)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        onSliderStyleChange(style)
+                        onSquigglySliderChange(isSquiggly)
+                    },
+                    label = { Text(label) },
+                    leadingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                painter = painterResource(R.drawable.check),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    } else null,
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // -------------------------------------------------------------
+        // AUDIO QUALITY BADGE
+        // -------------------------------------------------------------
+        Text(
+            text = "Audio Information",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onShowAudioQualityBadgeChange(!showAudioQualityBadge) }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Show Audio Quality Badge",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Display format tags (FLAC, Hi-Res, etc.) on the player screen",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Switch(
+                    checked = showAudioQualityBadge,
+                    onCheckedChange = onShowAudioQualityBadgeChange,
+                    thumbContent = {
+                        Icon(
+                            painter = painterResource(
+                                id = if (showAudioQualityBadge) R.drawable.check else R.drawable.close
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                        )
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // -------------------------------------------------------------
+        // NAVIGATION BAR
+        // -------------------------------------------------------------
+        Text(
+            text = "Navigation Bar",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "Docked classic bar or modern floating pill navigation",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                modifier = Modifier.weight(1f),
+                selected = floatingNavBar,
+                onClick = { onFloatingNavBarChange(true) },
+                label = {
+                    Text(
+                        text = "Floating (Default)",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                leadingIcon = if (floatingNavBar) {
+                    {
+                        Icon(
+                            painter = painterResource(R.drawable.check),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+
+            FilterChip(
+                modifier = Modifier.weight(1f),
+                selected = !floatingNavBar,
+                onClick = { onFloatingNavBarChange(false) },
+                label = {
+                    Text(
+                        text = "Docked",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                leadingIcon = if (!floatingNavBar) {
+                    {
+                        Icon(
+                            painter = painterResource(R.drawable.check),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSlimNavChange(!slimNav) }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Slim Navigation Bar",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Hide text labels for a compact, clean navigation look",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Switch(
+                    checked = slimNav,
+                    onCheckedChange = onSlimNavChange,
+                    thumbContent = {
+                        Icon(
+                            painter = painterResource(
+                                id = if (slimNav) R.drawable.check else R.drawable.close
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                        )
+                    }
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(60.dp))
     }
 
     TopAppBar(
-        title = { Text("Player Theme") },
+        title = { Text("Player Appearance") },
         navigationIcon = {
             IconButton(onClick = { navController.navigateUp() }) {
                 Icon(

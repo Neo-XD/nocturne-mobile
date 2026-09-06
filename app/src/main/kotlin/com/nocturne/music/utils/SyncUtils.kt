@@ -966,16 +966,48 @@ class SyncUtils @Inject constructor(
                         database.withTransaction {
                             database.clearPlaylist(playlistId)
                         }
+                        PlaylistOrderCache.clearOrder(context, playlistId)
                         return@onSuccess
                     }
 
                     val remoteIds = songs.map { it.id }
-                    val localIds = database.playlistSongs(playlistId).first()
+                    val localPlaylistSongs = database.playlistSongs(playlistId).first()
+                    val localIds = localPlaylistSongs
                         .sortedBy { it.map.position }
                         .map { it.song.id }
 
+                    val cachedOrder = PlaylistOrderCache.getCustomOrder(context, playlistId)
+
+                    // 1. If remote order matches cached order, YTM has caught up! Clear disk cache.
+                    if (cachedOrder != null && remoteIds == cachedOrder) {
+                        Timber.d("syncPlaylist: Remote has fully caught up with cached custom order for $playlistId! Clearing cache.")
+                        PlaylistOrderCache.clearOrder(context, playlistId)
+                    }
+
                     if (remoteIds == localIds) {
                         Timber.d("syncPlaylist: Local and remote are in sync, no changes needed")
+                        return@onSuccess
+                    }
+
+                    // 2. If a manual reorder is cached and pending sync on YTM:
+                    val effectiveCached = PlaylistOrderCache.getCustomOrder(context, playlistId)
+                    if (effectiveCached != null && remoteIds.toSet() == effectiveCached.toSet()) {
+                        Timber.d("syncPlaylist: Preserving cached order while YTM catches up for $playlistId")
+                        val remoteSetVideoIdMap = songs.associate { it.id to it.setVideoId }
+                        database.withTransaction {
+                            effectiveCached.forEachIndexed { idx, songId ->
+                                val setVid = remoteSetVideoIdMap[songId]
+                                val existing = localPlaylistSongs.find { it.song.id == songId }
+                                if (existing != null) {
+                                    database.update(
+                                        existing.map.copy(
+                                            position = idx,
+                                            setVideoId = setVid ?: existing.map.setVideoId
+                                        )
+                                    )
+                                }
+                            }
+                        }
                         return@onSuccess
                     }
 
@@ -997,6 +1029,7 @@ class SyncUtils @Inject constructor(
                             )
                         }
                     }
+                    PlaylistOrderCache.clearOrder(context, playlistId)
                     Timber.d("syncPlaylist: Successfully synced playlist")
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing playlist sync")
