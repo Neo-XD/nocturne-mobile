@@ -79,14 +79,8 @@ fun FloatingNavigationBar(
     val outlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     
     val (frostedGlass) = rememberPreference(EnableFrostedGlassKey, true)
-    val glassBorderBrush = rememberNocturneGlassBorderBrush()
-    val hazeState = LocalHazeState.current
-    val hazeStyle = rememberNocturneHazeStyle()
-    val navContainerColor = if (frostedGlass && !pureBlack) {
-        MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
-    } else {
-        containerColor
-    }
+    val glassConfig = LocalGlassEffectConfig.current
+    val isGlassActive = frostedGlass && !pureBlack && isGlassAllowed()
 
     // Left items are all main screens EXCEPT Search
     val leftItems = remember(navigationItems) {
@@ -106,20 +100,18 @@ fun FloatingNavigationBar(
         Row(
             modifier = Modifier
                 .height(64.dp)
-                .shadow(elevation = 6.dp, shape = CircleShape)
                 .then(
-                    if (frostedGlass && !pureBlack) {
-                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                    if (isGlassActive) {
+                        Modifier.liquidGlass(
+                            config = glassConfig,
+                            shape = CircleShape,
+                            applyEdgeEffects = true
+                        )
                     } else {
                         Modifier
-                    }
-                )
-                .background(navContainerColor, shape = CircleShape)
-                .then(
-                    if (frostedGlass && !pureBlack) {
-                        Modifier.border(BorderStroke(1.dp, glassBorderBrush), CircleShape)
-                    } else {
-                        Modifier.border(width = 1.dp, color = outlineColor, shape = CircleShape)
+                            .shadow(elevation = 6.dp, shape = CircleShape)
+                            .background(containerColor, shape = CircleShape)
+                            .border(width = 1.dp, color = outlineColor, shape = CircleShape)
                     }
                 )
                 .padding(horizontal = 12.dp),
@@ -149,20 +141,18 @@ fun FloatingNavigationBar(
         Box(
             modifier = Modifier
                 .size(64.dp)
-                .shadow(elevation = 6.dp, shape = CircleShape)
                 .then(
-                    if (frostedGlass && !pureBlack) {
-                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                    if (isGlassActive) {
+                        Modifier.liquidGlass(
+                            config = glassConfig,
+                            shape = CircleShape,
+                            applyEdgeEffects = true
+                        )
                     } else {
                         Modifier
-                    }
-                )
-                .background(navContainerColor, shape = CircleShape)
-                .then(
-                    if (frostedGlass && !pureBlack) {
-                        Modifier.border(BorderStroke(1.dp, glassBorderBrush), CircleShape)
-                    } else {
-                        Modifier.border(width = 1.dp, color = outlineColor, shape = CircleShape)
+                            .shadow(elevation = 6.dp, shape = CircleShape)
+                            .background(containerColor, shape = CircleShape)
+                            .border(width = 1.dp, color = outlineColor, shape = CircleShape)
                     }
                 ),
             contentAlignment = Alignment.Center

@@ -153,6 +153,9 @@ import com.nocturne.music.ui.component.NocturneGlassBox
 import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
 import com.nocturne.music.ui.component.LocalHazeState
 import com.nocturne.music.ui.component.rememberNocturneHazeStyle
+import com.nocturne.music.ui.component.LocalGlassEffectConfig
+import com.nocturne.music.ui.component.isGlassAllowed
+import com.nocturne.music.ui.component.liquidGlass
 import dev.chrisbanes.haze.hazeEffect
 import com.nocturne.music.ui.component.Icon as MIcon
 
@@ -310,13 +313,14 @@ private fun NewMiniPlayer(
     
     // Frosted glass
     val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
-    val glassBorderBrush = rememberNocturneGlassBorderBrush()
+    val isDynamicBackground = miniPlayerBackground != PlayerBackgroundStyle.DEFAULT
+    val isGlassActive = enableFrostedGlass && !isDynamicBackground && !pureBlack && isGlassAllowed()
+    val glassConfig = LocalGlassEffectConfig.current
 
     // Memoize colors
-    val isDynamicBackground = miniPlayerBackground != PlayerBackgroundStyle.DEFAULT
     val backgroundColor = when {
         isDynamicBackground && !enableFrostedGlass -> Color.Transparent
-        enableFrostedGlass && !pureBlack -> MaterialTheme.colorScheme.surface.copy(alpha = 0.70f)
+        isGlassActive -> Color.Transparent
         pureBlack && useDarkTheme -> Color.Black
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
@@ -377,26 +381,24 @@ private fun NewMiniPlayer(
             }
     ) {
         val pillShape = RoundedCornerShape(32.dp)
-        val hazeState = LocalHazeState.current
-        val hazeStyle = rememberNocturneHazeStyle()
         Box(
             modifier = Modifier
                 .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                 .height(64.dp)
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                .clip(pillShape)
                 .then(
-                    if (enableFrostedGlass && !isDynamicBackground && !pureBlack)
-                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
-                    else
+                    if (isGlassActive) {
+                        Modifier.liquidGlass(
+                            config = glassConfig,
+                            shape = pillShape,
+                            applyEdgeEffects = true
+                        )
+                    } else {
                         Modifier
-                )
-                .background(color = backgroundColor)
-                .then(
-                    if (enableFrostedGlass && !isDynamicBackground && !pureBlack)
-                        Modifier.border(1.dp, glassBorderBrush, pillShape)
-                    else
-                        Modifier.border(1.dp, outlineColor.copy(alpha = 0.3f), pillShape)
+                            .clip(pillShape)
+                            .background(color = backgroundColor)
+                            .border(1.dp, outlineColor.copy(alpha = 0.3f), pillShape)
+                    }
                 )
         ) {
             // Background Layers
@@ -926,15 +928,30 @@ private fun LegacyMiniPlayer(
     val primaryColor = MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
 
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+    val glassConfig = LocalGlassEffectConfig.current
+
     Box(
         modifier = modifier
             .then(if (isTabletLandscape) Modifier.width(500.dp) else Modifier.fillMaxWidth())
             .height(MiniPlayerHeight)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
-            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .background(
-                if (pureBlack && isSystemInDarkTheme()) Color.Black
-                else MaterialTheme.colorScheme.surfaceContainer
+            .then(
+                if (isGlassActive) {
+                    Modifier.liquidGlass(
+                        config = glassConfig,
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                        applyEdgeEffects = false
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                        .background(
+                            if (pureBlack && isSystemInDarkTheme()) Color.Black
+                            else MaterialTheme.colorScheme.surfaceContainer
+                        )
+                }
             )
             .let { baseModifier ->
                 if (swipeThumbnail) {

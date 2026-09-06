@@ -8,6 +8,7 @@ package com.nocturne.music.ui.component
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -157,29 +158,33 @@ fun AppNavigationBar(
             bottomInset = bottomInset
         )
     } else {
+        val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+        val glassConfig = LocalGlassEffectConfig.current
         val containerColor = when {
+            isGlassActive -> Color.Transparent
             pureBlack -> Color.Black
-            enableFrostedGlass -> MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.70f)
             else -> MaterialTheme.colorScheme.surfaceContainer
         }
         val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
         val haptics = LocalHapticFeedback.current
         val viewConfiguration = LocalViewConfiguration.current
         val glassBorderBrush = rememberNocturneGlassBorderBrush()
-        val hazeState = LocalHazeState.current
-        val hazeStyle = rememberNocturneHazeStyle()
         
         NavigationBar(
             modifier = modifier
                 .then(
-                    if (enableFrostedGlass && !pureBlack) {
-                        Modifier.hazeEffect(state = hazeState, style = hazeStyle)
+                    if (isGlassActive) {
+                        Modifier.liquidGlass(
+                            config = glassConfig,
+                            shape = RoundedCornerShape(0.dp),
+                            applyEdgeEffects = false
+                        )
                     } else {
                         Modifier
                     }
                 )
                 .then(
-                    if (enableFrostedGlass && !pureBlack) {
+                    if (isGlassActive) {
                         Modifier.drawBehind {
                             drawLine(
                                 brush = glassBorderBrush,

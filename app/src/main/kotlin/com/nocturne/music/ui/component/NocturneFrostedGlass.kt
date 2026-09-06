@@ -138,7 +138,7 @@ fun NocturneGlassCard(
 
 /**
  * High-performance frosted glass container box.
- * Uses Haze for real backdrop blur instead of just transparency.
+ * Uses backdrop liquid glass for real backdrop blur.
  */
 @Composable
 fun NocturneGlassBox(
@@ -149,10 +149,28 @@ fun NocturneGlassBox(
     borderBrush: Brush = rememberNocturneGlassBorderBrush(),
     content: @Composable BoxScope.() -> Unit
 ) {
-    val hazeState = LocalHazeState.current
-    val hazeStyle = rememberNocturneHazeStyle()
-    Box(
-        modifier = modifier
+    val cornerShape = shape as? androidx.compose.foundation.shape.CornerBasedShape ?: RoundedCornerShape(24.dp)
+    val glassConfig = LocalGlassEffectConfig.current
+    val backdrop = LocalAppBackdrop.current
+    
+    val glassModifier = if (backdrop != null && glassConfig.globalEnabled && isGlassAllowed()) {
+        Modifier
+            .liquidGlass(
+                config = glassConfig,
+                shape = cornerShape,
+                applyEdgeEffects = false
+            )
+            .then(
+                if (showBorder) {
+                    Modifier.border(BorderStroke(1.dp, borderBrush), shape)
+                } else {
+                    Modifier
+                }
+            )
+    } else {
+        val hazeState = LocalHazeState.current
+        val hazeStyle = rememberNocturneHazeStyle()
+        Modifier
             .clip(shape)
             .hazeEffect(state = hazeState, style = hazeStyle)
             .then(
@@ -162,7 +180,10 @@ fun NocturneGlassBox(
                     Modifier
                 }
             )
-            .background(backgroundColor, shape),
+            .background(backgroundColor, shape)
+    }
+    Box(
+        modifier = modifier.then(glassModifier),
         content = content
     )
 }

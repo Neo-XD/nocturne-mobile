@@ -227,6 +227,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.nocturne.music.ui.component.LocalHazeState
+import com.nocturne.music.ui.component.backdrop.backdrops.layerBackdrop
+import com.nocturne.music.ui.component.backdrop.backdrops.rememberBackdropFreeze
+import com.nocturne.music.ui.component.backdrop.backdrops.rememberLayerBackdrop
+import com.nocturne.music.ui.component.backdrop.backdrops.rememberNavTransitionFreeze
+import com.nocturne.music.ui.component.LocalAppBackdrop
+import com.nocturne.music.ui.component.LocalGlassEffectConfig
+import com.nocturne.music.ui.component.rememberGlassEffectConfig
+import com.nocturne.music.ui.component.isGlassAllowed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -952,8 +960,24 @@ class MainActivity : ComponentActivity() {
 
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
 
-                // One shared Haze graph lets overlays (mini-player and navigation) blur the
-                // content rendered underneath them instead of falling back to translucency.
+                val appBackdrop = rememberLayerBackdrop(
+                    onDraw = remember(baseBg) {
+                        val bg = baseBg
+                        {
+                            drawRect(bg)
+                            drawContent()
+                        }
+                    }
+                )
+                val backdropFreeze = rememberBackdropFreeze()
+                val backdropFreezeConnection = backdropFreeze.connection
+                val navTransitionFreeze = rememberNavTransitionFreeze(currentRoute)
+                val backdropFrozenProvider = {
+                    backdropFreeze.frozen() || navTransitionFreeze.frozen()
+                }
+                val glassConfig = rememberGlassEffectConfig()
+
+                // Shared Haze graph kept for fallback/legacy compatibility
                 val appHazeState = remember { HazeState() }
 
                 CompositionLocalProvider(
@@ -968,6 +992,8 @@ class MainActivity : ComponentActivity() {
                     LocalSnackbarHostState provides snackbarHostState,
                     com.nocturne.music.sync.LocalRemoteSyncManager provides remoteSyncManager,
                     LocalHazeState provides appHazeState,
+                    LocalAppBackdrop provides appBackdrop,
+                    LocalGlassEffectConfig provides glassConfig,
                 ) {
                     Scaffold(
                         containerColor = if (dynamicAppBackground) {
@@ -1225,7 +1251,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                     ) {
-                        Row(Modifier.fillMaxSize().hazeSource(state = appHazeState)) {
+                        Row(Modifier.fillMaxSize()) {
                             val onRailItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
                                 { screen: Screens, isSelected: Boolean ->
                                     if (playerBottomSheetState.isExpanded) {
@@ -1266,7 +1292,24 @@ class MainActivity : ComponentActivity() {
                                     onSearchLongClick = onRailSearchLongClick
                                 )
                             }
-                            Box(Modifier.weight(1f)) {
+                            Box(
+                                Modifier
+                                    .weight(1f)
+                                    .then(
+                                        if (enableFrostedGlass && !pureBlack && isGlassAllowed()) {
+                                            Modifier
+                                                .graphicsLayer()
+                                                .layerBackdrop(
+                                                    appBackdrop,
+                                                    frozen = backdropFrozenProvider,
+                                                )
+                                                .graphicsLayer()
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                                    .nestedScroll(backdropFreezeConnection)
+                            ) {
                                 // NavHost with animations (Material 3 Expressive style)
                                 NavHost(
                                     navController = navController,
