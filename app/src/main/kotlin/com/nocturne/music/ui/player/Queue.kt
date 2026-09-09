@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -162,8 +164,14 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import android.widget.Toast
 import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import com.nocturne.music.sync.LocalRemoteSyncManager
+import com.nocturne.music.sync.PlaybackDeviceTarget
+import com.nocturne.music.sync.RemoteConnectionState
+import com.nocturne.music.sync.RemoteTrack
 import kotlinx.coroutines.coroutineScope
 import kotlin.math.roundToInt
+
 
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -191,6 +199,12 @@ fun Queue(
     val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     var showAudioDeviceBottomSheet by remember { mutableStateOf(false) }
+
+    val remoteSyncManager = LocalRemoteSyncManager.current
+    val remoteRoomState by remoteSyncManager.remoteRoomState.collectAsState()
+    val isRemoteDesktop by remoteSyncManager.isRemoteDesktop.collectAsState()
+    val remoteConnState by remoteSyncManager.connectionState.collectAsState()
+    var selectedQueueTab by rememberSaveable { mutableStateOf("MOBILE") }
 
     val isBluetoothConnected by produceState(initialValue = isBluetoothHeadphoneConnected(context)) {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -1014,6 +1028,123 @@ fun Queue(
                     }
                 }
 
+                if (remoteConnState == RemoteConnectionState.CONNECTED || remoteRoomState != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Queue segmented pill switcher
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .padding(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            val isMobileTab = selectedQueueTab == "MOBILE"
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(if (isMobileTab) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .clickable { selectedQueueTab = "MOBILE" }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Mobile Queue (${queueWindows.size})",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (isMobileTab) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    if (!isRemoteDesktop) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(if (isMobileTab) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
+                                        )
+                                    }
+                                }
+                            }
+
+                            val isPcTab = selectedQueueTab == "PC"
+                            val pcCount = remoteRoomState?.queue?.size ?: 0
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(if (isPcTab) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .clickable { selectedQueueTab = "PC" }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "PC Queue ($pcCount)",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = if (isPcTab) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    if (isRemoteDesktop) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(if (isPcTab) MaterialTheme.colorScheme.onPrimary else Color(0xFF10B981))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Active queue indicator banner
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isRemoteDesktop) Color(0xFF10B981) else MaterialTheme.colorScheme.primary)
+                                )
+                                Text(
+                                    text = if (isRemoteDesktop) "Playing from PC Queue" else "Playing from Mobile Queue",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    val target = if (isRemoteDesktop) PlaybackDeviceTarget.LOCAL else PlaybackDeviceTarget.REMOTE_DESKTOP
+                                    remoteSyncManager.setPlaybackTarget(target)
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (isRemoteDesktop) "Switch to Mobile" else "Switch to PC",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1127,7 +1258,97 @@ fun Queue(
             }
 
             Box(modifier = Modifier.weight(1f)) {
-                LazyColumn(
+                if (selectedQueueTab == "PC") {
+                    val pcQueue = remoteRoomState?.queue.orEmpty()
+                    if (pcQueue.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No songs in Nocturne PC queue",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            contentPadding = WindowInsets.systemBars
+                                .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+                                .add(WindowInsets(top = 8.dp, bottom = ListItemHeight + 8.dp))
+                                .asPaddingValues(),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(pcQueue, key = { index, track -> "${track.id}_$index" }) { index, track ->
+                                val isCurrent = track.id == remoteRoomState?.current_track?.id
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { remoteSyncManager.playQueueTrack(track) }
+                                        .background(if (isCurrent) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else Color.Transparent)
+                                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    if (isCurrent) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.volume_up),
+                                            contentDescription = "Playing",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "${index + 1}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.width(20.dp),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+
+                                    AsyncImage(
+                                        model = track.thumbnail,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = track.title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = track.artist,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    if (track.duration_ms > 0) {
+                                        Text(
+                                            text = makeTimeString(track.duration_ms),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
                     state = lazyListState,
                     contentPadding =
                         WindowInsets.systemBars
@@ -1412,6 +1633,7 @@ fun Queue(
                         }
                     }
                 }
+            }
 
                 SnackbarHost(
                     hostState = snackbarHostState,

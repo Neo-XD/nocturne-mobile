@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -47,6 +48,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.nocturne.music.constants.GlassVibrancyKey
+import com.nocturne.music.constants.GlassHighlightOpacityKey
+import com.nocturne.music.constants.GlassLensAmountKey
+import com.nocturne.music.constants.GlassLensHeightKey
+import com.nocturne.music.constants.GlassChromaticAberrationKey
+import com.nocturne.music.constants.GlassDepthEffectKey
+import com.nocturne.music.constants.GlassSurfaceOpacityKey
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -172,12 +191,41 @@ fun AppearanceSettings(
     )
     val (enableSettingsPopup, onEnableSettingsPopupChange) = rememberPreference(
         EnableSettingsPopupKey,
-        defaultValue = false
+        defaultValue = true
     )
     val (enableFrostedGlass, onEnableFrostedGlassChange) = rememberPreference(
         EnableFrostedGlassKey,
         defaultValue = true
     )
+    val (glassBlurRadius, onGlassBlurRadiusChange) = rememberPreference(
+        GlassBlurRadiusKey,
+        defaultValue = 50f
+    )
+    val (glassVibrancy, onGlassVibrancyChange) = rememberPreference(
+        GlassVibrancyKey,
+        defaultValue = 1.2f
+    )
+    val (glassHighlightOpacity, onGlassHighlightOpacityChange) = rememberPreference(
+        GlassHighlightOpacityKey,
+        defaultValue = 0.55f
+    )
+    val (glassLensAmount, onGlassLensAmountChange) = rememberPreference(
+        GlassLensAmountKey,
+        defaultValue = 0.6f
+    )
+    val (glassSurfaceOpacity, onGlassSurfaceOpacityChange) = rememberPreference(
+        GlassSurfaceOpacityKey,
+        defaultValue = 0.5f
+    )
+    val (glassChromaticAberration, onGlassChromaticAberrationChange) = rememberPreference(
+        GlassChromaticAberrationKey,
+        defaultValue = false
+    )
+    val (glassDepthEffect, onGlassDepthEffectChange) = rememberPreference(
+        GlassDepthEffectKey,
+        defaultValue = false
+    )
+    var showGlassCustomizerDialog by rememberSaveable { mutableStateOf(false) }
     val (selectedThemeColorInt, onSelectedThemeColorChange) = rememberPreference(
         SelectedThemeColorKey,
         defaultValue = DefaultThemeColor.toArgb()
@@ -427,69 +475,608 @@ fun AppearanceSettings(
     }
 
     if (showPlayerDesignDialog) {
-        EnumDialog(
+        DefaultDialog(
             onDismiss = { showPlayerDesignDialog = false },
-            onSelect = { option ->
-                when (option) {
-                    PlayerDesignOption.CLASSIC -> {
-                        onUsePlayerV2Change(false)
-                        onUseNewPlayerDesignChange(false)
-                    }
-                    PlayerDesignOption.NEW -> {
-                        onUsePlayerV2Change(false)
-                        onUseNewPlayerDesignChange(true)
-                    }
-                    PlayerDesignOption.V2 -> {
-                        onUsePlayerV2Change(true)
-                        onUseNewPlayerDesignChange(false)
-                    }
-                }
-                showPlayerDesignDialog = false
-            },
-            title = stringResource(R.string.player),
-            current = currentPlayerDesign,
-            values = PlayerDesignOption.values().toList(),
-            valueText = {
-                when (it) {
-                    PlayerDesignOption.CLASSIC -> stringResource(R.string.classic_player)
-                    PlayerDesignOption.NEW -> stringResource(R.string.new_player_design)
-                    PlayerDesignOption.V2 -> stringResource(R.string.player_v2)
+            title = { Text(stringResource(R.string.player)) },
+            buttons = {
+                TextButton(onClick = { showPlayerDesignDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
-        )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                PlayerDesignOption.values().forEach { option ->
+                    val isSelected = option == currentPlayerDesign
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                when (option) {
+                                    PlayerDesignOption.CLASSIC -> {
+                                        onUsePlayerV2Change(false)
+                                        onUseNewPlayerDesignChange(false)
+                                    }
+                                    PlayerDesignOption.NEW -> {
+                                        onUsePlayerV2Change(false)
+                                        onUseNewPlayerDesignChange(true)
+                                    }
+                                    PlayerDesignOption.V2 -> {
+                                        onUsePlayerV2Change(true)
+                                        onUseNewPlayerDesignChange(false)
+                                    }
+                                }
+                                showPlayerDesignDialog = false
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        ),
+                        border = if (isSelected)
+                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                        else
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(selected = isSelected, onClick = null)
+                                Text(
+                                    text = when (option) {
+                                        PlayerDesignOption.CLASSIC -> stringResource(R.string.classic_player)
+                                        PlayerDesignOption.NEW -> stringResource(R.string.new_player_design)
+                                        PlayerDesignOption.V2 -> stringResource(R.string.player_v2)
+                                    },
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                    .padding(8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                when (option) {
+                                    PlayerDesignOption.CLASSIC -> {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                                            )
+                                            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                                                Box(modifier = Modifier.fillMaxWidth(0.7f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                                                Spacer(Modifier.height(4.dp))
+                                                Box(modifier = Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(1.5.dp)).background(MaterialTheme.colorScheme.primary))
+                                            }
+                                            Icon(painter = painterResource(R.drawable.play), contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                    PlayerDesignOption.NEW -> {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .clip(RoundedCornerShape(14.dp))
+                                                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f))
+                                            )
+                                            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                                                Box(modifier = Modifier.fillMaxWidth(0.65f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                                                Spacer(Modifier.height(4.dp))
+                                                Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))))
+                                            }
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(28.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(painter = painterResource(R.drawable.play), contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                            }
+                                        }
+                                    }
+                                    PlayerDesignOption.V2 -> {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(
+                                                    Brush.linearGradient(
+                                                        listOf(
+                                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)
+                                                        )
+                                                    )
+                                                )
+                                                .padding(horizontal = 10.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)))
+                                                    Box(modifier = Modifier.width(60.dp).height(6.dp).clip(RoundedCornerShape(3.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)))
+                                                }
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(26.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                                                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(painter = painterResource(R.drawable.play), contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showMiniPlayerDesignDialog) {
-        EnumDialog(
+        DefaultDialog(
             onDismiss = { showMiniPlayerDesignDialog = false },
-            onSelect = { option ->
-                when (option) {
-                    MiniPlayerDesignOption.CLASSIC -> {
-                        onUseAppleMiniPlayerChange(false)
-                        onUseNewMiniPlayerDesignChange(false)
-                    }
-                    MiniPlayerDesignOption.NEW -> {
-                        onUseAppleMiniPlayerChange(false)
-                        onUseNewMiniPlayerDesignChange(true)
-                    }
-                    MiniPlayerDesignOption.APPLE -> {
-                        onUseAppleMiniPlayerChange(true)
-                        onUseNewMiniPlayerDesignChange(false)
-                    }
-                }
-                showMiniPlayerDesignDialog = false
-            },
-            title = stringResource(R.string.mini_player),
-            current = currentMiniPlayerDesign,
-            values = MiniPlayerDesignOption.values().toList(),
-            valueText = {
-                when (it) {
-                    MiniPlayerDesignOption.CLASSIC -> stringResource(R.string.classic_player)
-                    MiniPlayerDesignOption.NEW -> stringResource(R.string.new_mini_player_design)
-                    MiniPlayerDesignOption.APPLE -> stringResource(R.string.apple_mini_player_design)
+            title = { Text(stringResource(R.string.mini_player)) },
+            buttons = {
+                TextButton(onClick = { showMiniPlayerDesignDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
-        )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MiniPlayerDesignOption.values().forEach { option ->
+                    val isSelected = option == currentMiniPlayerDesign
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                when (option) {
+                                    MiniPlayerDesignOption.CLASSIC -> {
+                                        onUseAppleMiniPlayerChange(false)
+                                        onUseNewMiniPlayerDesignChange(false)
+                                    }
+                                    MiniPlayerDesignOption.NEW -> {
+                                        onUseAppleMiniPlayerChange(false)
+                                        onUseNewMiniPlayerDesignChange(true)
+                                    }
+                                    MiniPlayerDesignOption.APPLE -> {
+                                        onUseAppleMiniPlayerChange(true)
+                                        onUseNewMiniPlayerDesignChange(false)
+                                    }
+                                }
+                                showMiniPlayerDesignDialog = false
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        ),
+                        border = if (isSelected)
+                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                        else
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(selected = isSelected, onClick = null)
+                                Text(
+                                    text = when (option) {
+                                        MiniPlayerDesignOption.CLASSIC -> stringResource(R.string.classic_player)
+                                        MiniPlayerDesignOption.NEW -> stringResource(R.string.new_mini_player_design)
+                                        MiniPlayerDesignOption.APPLE -> stringResource(R.string.apple_mini_player_design)
+                                    },
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                                    .clip(
+                                        when (option) {
+                                            MiniPlayerDesignOption.CLASSIC -> RoundedCornerShape(4.dp)
+                                            MiniPlayerDesignOption.NEW -> RoundedCornerShape(22.dp)
+                                            MiniPlayerDesignOption.APPLE -> RoundedCornerShape(12.dp)
+                                        }
+                                    )
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (option == MiniPlayerDesignOption.APPLE)
+                                            Color.White.copy(alpha = 0.25f)
+                                        else
+                                            Color.Transparent,
+                                        shape = when (option) {
+                                            MiniPlayerDesignOption.CLASSIC -> RoundedCornerShape(4.dp)
+                                            MiniPlayerDesignOption.NEW -> RoundedCornerShape(22.dp)
+                                            MiniPlayerDesignOption.APPLE -> RoundedCornerShape(12.dp)
+                                        }
+                                    )
+                                    .padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .clip(
+                                                    when (option) {
+                                                        MiniPlayerDesignOption.CLASSIC -> RoundedCornerShape(4.dp)
+                                                        MiniPlayerDesignOption.NEW -> CircleShape
+                                                        MiniPlayerDesignOption.APPLE -> RoundedCornerShape(6.dp)
+                                                    }
+                                                )
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                                        )
+                                        Column {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(65.dp)
+                                                    .height(5.dp)
+                                                    .clip(RoundedCornerShape(2.5.dp))
+                                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                                            )
+                                            Spacer(Modifier.height(3.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(40.dp)
+                                                    .height(4.dp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.play),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        if (option == MiniPlayerDesignOption.APPLE) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.skip_next),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showGlassCustomizerDialog) {
+        DefaultDialog(
+            onDismiss = { showGlassCustomizerDialog = false },
+            title = { Text("Liquid Glass & Lighting") },
+            buttons = {
+                TextButton(
+                    onClick = {
+                        onGlassBlurRadiusChange(50f)
+                        onGlassVibrancyChange(1.2f)
+                        onGlassHighlightOpacityChange(0.55f)
+                        onGlassLensAmountChange(0.6f)
+                        onGlassSurfaceOpacityChange(0.5f)
+                        onGlassChromaticAberrationChange(false)
+                        onGlassDepthEffectChange(false)
+                    }
+                ) {
+                    Text("Reset")
+                }
+                TextButton(onClick = { showGlassCustomizerDialog = false }) {
+                    Text(stringResource(R.string.done))
+                }
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Live Interactive Glass Preview
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(115.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF8A2387),
+                                    Color(0xFFE94057),
+                                    Color(0xFFF27121)
+                                )
+                            )
+                        )
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .height(76.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(
+                                    alpha = glassSurfaceOpacity.coerceIn(0.1f, 0.9f)
+                                )
+                            )
+                            .border(
+                                width = 1.2.dp,
+                                brush = Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = glassHighlightOpacity.coerceIn(0f, 1f)),
+                                        Color.White.copy(alpha = (glassHighlightOpacity * 0.2f).coerceIn(0f, 1f))
+                                    )
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Nocturne Liquid Glass",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = "Blur: ${glassBlurRadius.roundToInt()}dp • Vibrancy: ${String.format(java.util.Locale.US, "%.1f", glassVibrancy)}x",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.85f)
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.25f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.sparks),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Blur Slider
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Backdrop Blur Radius",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)
+                        )
+                        Text(
+                            text = "${glassBlurRadius.roundToInt()} dp",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = glassBlurRadius,
+                        onValueChange = onGlassBlurRadiusChange,
+                        valueRange = 10f..120f
+                    )
+                }
+
+                // Vibrancy Slider
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Color Vibrancy & Saturation",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)
+                        )
+                        Text(
+                            text = "${String.format(java.util.Locale.US, "%.1f", glassVibrancy)}x",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = glassVibrancy,
+                        onValueChange = onGlassVibrancyChange,
+                        valueRange = 0.5f..2.0f
+                    )
+                }
+
+                // Specular Edge Rim Light Slider
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Specular Edge Rim Light",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)
+                        )
+                        Text(
+                            text = "${(glassHighlightOpacity * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = glassHighlightOpacity,
+                        onValueChange = onGlassHighlightOpacityChange,
+                        valueRange = 0f..1f
+                    )
+                }
+
+                // Glass Surface Opacity Slider
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Surface Base Opacity",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)
+                        )
+                        Text(
+                            text = "${(glassSurfaceOpacity * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = glassSurfaceOpacity,
+                        onValueChange = onGlassSurfaceOpacityChange,
+                        valueRange = 0.1f..0.9f
+                    )
+                }
+
+                // Lens Refraction Amount Slider
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Lens Refraction Depth",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)
+                        )
+                        Text(
+                            text = "${(glassLensAmount * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Slider(
+                        value = glassLensAmount,
+                        onValueChange = onGlassLensAmountChange,
+                        valueRange = 0f..1f
+                    )
+                }
+
+                // 3D Depth Specular Lighting Switch
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "3D Specular Lighting",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "Add realistic 3D normal-map depth shading across edges",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = glassDepthEffect,
+                        onCheckedChange = onGlassDepthEffectChange
+                    )
+                }
+
+                // Chromatic Aberration Switch
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Chromatic Aberration",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "Split light wavelengths at glass borders for prism dispersion",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = glassChromaticAberration,
+                        onCheckedChange = onGlassChromaticAberrationChange
+                    )
+                }
+            }
+        }
     }
 
 
@@ -698,71 +1285,287 @@ fun AppearanceSettings(
     }
 
     if (showPlayerButtonsStyleDialog) {
-        EnumDialog(
+        DefaultDialog(
             onDismiss = { showPlayerButtonsStyleDialog = false },
-            onSelect = {
-                onPlayerButtonsStyleChange(it)
-                showPlayerButtonsStyleDialog = false
-            },
-            title = stringResource(R.string.player_buttons_style),
-            current = playerButtonsStyle,
-            values = PlayerButtonsStyle.values().toList(),
-            valueText = {
-                when (it) {
-                    PlayerButtonsStyle.DEFAULT -> stringResource(R.string.default_style)
-                    PlayerButtonsStyle.PRIMARY -> stringResource(R.string.primary_color_style)
-                    PlayerButtonsStyle.TERTIARY -> stringResource(R.string.tertiary_color_style)
+            title = { Text(stringResource(R.string.player_buttons_style)) },
+            buttons = {
+                TextButton(onClick = { showPlayerButtonsStyleDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
-        )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                PlayerButtonsStyle.values().forEach { style ->
+                    val isSelected = style == playerButtonsStyle
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onPlayerButtonsStyleChange(style)
+                                showPlayerButtonsStyleDialog = false
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        ),
+                        border = if (isSelected)
+                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                        else
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(selected = isSelected, onClick = null)
+                                Text(
+                                    text = when (style) {
+                                        PlayerButtonsStyle.DEFAULT -> stringResource(R.string.default_style)
+                                        PlayerButtonsStyle.PRIMARY -> stringResource(R.string.primary_color_style)
+                                        PlayerButtonsStyle.TERTIARY -> stringResource(R.string.tertiary_color_style)
+                                    },
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            // Visual button preview
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.skip_previous),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when (style) {
+                                                PlayerButtonsStyle.DEFAULT -> MaterialTheme.colorScheme.surfaceVariant
+                                                PlayerButtonsStyle.PRIMARY -> MaterialTheme.colorScheme.primary
+                                                PlayerButtonsStyle.TERTIARY -> MaterialTheme.colorScheme.tertiary
+                                            }
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.play),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = when (style) {
+                                            PlayerButtonsStyle.DEFAULT -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            PlayerButtonsStyle.PRIMARY -> MaterialTheme.colorScheme.onPrimary
+                                            PlayerButtonsStyle.TERTIARY -> MaterialTheme.colorScheme.onTertiary
+                                        }
+                                    )
+                                }
+                                Icon(
+                                    painter = painterResource(R.drawable.skip_next),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showPlayerBackgroundDialog) {
-        EnumDialog(
+        DefaultDialog(
             onDismiss = { showPlayerBackgroundDialog = false },
-            onSelect = {
-                onPlayerBackgroundChange(it)
-                showPlayerBackgroundDialog = false
-            },
-            title = stringResource(R.string.player_background_style),
-            current = playerBackground,
-            values = availableBackgroundStyles,
-            valueText = {
-                when (it) {
-                    PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                    PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Liquid Mesh)"
-                    PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                    PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                    PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
-                    PlayerBackgroundStyle.APPLE_MUSIC -> stringResource(R.string.apple_music)
-                    PlayerBackgroundStyle.LIVE_MESH -> stringResource(R.string.live_mesh)
+            title = { Text(stringResource(R.string.player_background_style)) },
+            buttons = {
+                TextButton(onClick = { showPlayerBackgroundDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
-        )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                availableBackgroundStyles.forEach { style ->
+                    val isSelected = style == playerBackground
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onPlayerBackgroundChange(style)
+                                showPlayerBackgroundDialog = false
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        ),
+                        border = if (isSelected)
+                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                        else
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                RadioButton(selected = isSelected, onClick = null)
+                                Text(
+                                    text = when (style) {
+                                        PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                                        PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Liquid Mesh)"
+                                        PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                                        PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                                        PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
+                                        PlayerBackgroundStyle.APPLE_MUSIC -> stringResource(R.string.apple_music)
+                                        PlayerBackgroundStyle.LIVE_MESH -> stringResource(R.string.live_mesh)
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        when (style) {
+                                            PlayerBackgroundStyle.DEFAULT -> Brush.linearGradient(listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant))
+                                            PlayerBackgroundStyle.GLASSY_WARP -> Brush.linearGradient(listOf(Color(0xFF8A2387), Color(0xFFE94057), Color(0xFFF27121)))
+                                            PlayerBackgroundStyle.GRADIENT -> Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), MaterialTheme.colorScheme.background))
+                                            PlayerBackgroundStyle.BLUR -> Brush.radialGradient(listOf(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f), MaterialTheme.colorScheme.background))
+                                            PlayerBackgroundStyle.GLOW_ANIMATED -> Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.primary))
+                                            PlayerBackgroundStyle.APPLE_MUSIC -> Brush.linearGradient(listOf(Color(0xFF4A00E0), Color(0xFF8E2DE2)))
+                                            PlayerBackgroundStyle.LIVE_MESH -> Brush.linearGradient(listOf(Color(0xFF00c6ff), Color(0xFF0072ff)))
+                                        }
+                                    )
+                                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showMiniPlayerBackgroundDialog) {
-        EnumDialog(
+        DefaultDialog(
             onDismiss = { showMiniPlayerBackgroundDialog = false },
-            onSelect = {
-                onMiniPlayerBackgroundChange(it)
-                showMiniPlayerBackgroundDialog = false
-            },
-            title = stringResource(R.string.miniplayer_background_style),
-            current = miniPlayerBackground,
-            values = availableMiniPlayerBackgroundStyles,
-            valueText = {
-                when (it) {
-                    PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                    PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Liquid Mesh)"
-                    PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                    PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                    PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
-                    PlayerBackgroundStyle.LIVE_MESH -> stringResource(R.string.live_mesh)
-                    else -> ""
+            title = { Text(stringResource(R.string.miniplayer_background_style)) },
+            buttons = {
+                TextButton(onClick = { showMiniPlayerBackgroundDialog = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             }
-        )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                availableMiniPlayerBackgroundStyles.forEach { style ->
+                    val isSelected = style == miniPlayerBackground
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onMiniPlayerBackgroundChange(style)
+                                showMiniPlayerBackgroundDialog = false
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        ),
+                        border = if (isSelected)
+                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                        else
+                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                RadioButton(selected = isSelected, onClick = null)
+                                Text(
+                                    text = when (style) {
+                                        PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                                        PlayerBackgroundStyle.GLASSY_WARP -> "Glassy Warp (Liquid Mesh)"
+                                        PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                                        PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                                        PlayerBackgroundStyle.GLOW_ANIMATED -> stringResource(R.string.glow_animated)
+                                        PlayerBackgroundStyle.LIVE_MESH -> stringResource(R.string.live_mesh)
+                                        else -> ""
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        when (style) {
+                                            PlayerBackgroundStyle.DEFAULT -> Brush.linearGradient(listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant))
+                                            PlayerBackgroundStyle.GLASSY_WARP -> Brush.linearGradient(listOf(Color(0xFF8A2387), Color(0xFFE94057), Color(0xFFF27121)))
+                                            PlayerBackgroundStyle.GRADIENT -> Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), MaterialTheme.colorScheme.background))
+                                            PlayerBackgroundStyle.BLUR -> Brush.radialGradient(listOf(MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f), MaterialTheme.colorScheme.background))
+                                            PlayerBackgroundStyle.GLOW_ANIMATED -> Brush.sweepGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.primary))
+                                            PlayerBackgroundStyle.LIVE_MESH -> Brush.linearGradient(listOf(Color(0xFF00c6ff), Color(0xFF0072ff)))
+                                            else -> Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
+                                        }
+                                    )
+                                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
 
@@ -1294,11 +2097,19 @@ fun AppearanceSettings(
                         descriptionBelow = true
                     )
                 )
-                // Blur radius slider — only shown when frosted glass is on
+                // Blur radius & glass lighting customizer — only shown when frosted glass is on
                 if (enableFrostedGlass) {
-                    val (blurRadius, onBlurRadiusChange) = rememberPreference(
-                        GlassBlurRadiusKey,
-                        defaultValue = 50f
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.sliders),
+                            title = { Text("Liquid Glass & Lighting Customizer") },
+                            description = {
+                                Text("Blur: ${glassBlurRadius.roundToInt()}dp • Vibrancy: ${String.format(java.util.Locale.US, "%.1f", glassVibrancy)}x • Rim: ${(glassHighlightOpacity * 100).roundToInt()}%")
+                            },
+                            onClick = { showGlassCustomizerDialog = true },
+                            isExpressive = true,
+                            descriptionBelow = true
+                        )
                     )
                     add(
                         Material3SettingsItem(
@@ -1306,11 +2117,11 @@ fun AppearanceSettings(
                             title = { Text("Blur Intensity") },
                             description = {
                                 Column {
-                                    Text("${blurRadius.roundToInt()} dp — drag to adjust glass blur strength")
+                                    Text("${glassBlurRadius.roundToInt()} dp — drag to adjust glass blur strength")
                                     Slider(
-                                        value = blurRadius,
-                                        onValueChange = onBlurRadiusChange,
-                                        valueRange = 10f..100f,
+                                        value = glassBlurRadius,
+                                        onValueChange = onGlassBlurRadiusChange,
+                                        valueRange = 10f..120f,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 4.dp)

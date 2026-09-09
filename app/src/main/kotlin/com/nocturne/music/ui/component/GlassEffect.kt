@@ -28,6 +28,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.nocturne.music.constants.EnableFrostedGlassKey
 import com.nocturne.music.constants.GlassBlurRadiusKey
+import com.nocturne.music.constants.GlassChromaticAberrationKey
+import com.nocturne.music.constants.GlassDepthEffectKey
+import com.nocturne.music.constants.GlassHighlightOpacityKey
+import com.nocturne.music.constants.GlassLensAmountKey
+import com.nocturne.music.constants.GlassLensHeightKey
+import com.nocturne.music.constants.GlassSurfaceOpacityKey
+import com.nocturne.music.constants.GlassVibrancyKey
 import com.nocturne.music.ui.component.backdrop.Backdrop
 import com.nocturne.music.ui.component.backdrop.BackdropEffectScope
 import com.nocturne.music.ui.component.backdrop.drawBackdrop
@@ -150,10 +157,35 @@ val LocalBackdropLoopBucket = staticCompositionLocalOf<(() -> Int)?> { null }
 fun rememberGlassEffectConfig(): GlassEffectConfig {
     val (enabled) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
     val (blurRadius) = rememberPreference(GlassBlurRadiusKey, defaultValue = 50f)
-    return remember(enabled, blurRadius) {
+    val (vibrancy) = rememberPreference(GlassVibrancyKey, defaultValue = 1.2f)
+    val (highlightOpacity) = rememberPreference(GlassHighlightOpacityKey, defaultValue = EdgeHighlightAlpha)
+    val (lensAmount) = rememberPreference(GlassLensAmountKey, defaultValue = 0.6f)
+    val (lensHeight) = rememberPreference(GlassLensHeightKey, defaultValue = 0.4f)
+    val (chromaticAberration) = rememberPreference(GlassChromaticAberrationKey, defaultValue = false)
+    val (depthEffect) = rememberPreference(GlassDepthEffectKey, defaultValue = false)
+    val (surfaceOpacity) = rememberPreference(GlassSurfaceOpacityKey, defaultValue = 0.5f)
+
+    return remember(
+        enabled,
+        blurRadius,
+        vibrancy,
+        highlightOpacity,
+        lensAmount,
+        lensHeight,
+        chromaticAberration,
+        depthEffect,
+        surfaceOpacity
+    ) {
         GlassEffectConfig(
             globalEnabled = enabled,
             blurRadius = blurRadius,
+            vibrancy = vibrancy,
+            highlightOpacity = highlightOpacity,
+            lensAmount = lensAmount,
+            lensHeight = lensHeight,
+            chromaticAberration = chromaticAberration,
+            depthEffect = depthEffect,
+            surfaceOpacity = surfaceOpacity,
             style = GlassStyle.LIQUID
         )
     }

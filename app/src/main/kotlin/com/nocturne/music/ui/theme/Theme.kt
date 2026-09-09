@@ -34,7 +34,113 @@ import com.nocturne.music.constants.AppFont
 import com.nocturne.music.utils.rememberPreference
 import androidx.compose.ui.text.font.FontFamily
 
+import com.nocturne.music.constants.ThemeCategory
+import com.nocturne.music.constants.ThemeCategoryKey
+import com.nocturne.music.constants.NocturneThemePreset
+import com.nocturne.music.constants.NocturneThemePresetKey
+
 val DefaultThemeColor = Color(0xFFED5564)
+
+fun buildNocturneDesktopColorScheme(
+    preset: NocturneThemePreset,
+    darkTheme: Boolean,
+    pureBlack: Boolean
+): ColorScheme {
+    val accent = Color(preset.accentHex)
+    val onAccent = if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
+
+    return if (darkTheme) {
+        val bg = if (pureBlack) Color.Black else Color(0xFF131314)
+        val surface = if (pureBlack) Color.Black else Color(0xFF171719)
+        val card = if (pureBlack) Color(0xFF101012) else Color(0xFF1E1E22)
+        val popover = if (pureBlack) Color(0xFF1A1A1E) else Color(0xFF26262B)
+        val secondary = Color(0xFF2E2E33)
+        
+        ColorScheme(
+            primary = accent,
+            onPrimary = onAccent,
+            primaryContainer = accent.copy(alpha = 0.22f),
+            onPrimaryContainer = Color(0xFFF5F5F7),
+            inversePrimary = Color(0xFF131314),
+            secondary = secondary,
+            onSecondary = Color(0xFFF5F5F7),
+            secondaryContainer = card,
+            onSecondaryContainer = Color(0xFFF5F5F7),
+            tertiary = accent,
+            onTertiary = onAccent,
+            tertiaryContainer = accent.copy(alpha = 0.15f),
+            onTertiaryContainer = Color(0xFFF5F5F7),
+            background = bg,
+            onBackground = Color(0xFFF5F5F7),
+            surface = surface,
+            onSurface = Color(0xFFF5F5F7),
+            surfaceVariant = secondary,
+            onSurfaceVariant = Color(0xFF98989F),
+            surfaceTint = accent,
+            inverseSurface = Color(0xFFF5F5F7),
+            inverseOnSurface = Color(0xFF131314),
+            error = Color(0xFFF87171),
+            onError = Color(0xFF450A0A),
+            errorContainer = Color(0xFF7F1D1D),
+            onErrorContainer = Color(0xFFFECACA),
+            outline = Color(0x28FFFFFF),
+            outlineVariant = Color(0x1AFFFFFF),
+            scrim = Color(0xBF000000),
+            surfaceBright = popover,
+            surfaceContainer = card,
+            surfaceContainerHigh = popover,
+            surfaceContainerHighest = Color(0xFF323238),
+            surfaceContainerLow = Color(0xFF161618),
+            surfaceContainerLowest = Color(0xFF0F0F10),
+            surfaceDim = bg
+        )
+    } else {
+        val bg = Color(0xFFFAFAFA)
+        val surface = Color(0xFFFFFFFF)
+        val card = Color(0xFFF3F3F5)
+        val popover = Color(0xFFEBEBEF)
+        val secondary = Color(0xFFE4E4E8)
+
+        ColorScheme(
+            primary = if (preset == NocturneThemePreset.MONOCHROME) Color(0xFF18181B) else accent,
+            onPrimary = if (preset == NocturneThemePreset.MONOCHROME) Color.White else onAccent,
+            primaryContainer = accent.copy(alpha = 0.12f),
+            onPrimaryContainer = Color(0xFF1C1C1E),
+            inversePrimary = Color(0xFFF5F5F7),
+            secondary = secondary,
+            onSecondary = Color(0xFF1C1C1E),
+            secondaryContainer = card,
+            onSecondaryContainer = Color(0xFF1C1C1E),
+            tertiary = accent,
+            onTertiary = onAccent,
+            tertiaryContainer = accent.copy(alpha = 0.1f),
+            onTertiaryContainer = Color(0xFF1C1C1E),
+            background = bg,
+            onBackground = Color(0xFF1C1C1E),
+            surface = surface,
+            onSurface = Color(0xFF1C1C1E),
+            surfaceVariant = secondary,
+            onSurfaceVariant = Color(0xFF6B6B75),
+            surfaceTint = accent,
+            inverseSurface = Color(0xFF1C1C1E),
+            inverseOnSurface = Color(0xFFFAFAFA),
+            error = Color(0xFFDC2626),
+            onError = Color.White,
+            errorContainer = Color(0xFFFEE2E2),
+            onErrorContainer = Color(0xFF991B1B),
+            outline = Color(0x1F000000),
+            outlineVariant = Color(0x12000000),
+            scrim = Color(0x80000000),
+            surfaceBright = Color.White,
+            surfaceContainer = card,
+            surfaceContainerHigh = popover,
+            surfaceContainerHighest = Color(0xFFE2E2E6),
+            surfaceContainerLow = Color(0xFFF7F7F9),
+            surfaceContainerLowest = Color(0xFFFFFFFF),
+            surfaceDim = Color(0xFFECECEF)
+        )
+    }
+}
 
 @Composable
 fun NocturneTheme(
@@ -46,6 +152,15 @@ fun NocturneTheme(
     val context = LocalContext.current
     val selectedFontValue by rememberPreference(SelectedFontKey, AppFont.SYSTEM.value)
 
+    val (themeCategoryStr) = rememberPreference(ThemeCategoryKey, ThemeCategory.NOCTURNE_UI.name)
+    val themeCategory = remember(themeCategoryStr) {
+        runCatching { ThemeCategory.valueOf(themeCategoryStr) }.getOrDefault(ThemeCategory.NOCTURNE_UI)
+    }
+    val (nocturnePresetStr) = rememberPreference(NocturneThemePresetKey, NocturneThemePreset.MONOCHROME.name)
+    val nocturnePreset = remember(nocturnePresetStr) {
+        NocturneThemePreset.fromName(nocturnePresetStr)
+    }
+
     val brandFont = remember(selectedFontValue) {
         when (AppFont.fromValue(selectedFontValue)) {
             AppFont.SYSTEM -> FontFamily.Default
@@ -56,40 +171,33 @@ fun NocturneTheme(
         }
     }
 
-        val typography = remember(brandFont) {
+    val typography = remember(brandFont) {
         getTypography(brandFont = brandFont, plainFont = brandFont)
     }
 
-
-    // Determine if system dynamic colors should be used (Android S+ and default theme color)
-    val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-
-    // Select the appropriate color scheme generation method
-    val baseColorScheme = if (useSystemDynamicColor) {
-        // Use standard Material 3 dynamic color functions for system wallpaper colors
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else {
-        // Use materialKolor only when a specific seed color is provided
-        rememberDynamicColorScheme(
-            seedColor = themeColor, // themeColor is guaranteed non-default here
-            isDark = darkTheme,
-            specVersion = ColorSpec.SpecVersion.SPEC_2025,
-            style = if (themeColor.toArgb() == 0xFF000000.toInt()) PaletteStyle.Monochrome else PaletteStyle.TonalSpot
-        )
-    }
-
-    // Apply pureBlack modification if needed, similar to original logic
-    val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
-        if (darkTheme && pureBlack) {
-            baseColorScheme.pureBlack(true)
+    val colorScheme = remember(themeCategory, nocturnePreset, darkTheme, pureBlack, themeColor) {
+        if (themeCategory == ThemeCategory.NOCTURNE_UI) {
+            buildNocturneDesktopColorScheme(nocturnePreset, darkTheme, pureBlack)
         } else {
-            baseColorScheme
+            // Material 3 Expressive
+            val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            val base = if (useSystemDynamicColor) {
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            } else {
+                com.materialkolor.dynamicColorScheme(
+                    seedColor = themeColor,
+                    isDark = darkTheme,
+                    specVersion = ColorSpec.SpecVersion.SPEC_2025,
+                    style = if (themeColor.toArgb() == 0xFF000000.toInt()) PaletteStyle.Monochrome else PaletteStyle.TonalSpot
+                )
+            }
+            if (darkTheme && pureBlack) base.pureBlack(true) else base
         }
     }
 
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
-        typography = typography, // Use the dynamically configured typography
+        typography = typography,
         motionScheme = MotionScheme.expressive(),
         content = content
     )

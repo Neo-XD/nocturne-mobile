@@ -27,7 +27,42 @@ val MiniPlayerOutlineKey = booleanPreferencesKey("miniPlayerOutline")
 val SelectedFontKey = stringPreferencesKey("selected_font")
 val EnableFrostedGlassKey = booleanPreferencesKey("enable_frosted_glass")
 val GlassBlurRadiusKey = floatPreferencesKey("glass_blur_radius")
+val GlassVibrancyKey = floatPreferencesKey("glass_vibrancy")
+val GlassHighlightOpacityKey = floatPreferencesKey("glass_highlight_opacity")
+val GlassLensAmountKey = floatPreferencesKey("glass_lens_amount")
+val GlassLensHeightKey = floatPreferencesKey("glass_lens_height")
+val GlassChromaticAberrationKey = booleanPreferencesKey("glass_chromatic_aberration")
+val GlassDepthEffectKey = booleanPreferencesKey("glass_depth_effect")
+val GlassSurfaceOpacityKey = floatPreferencesKey("glass_surface_opacity")
 val HasPromptedSignInKey = booleanPreferencesKey("has_prompted_sign_in")
+
+val ThemeCategoryKey = stringPreferencesKey("theme_category")
+
+enum class ThemeCategory {
+    NOCTURNE_UI,
+    MATERIAL_3_EXPRESSIVE
+}
+
+val NocturneThemePresetKey = stringPreferencesKey("nocturne_theme_preset")
+
+enum class NocturneThemePreset(val label: String, val accentHex: Long) {
+    MONOCHROME("Monochrome", 0xFFFFFFFF),
+    ROSE("Rose", 0xFFE54D60),
+    BLUE("Blue", 0xFF3B82F6),
+    LIME("Lime", 0xFF84CC16),
+    PURPLE("Purple", 0xFFA855F7),
+    TEAL("Teal", 0xFF14B8A6),
+    CATPPUCCIN("Catppuccin", 0xFFCBA6F7),
+    CAFFEINE("Caffeine", 0xFFA07855),
+    NEON("Neon", 0xFFFF2A85),
+    BREEZE("Breeze", 0xFF2ECC71);
+
+    companion object {
+        fun fromName(name: String?): NocturneThemePreset =
+            entries.find { it.name.equals(name, ignoreCase = true) } ?: MONOCHROME
+    }
+}
+
 
 enum class AppFont(val value: String) {
     SYSTEM("system"),

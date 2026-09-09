@@ -609,7 +609,7 @@ fun AudioDeviceBottomSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier)
                                     }
                                 }
                             },
-                            shape = MaterialTheme.shapes.large,
+                            shape = RoundedCornerShape(24.dp),
                             color = if (isRemoteActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                         ) {
@@ -626,17 +626,17 @@ fun AudioDeviceBottomSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier)
                                 )
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Nocturne Desktop PC (Beta / Buggy)",
+                                        text = "Nocturne Desktop PC",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         color = if (isRemoteActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = when {
-                                            isRemoteActive -> "Playing on Desktop PC (Wi-Fi Sync - Experimental)"
-                                            isRemoteConnected -> "Ready to stream to Desktop (Experimental)"
-                                            discoveredDevices.isNotEmpty() -> "Found ${discoveredDevices.first().name} on Wi-Fi (Beta)"
-                                            else -> "Tap to stream over Wi-Fi (Beta / Buggy on Android)"
+                                            isRemoteActive -> "Playing on Desktop PC via Wi-Fi Sync"
+                                            isRemoteConnected -> "Connected • Ready to stream"
+                                            discoveredDevices.isNotEmpty() -> "Found ${discoveredDevices.first().name} on Wi-Fi"
+                                            else -> "Tap to stream over Wi-Fi"
                                         },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = if (isRemoteActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant

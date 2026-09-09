@@ -78,10 +78,16 @@ import com.nocturne.music.constants.DynamicThemeKey
 import com.nocturne.music.constants.PureBlackKey
 import com.nocturne.music.constants.PureBlackMiniPlayerKey
 import com.nocturne.music.constants.SelectedThemeColorKey
+import com.nocturne.music.constants.ThemeCategory
+import com.nocturne.music.constants.ThemeCategoryKey
+import com.nocturne.music.constants.NocturneThemePreset
+import com.nocturne.music.constants.NocturneThemePresetKey
 import com.nocturne.music.ui.theme.DefaultThemeColor
+import com.nocturne.music.ui.theme.buildNocturneDesktopColorScheme
 import com.nocturne.music.ui.theme.vivimusicTheme
 import com.nocturne.music.utils.rememberEnumPreference
 import com.nocturne.music.utils.rememberPreference
+
 
 data class ThemePalette(
     val nameRes: Int,
@@ -134,6 +140,22 @@ fun ThemeScreen(
     )
     val (_, onDynamicThemeChange) = rememberPreference(DynamicThemeKey, defaultValue = true)
 
+    val (themeCategoryStr, onThemeCategoryChange) = rememberPreference(
+        ThemeCategoryKey,
+        defaultValue = ThemeCategory.NOCTURNE_UI.name
+    )
+    val themeCategory = remember(themeCategoryStr) {
+        runCatching { ThemeCategory.valueOf(themeCategoryStr) }.getOrDefault(ThemeCategory.NOCTURNE_UI)
+    }
+
+    val (nocturnePresetStr, onNocturnePresetChange) = rememberPreference(
+        NocturneThemePresetKey,
+        defaultValue = NocturneThemePreset.MONOCHROME.name
+    )
+    val nocturnePreset = remember(nocturnePresetStr) {
+        NocturneThemePreset.fromName(nocturnePresetStr)
+    }
+
     val selectedThemeColor = Color(selectedThemeColorInt)
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -141,8 +163,6 @@ fun ThemeScreen(
     // Helper function to handle color selection with dynamic theme toggle
     val handleColorSelection: (Color) -> Unit = { color ->
         onSelectedThemeColorChange(color.toArgb())
-        // Enable dynamic theme only when selecting the default/dynamic color
-        // Disable it when selecting any other color
         val isDynamicColor = color == DefaultThemeColor
         onDynamicThemeChange(isDynamicColor)
     }
@@ -155,7 +175,11 @@ fun ThemeScreen(
             pureBlack = pureBlack,
             onPureBlackChange = onPureBlackChange,
             selectedThemeColor = selectedThemeColor,
-            onSelectedThemeColorChange = handleColorSelection
+            onSelectedThemeColorChange = handleColorSelection,
+            themeCategory = themeCategory,
+            onThemeCategoryChange = onThemeCategoryChange,
+            nocturnePreset = nocturnePreset,
+            onNocturnePresetChange = onNocturnePresetChange
         )
     } else {
         PortraitThemeLayout(
@@ -165,7 +189,11 @@ fun ThemeScreen(
             pureBlack = pureBlack,
             onPureBlackChange = onPureBlackChange,
             selectedThemeColor = selectedThemeColor,
-            onSelectedThemeColorChange = handleColorSelection
+            onSelectedThemeColorChange = handleColorSelection,
+            themeCategory = themeCategory,
+            onThemeCategoryChange = onThemeCategoryChange,
+            nocturnePreset = nocturnePreset,
+            onNocturnePresetChange = onNocturnePresetChange
         )
     }
 
@@ -190,7 +218,11 @@ fun PortraitThemeLayout(
     pureBlack: Boolean,
     onPureBlackChange: (Boolean) -> Unit,
     selectedThemeColor: Color,
-    onSelectedThemeColorChange: (Color) -> Unit
+    onSelectedThemeColorChange: (Color) -> Unit,
+    themeCategory: ThemeCategory,
+    onThemeCategoryChange: (String) -> Unit,
+    nocturnePreset: NocturneThemePreset,
+    onNocturnePresetChange: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -211,7 +243,7 @@ fun PortraitThemeLayout(
             themeColor = selectedThemeColor
         )
 
-        Spacer(modifier = Modifier.height(160.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         ThemeControls(
             darkMode = darkMode,
@@ -219,7 +251,11 @@ fun PortraitThemeLayout(
             pureBlack = pureBlack,
             onPureBlackChange = onPureBlackChange,
             selectedThemeColor = selectedThemeColor,
-            onSelectedThemeColorChange = onSelectedThemeColorChange
+            onSelectedThemeColorChange = onSelectedThemeColorChange,
+            themeCategory = themeCategory,
+            onThemeCategoryChange = onThemeCategoryChange,
+            nocturnePreset = nocturnePreset,
+            onNocturnePresetChange = onNocturnePresetChange
         )
 
         Spacer(modifier = Modifier.height(120.dp))
@@ -234,7 +270,11 @@ fun LandscapeThemeLayout(
     pureBlack: Boolean,
     onPureBlackChange: (Boolean) -> Unit,
     selectedThemeColor: Color,
-    onSelectedThemeColorChange: (Color) -> Unit
+    onSelectedThemeColorChange: (Color) -> Unit,
+    themeCategory: ThemeCategory,
+    onThemeCategoryChange: (String) -> Unit,
+    nocturnePreset: NocturneThemePreset,
+    onNocturnePresetChange: (String) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -272,7 +312,11 @@ fun LandscapeThemeLayout(
                 pureBlack = pureBlack,
                 onPureBlackChange = onPureBlackChange,
                 selectedThemeColor = selectedThemeColor,
-                onSelectedThemeColorChange = onSelectedThemeColorChange
+                onSelectedThemeColorChange = onSelectedThemeColorChange,
+                themeCategory = themeCategory,
+                onThemeCategoryChange = onThemeCategoryChange,
+                nocturnePreset = nocturnePreset,
+                onNocturnePresetChange = onNocturnePresetChange
             )
 
             Spacer(modifier = Modifier.height(80.dp))
@@ -287,21 +331,74 @@ fun ThemeControls(
     pureBlack: Boolean,
     onPureBlackChange: (Boolean) -> Unit,
     selectedThemeColor: Color,
-    onSelectedThemeColorChange: (Color) -> Unit
+    onSelectedThemeColorChange: (Color) -> Unit,
+    themeCategory: ThemeCategory,
+    onThemeCategoryChange: (String) -> Unit,
+    nocturnePreset: NocturneThemePreset,
+    onNocturnePresetChange: (String) -> Unit
 ) {
+    val isSystemDark = isSystemInDarkTheme()
+    val effectiveDark = when (darkMode) {
+        DarkMode.AUTO -> isSystemDark
+        DarkMode.ON -> true
+        DarkMode.OFF -> false
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        // Theme Category Segmented Selector
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.theme_category_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                val categories = listOf(
+                    ThemeCategory.NOCTURNE_UI to stringResource(R.string.theme_category_nocturne_ui),
+                    ThemeCategory.MATERIAL_3_EXPRESSIVE to stringResource(R.string.theme_category_material3)
+                )
+                categories.forEach { (cat, title) ->
+                    val isCatSelected = themeCategory == cat
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isCatSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            .clickable { onThemeCategoryChange(cat.name) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (isCatSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+        // Dark Mode Options
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 text = stringResource(R.string.theme_mode),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
@@ -318,7 +415,7 @@ fun ThemeControls(
                     },
                     showIcon = true
                 )
-                
+
                 // Vertical divider to separate System from manual modes
                 Box(
                     modifier = Modifier
@@ -326,7 +423,7 @@ fun ThemeControls(
                         .height(32.dp)
                         .background(MaterialTheme.colorScheme.outlineVariant)
                 )
-                
+
                 // Manual modes (Light, Dark, Pure Black)
                 ModeCircle(
                     darkMode = darkMode,
@@ -339,7 +436,7 @@ fun ThemeControls(
                     },
                     showIcon = false
                 )
-                
+
                 ModeCircle(
                     darkMode = darkMode,
                     pureBlack = pureBlack,
@@ -351,7 +448,7 @@ fun ThemeControls(
                     },
                     showIcon = false
                 )
-                
+
                 ModeCircle(
                     darkMode = darkMode,
                     pureBlack = pureBlack,
@@ -366,38 +463,143 @@ fun ThemeControls(
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = stringResource(R.string.color_palette),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                items(PaletteColors) { palette ->
-                    val isDynamicPalette = palette.seedColor == Color.Transparent
-                    val isSelected = if (isDynamicPalette) {
-                        selectedThemeColor == DefaultThemeColor
-                    } else {
-                        selectedThemeColor == palette.seedColor
+        // Category-specific presets or palettes
+        if (themeCategory == ThemeCategory.NOCTURNE_UI) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.nocturne_desktop_presets),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(NocturneThemePreset.values()) { preset ->
+                        val isSelected = nocturnePreset == preset
+                        NocturnePresetItem(
+                            preset = preset,
+                            isSelected = isSelected,
+                            pureBlack = pureBlack,
+                            darkTheme = effectiveDark,
+                            onClick = { onNocturnePresetChange(preset.name) }
+                        )
                     }
-                    
-                    PaletteItem(
-                        palette = palette,
-                        isSelected = isSelected,
-                        onClick = { 
-                            val colorToSave = if (isDynamicPalette) DefaultThemeColor else palette.seedColor
-                            onSelectedThemeColorChange(colorToSave) 
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.color_palette),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(PaletteColors) { palette ->
+                        val isDynamicPalette = palette.seedColor == Color.Transparent
+                        val isSelected = if (isDynamicPalette) {
+                            selectedThemeColor == DefaultThemeColor
+                        } else {
+                            selectedThemeColor == palette.seedColor
                         }
-                    )
+
+                        PaletteItem(
+                            palette = palette,
+                            isSelected = isSelected,
+                            onClick = {
+                                val colorToSave = if (isDynamicPalette) DefaultThemeColor else palette.seedColor
+                                onSelectedThemeColorChange(colorToSave)
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+@Composable
+fun NocturnePresetItem(
+    preset: NocturneThemePreset,
+    isSelected: Boolean,
+    pureBlack: Boolean,
+    darkTheme: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "preset_scale"
+    )
+    val interactionSource = remember { MutableInteractionSource() }
+    val accentColor = Color(preset.accentHex)
+    val cardBg = if (darkTheme) {
+        if (pureBlack) Color(0xFF101012) else Color(0xFF1E1E22)
+    } else {
+        Color(0xFFF3F3F5)
+    }
+
+    Box(
+        modifier = Modifier
+            .size(width = 86.dp, height = 96.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(RoundedCornerShape(16.dp))
+            .background(cardBg)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) accentColor else MaterialTheme.colorScheme.outlineVariant,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(accentColor),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    val checkTint = if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
+                    Icon(
+                        painter = painterResource(R.drawable.check),
+                        contentDescription = null,
+                        tint = checkTint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            Text(
+                text = preset.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (darkTheme) Color(0xFFF5F5F7) else Color(0xFF131314),
+                maxLines = 1
+            )
+        }
+    }
+}
+
 
 @Composable
 fun ModeCircle(

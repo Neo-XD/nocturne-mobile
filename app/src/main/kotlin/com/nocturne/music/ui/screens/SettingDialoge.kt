@@ -288,7 +288,9 @@ fun SettingDialoge(
 
                 // Extra Options List
                 val extraOptions = listOf(
-                    Option("Nocturne Sync", R.drawable.cast),
+                    Option("History", R.drawable.history),
+                    Option("Stats", R.drawable.stats),
+                    Option("Nocturne Sync", R.drawable.ic_nocturne_sync),
                     Option("Settings", R.drawable.settings),
                     Option("About", R.drawable.info)
                 )
@@ -299,43 +301,16 @@ fun SettingDialoge(
                         textColor = onPrimaryColor,
                         trailingText = if (option.title == "About") BuildConfig.VERSION_NAME else null,
                         onClick = {
+                            onDismissRequest()
                             when (option.title) {
+                                "History" -> onNavigate("history")
+                                "Stats" -> onNavigate("stats")
                                 "Nocturne Sync" -> onNavigate("settings/remote_sync")
                                 "Settings" -> onNavigate("settings")
                                 "About" -> onNavigate("settings/about")
                             }
                         }
                     )
-                }
-
-                // Footer
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
-                ) {
-                    TextButton(onClick = { uriHandler.openUri("https://github.com/Neo-XD/nocturne-mobile") }) {
-                        Text(
-                            text = "Privacy Policy",
-                            fontWeight = FontWeight.Light,
-                            color = onPrimaryColor,
-                            fontSize = 12.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                
-                    Text(text = "•", color = onPrimaryColor)
-                    TextButton(onClick = { uriHandler.openUri("https://github.com/Neo-XD/nocturne-mobile") }) {
-                        Text(
-                            text = "Terms of Service",
-                            fontWeight = FontWeight.Light,
-                            color = onPrimaryColor,
-                            fontSize = 12.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
                 }
             }
         }

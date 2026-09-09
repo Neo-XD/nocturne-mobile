@@ -8,7 +8,11 @@ package com.nocturne.music.ui.component
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.nocturne.music.constants.EnableFrostedGlassKey
+import com.nocturne.music.utils.rememberPreference
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -64,13 +68,47 @@ fun AppNavigationRail(
     pureBlack: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+    val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+    val glassConfig = LocalGlassEffectConfig.current
+    val containerColor = when {
+        isGlassActive -> Color.Transparent
+        pureBlack -> Color.Black
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
+    val glassBorderBrush = rememberNocturneGlassBorderBrush()
     
     NavigationRail(
-        modifier = modifier,
-        containerColor = containerColor
+        modifier = modifier
+            .then(
+                if (isGlassActive) {
+                    Modifier.liquidGlass(
+                        config = glassConfig,
+                        shape = RoundedCornerShape(0.dp),
+                        applyEdgeEffects = false
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .then(
+                if (isGlassActive) {
+                    Modifier.drawBehind {
+                        drawLine(
+                            brush = glassBorderBrush,
+                            start = Offset(size.width, 0f),
+                            end = Offset(size.width, size.height),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+            ),
+        containerColor = containerColor,
+        windowInsets = WindowInsets(0.dp)
     ) {
         Spacer(modifier = Modifier.weight(1f))
         
@@ -198,8 +236,11 @@ fun AppNavigationBar(
                     }
                 ),
             containerColor = containerColor,
-            contentColor = contentColor
+            contentColor = contentColor,
+            tonalElevation = 0.dp,
+            windowInsets = WindowInsets(0.dp)
         ) {
+
             navigationItems.forEach { screen ->
                 val isSelected = remember(currentRoute, screen.route) {
                     isRouteSelected(currentRoute, screen.route, navigationItems)

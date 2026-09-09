@@ -129,8 +129,20 @@ class RemoteSyncManager @Inject constructor(
     private val _playbackTarget = MutableStateFlow(PlaybackDeviceTarget.LOCAL)
     val playbackTarget: StateFlow<PlaybackDeviceTarget> = _playbackTarget.asStateFlow()
 
+    val isRemoteDesktop: StateFlow<Boolean> = combine(_playbackTarget, _connectionState) { target, conn ->
+        target == PlaybackDeviceTarget.REMOTE_DESKTOP && conn == RemoteConnectionState.CONNECTED
+    }.stateIn(scope, SharingStarted.Eagerly, false)
+
     private val _remoteRoomState = MutableStateFlow<RemoteRoomState?>(null)
     val remoteRoomState: StateFlow<RemoteRoomState?> = _remoteRoomState.asStateFlow()
+
+    fun calculateCurrentPositionMs(): Long {
+        val state = _remoteRoomState.value ?: return 0L
+        if (!state.is_playing) return state.position_ms
+        val elapsed = System.currentTimeMillis() - state.last_update_ms
+        val duration = state.current_track?.duration_ms ?: Long.MAX_VALUE
+        return (state.position_ms + elapsed.coerceAtLeast(0L)).coerceAtMost(duration)
+    }
 
     private val _statusMessage = MutableStateFlow("Disconnected")
     val statusMessage: StateFlow<String> = _statusMessage.asStateFlow()
@@ -378,6 +390,8 @@ class RemoteSyncManager @Inject constructor(
     fun sendChangeTrack(track: RemoteTrack) = sendAction(
         RemotePlaybackActionPayload(kind = "change_track", track = track)
     )
+
+    fun playQueueTrack(track: RemoteTrack) = sendChangeTrack(track)
 
     fun sendAction(action: RemotePlaybackActionPayload) {
         val ws = webSocket

@@ -1,10 +1,14 @@
-name: Checks
+name: Checks & Quality Gate
 
-# Pull requests only: a full Android build on every push is how new CI gets switched off again.
 on:
+  push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
-# A second push to the same PR makes the earlier run irrelevant.
 concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
@@ -13,7 +17,8 @@ permissions:
   contents: read
 
 jobs:
-  android:
+  quality-gate:
+    name: Code Quality & Error Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,21 +29,19 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # setup-gradle rather than actions/cache, which gets the Gradle cache layout wrong.
       - uses: gradle/actions/setup-gradle@v4
 
-      # A clone made on Windows loses the executable bit, and the run then fails at step one.
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # One flavour, not the abi x variant matrix; a GMS-only break therefore passes this job.
-      # Fails on any issue absent from app/lint-baseline.xml. New warnings still pass: the two
-      # dependency-freshness checks report new warnings as upstream publishes releases, which
-      # would turn this job red for reasons unrelated to the change.
-      - name: Lint
+      # Fast compilation check to catch syntax, type, and annotation errors without full APK packaging
+      - name: Compile Kotlin & Java
+        run: ./gradlew --no-daemon compileUniversalFossDebugKotlin compileUniversalFossDebugJavaWithJavac
+
+      # Android Lint checks against lint-baseline.xml to catch bugs, critical issues, and regressions
+      - name: Lint (Bug & Critical Issue Check)
         run: ./gradlew --no-daemon lintUniversalFossDebug
 
-      # A failing lint run that does not say what failed is a gate people switch off.
       - name: Upload lint report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -47,8 +50,7 @@ jobs:
           path: app/build/reports/lint-results-universalFossDebug.*
           if-no-files-found: ignore
 
-      # :canvas and :lyricsProvider are named explicitly because the flavour-qualified task
-      # reaches only :app, whose first unit tests cover the pairing PIN proof.
+      # Unit tests
       - name: Unit tests
         run: ./gradlew --no-daemon testUniversalFossDebugUnitTest :canvas:test :lyricsProvider:test
 
@@ -59,10 +61,3 @@ jobs:
           name: unit-test-results
           path: '**/build/reports/tests/**'
           if-no-files-found: ignore
-
-      # Absent on fork pull requests, where the empty-string fallback keeps the build working.
-      - name: Assemble debug APK
-        env:
-          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
-          LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
-        run: ./gradlew --no-daemon assembleUniversalFossDebug

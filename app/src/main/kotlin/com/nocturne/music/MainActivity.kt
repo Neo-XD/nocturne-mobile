@@ -732,7 +732,7 @@ class MainActivity : ComponentActivity() {
 
                 val isLandscape = configuration.containerDpSize.width > configuration.containerDpSize.height
 
-                val showRail = isLandscape && !inSearchScreen
+                val showRail = isLandscape && !inSearchScreen && !floatingNav
 
                 val navPadding = if (shouldShowNavigationBar && !showRail) {
                     if (slimNav) SlimNavBarHeight else NavigationBarHeight
@@ -829,9 +829,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                LaunchedEffect(playerConnection) {
-                    val player = playerConnection?.player ?: return@LaunchedEffect
-                    if (player.currentMediaItem == null) {
+                val isRemoteDesktop by remoteSyncManager.isRemoteDesktop.collectAsState()
+                val remoteRoomState by remoteSyncManager.remoteRoomState.collectAsState()
+
+                LaunchedEffect(playerConnection, isRemoteDesktop, remoteRoomState) {
+                    val player = playerConnection?.player
+                    val hasLocalTrack = player?.currentMediaItem != null
+                    val hasRemoteTrack = isRemoteDesktop && remoteRoomState?.current_track != null
+                    if (!hasLocalTrack && !hasRemoteTrack) {
                         if (!playerBottomSheetState.isDismissed) {
                             playerBottomSheetState.dismiss()
                         }
@@ -920,7 +925,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(null)
                 }
                 var showSettingDialoge by remember { mutableStateOf(false) }
-                val (enableSettingsPopup) = rememberPreference(EnableSettingsPopupKey, defaultValue = false)
+                val (enableSettingsPopup) = rememberPreference(EnableSettingsPopupKey, defaultValue = true)
 
                 LaunchedEffect(Unit) {
                     if (pendingIntent != null) {
@@ -1031,18 +1036,10 @@ class MainActivity : ComponentActivity() {
                                             )
                                         },
                                         actions = {
-                                            if (showHistoryButton) {
-                                                IconButton(onClick = { navController.navigate("history") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.music_history),
-                                                        contentDescription = stringResource(R.string.history)
-                                                    )
-                                                }
-                                            }
-                                            IconButton(onClick = { navController.navigate("stats") }) {
+                                            IconButton(onClick = { navController.navigate("settings/remote_sync") }) {
                                                 Icon(
-                                                    painter = painterResource(R.drawable.stats),
-                                                    contentDescription = stringResource(R.string.stats)
+                                                    painter = painterResource(R.drawable.ic_nocturne_sync),
+                                                    contentDescription = stringResource(R.string.nocturne_sync)
                                                 )
                                             }
                                             if (listenTogetherInTopBar) {
