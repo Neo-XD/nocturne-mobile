@@ -126,7 +126,7 @@ object SearchSuggestionPage {
                             }?.menuNavigationItemRenderer
                             ?.navigationEndpoint
                             ?.watchPlaylistEndpoint
-                            ?.playlistId ?: return null,
+                            ?.playlistId ?: "",
                     title =
                         renderer.flexColumns
                             .firstOrNull()
@@ -135,15 +135,9 @@ object SearchSuggestionPage {
                             ?.runs
                             ?.firstOrNull()
                             ?.text ?: return null,
-                    artists =
-                        secondaryLine.getOrNull(1)?.oddElements()?.map {
-                            Artist(
-                                name = it.text,
-                                id = it.navigationEndpoint?.browseEndpoint?.browseId,
-                            )
-                        } ?: return null,
-                    year =
-                        secondaryLine
+                    artists = PageHelper.extractArtistsFromSecondaryLine(secondaryLine),
+                    year = PageHelper.extractYearFromSecondaryLine(secondaryLine)
+                        ?: secondaryLine
                             .lastOrNull()
                             ?.firstOrNull()
                             ?.text

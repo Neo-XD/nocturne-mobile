@@ -16,24 +16,23 @@ object NewReleaseAlbumPage {
                     ?.content
                     ?.musicPlayButtonRenderer
                     ?.playNavigationEndpoint
-                    ?.watchPlaylistEndpoint
-                    ?.playlistId ?: return null,
+                    ?.anyWatchEndpoint
+                    ?.playlistId ?: "",
             title =
                 renderer.title.runs
                     ?.firstOrNull()
                     ?.text ?: return null,
             artists =
-                renderer.subtitle?.runs?.splitBySeparator()?.getOrNull(1)?.oddElements()?.map {
-                    Artist(
-                        name = it.text,
-                        id = it.navigationEndpoint?.browseEndpoint?.browseId,
-                    )
-                } ?: return null,
+                renderer.subtitle?.runs?.splitBySeparator()?.let { PageHelper.extractArtistsFromSecondaryLine(it) }
+                    ?: renderer.subtitle?.runs?.splitBySeparator()?.getOrNull(1)?.oddElements()?.map {
+                        Artist(
+                            name = it.text,
+                            id = it.navigationEndpoint?.browseEndpoint?.browseId,
+                        )
+                    } ?: emptyList(),
             year =
-                renderer.subtitle.runs
-                    .lastOrNull()
-                    ?.text
-                    ?.toIntOrNull(),
+                renderer.subtitle?.runs?.splitBySeparator()?.let { PageHelper.extractYearFromSecondaryLine(it) }
+                    ?: renderer.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull(),
             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
             explicit =
                 renderer.subtitleBadges?.find {

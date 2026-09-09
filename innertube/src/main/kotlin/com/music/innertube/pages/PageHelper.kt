@@ -1,8 +1,10 @@
 package com.music.innertube.pages
 
+import com.music.innertube.models.Artist
 import com.music.innertube.models.Menu
 import com.music.innertube.models.MusicResponsiveListItemRenderer.FlexColumn
 import com.music.innertube.models.Run
+import com.music.innertube.models.oddElements
 
 object PageHelper {
     // Icon types for library management (YouTube changed these in Feb 2026)
@@ -163,5 +165,57 @@ object PageHelper {
             }
             else -> if (iconType == type) defaultToken else toggledToken
         }
+    }
+
+    /**
+     * Extracts artists reliably from multi-segment secondary lines.
+     * Deluxe albums or special editions often have extra tags like "Album • Deluxe Edition • Artist • 2024",
+     * which shifts the artist position and breaks hardcoded index accesses.
+     */
+    fun extractArtistsFromSecondaryLine(secondaryLine: List<List<Run>>): List<Artist>? {
+        // 1. Look for a segment where runs have browseEndpoints (standard artist navigation runs)
+        val artistSegment = secondaryLine.firstOrNull { segment ->
+            segment.any { it.navigationEndpoint?.browseEndpoint != null }
+        }
+        if (artistSegment != null) {
+            val artists = artistSegment.oddElements().mapNotNull { run ->
+                run.text.takeIf { it.isNotBlank() }?.let { name ->
+                    Artist(
+                        name = name,
+                        id = run.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
+            }
+            if (artists.isNotEmpty()) return artists
+        }
+
+        // 2. Fallback: Find segment that is not an edition badge, album type, or numeric year
+        val nonArtistKeywords = setOf(
+            "album", "ep", "single", "deluxe", "deluxe edition", "edition",
+            "remastered", "version", "expanded", "expanded edition", "special edition",
+            "collector's edition", "anniversary edition", "bonus track edition"
+        )
+        val candidateSegment = secondaryLine.firstOrNull { segment ->
+            val text = segment.joinToString("") { it.text }.trim()
+            text.toIntOrNull() == null && !nonArtistKeywords.contains(text.lowercase())
+        }
+        if (candidateSegment != null) {
+            val artists = candidateSegment.oddElements().mapNotNull { run ->
+                run.text.takeIf { it.isNotBlank() }?.let { name ->
+                    Artist(name = name, id = run.navigationEndpoint?.browseEndpoint?.browseId)
+                }
+            }
+            if (artists.isNotEmpty()) return artists
+        }
+        return null
+    }
+
+    /**
+     * Extracts the release year from secondary line runs by scanning segments in reverse for a number.
+     */
+    fun extractYearFromSecondaryLine(secondaryLine: List<List<Run>>): Int? {
+        return secondaryLine.asReversed().mapNotNull { segment ->
+            segment.firstOrNull()?.text?.trim()?.toIntOrNull()
+        }.firstOrNull()
     }
 }

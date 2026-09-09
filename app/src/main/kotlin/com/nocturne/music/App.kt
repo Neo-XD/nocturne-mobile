@@ -177,6 +177,19 @@ class App : Application(), SingletonImageLoader.Factory {
         }
 
         applicationScope.launch(Dispatchers.IO) {
+            dataStore.edit { settings ->
+                val email = settings[AccountEmailKey]
+                if (email != null && email.contains("vivimusic", ignoreCase = true)) {
+                    settings[AccountEmailKey] = "nocturnemusic@gmail.com"
+                }
+                val name = settings[AccountNameKey]
+                if (name != null && name.contains("vivimusic", ignoreCase = true)) {
+                    settings[AccountNameKey] = "Nocturne Music"
+                }
+            }
+        }
+
+        applicationScope.launch(Dispatchers.IO) {
             dataStore.data
                 .map { it[InnerTubeCookieKey] }
                 .distinctUntilChanged()

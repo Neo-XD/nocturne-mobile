@@ -27,16 +27,19 @@ data class MusicResponsiveListItemRenderer(
     val overlay: Overlay?,
     val navigationEndpoint: NavigationEndpoint?,
 ) {
-    val isSong: Boolean
-        get() = navigationEndpoint == null || navigationEndpoint.watchEndpoint != null || navigationEndpoint.watchPlaylistEndpoint != null
     val isPlaylist: Boolean
         get() = navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_PLAYLIST
     val isAlbum: Boolean
         get() = navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ALBUM ||
-                navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_AUDIOBOOK
+                navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_AUDIOBOOK ||
+                navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPREb_") == true ||
+                navigationEndpoint?.browseEndpoint?.browseId?.startsWith("FEmusic_library_album") == true
     val isArtist: Boolean
         get() = navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ARTIST
                 || navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_LIBRARY_ARTIST
+    val isSong: Boolean
+        get() = !isAlbum && !isArtist && !isPlaylist &&
+                (navigationEndpoint == null || navigationEndpoint.watchEndpoint != null || playlistItemData?.videoId != null)
 
     val musicVideoType: String?
         get() =

@@ -461,22 +461,32 @@ object YTPlayerUtils {
         // age-restricted incorrectly reroutes every bot-flagged request through WEB_CREATOR
         // and causes streaming failures for logged-in users.
         val mainStatus = mainPlayerResponse.playabilityStatus.status
+        val mainReason = mainPlayerResponse.playabilityStatus.reason.orEmpty()
         val isAgeRestrictedFromResponse = mainStatus in listOf(
             "AGE_CHECK_REQUIRED",
             "AGE_VERIFICATION_REQUIRED",
             "CONTENT_CHECK_REQUIRED"
-        )
-        wasOriginallyAgeRestricted = isAgeRestrictedFromResponse
+        ) || (mainStatus == "LOGIN_REQUIRED" && (
+            mainReason.contains("age", ignoreCase = true) ||
+            mainReason.contains("inappropriate", ignoreCase = true)
+        ))
+        wasOriginallyAgeRestricted = isAgeRestrictedFromResponse || contentHints.isExplicit == true
 
-        if (isAgeRestrictedFromResponse && isLoggedIn) {
-            // Age-restricted: use WEB_CREATOR directly (no NewPipe needed from here)
-            Timber.tag(logTag).d("Age-restricted detected, using WEB_CREATOR")
-            Log.i(TAG, "Age-restricted: using WEB_CREATOR for videoId=$videoId")
-            val creatorResponse = YouTube.player(videoId, playlistId, WEB_CREATOR, null, null).getOrNull()
-            if (creatorResponse?.playabilityStatus?.status == "OK") {
-                Timber.tag(logTag).d("WEB_CREATOR works for age-restricted content")
-                mainPlayerResponse = creatorResponse
-                usedAgeRestrictedClient = WEB_CREATOR
+        if (isAgeRestrictedFromResponse || contentHints.isExplicit == true) {
+            val candidateClients = if (isLoggedIn) {
+                listOf(WEB_CREATOR, ANDROID_CREATOR, TVHTML5_SIMPLY_EMBEDDED_PLAYER)
+            } else {
+                listOf(TVHTML5_SIMPLY_EMBEDDED_PLAYER, ANDROID_CREATOR)
+            }
+            for (candidateClient in candidateClients) {
+                Timber.tag(logTag).d("Age-restricted/explicit detected, trying bypass candidate: ${candidateClient.clientName}")
+                val bpResponse = YouTube.player(videoId, playlistId, candidateClient, null, null).getOrNull()
+                if (bpResponse?.playabilityStatus?.status == "OK") {
+                    Timber.tag(logTag).d("${candidateClient.clientName} works for age-restricted/explicit content")
+                    mainPlayerResponse = bpResponse
+                    usedAgeRestrictedClient = candidateClient
+                    break
+                }
             }
         }
 
@@ -599,7 +609,7 @@ object YTPlayerUtils {
 
                 Timber.tag(logTag).d("Format found: ${format.mimeType}, bitrate: ${format.bitrate}")
 
-                streamUrl = findUrlOrNull(format, videoId, responseToUse, skipNewPipe = wasOriginallyAgeRestricted)
+                streamUrl = findUrlOrNull(format, videoId, responseToUse, skipNewPipe = false)
                 if (streamUrl == null) {
                     Timber.tag(logTag).d("Stream URL not found for format")
                     continue
@@ -709,7 +719,49 @@ object YTPlayerUtils {
             }
         }
 
-        if (streamPlayerResponse == null) {
+        if (streamPlayerResponse == null || streamPlayerResponse.playabilityStatus.status != "OK" || streamUrl == null) {
+            Timber.tag(logTag).w("All Innertube clients failed or unplayable for videoId=$videoId (status=${streamPlayerResponse?.playabilityStatus?.status}). Attempting NewPipe StreamInfo fallback...")
+            val newPipeStreams = try {
+                YouTube.getNewPipeStreamUrls(videoId)
+            } catch (e: Exception) {
+                Timber.tag(logTag).e(e, "NewPipe StreamInfo fallback failed for videoId=$videoId")
+                emptyList()
+            }
+            if (newPipeStreams.isNotEmpty()) {
+                val fallbackStream = newPipeStreams.firstOrNull()
+                if (fallbackStream != null) {
+                    Timber.tag(logTag).i("NewPipe StreamInfo fallback succeeded for videoId=$videoId (itag=${fallbackStream.first})")
+                    val fallbackFormat = format ?: mainPlayerResponse?.streamingData?.adaptiveFormats?.find { it.itag == fallbackStream.first }
+                        ?: PlayerResponse.StreamingData.Format(
+                            itag = fallbackStream.first,
+                            url = fallbackStream.second,
+                            mimeType = "audio/mp4",
+                            bitrate = 128000,
+                            width = null,
+                            height = null,
+                            contentLength = null,
+                            quality = "medium",
+                            fps = null,
+                            qualityLabel = null,
+                            averageBitrate = 128000,
+                            audioQuality = "AUDIO_QUALITY_MEDIUM",
+                            approxDurationMs = null,
+                            audioSampleRate = 44100,
+                            audioChannels = 2,
+                            loudnessDb = null,
+                            lastModified = null,
+                            signatureCipher = null,
+                            cipher = null,
+                            audioTrack = null
+                        )
+                    format = fallbackFormat
+                    streamUrl = fallbackStream.second
+                    streamExpiresInSeconds = 21600
+                }
+            }
+        }
+
+        if (streamPlayerResponse == null && streamUrl == null) {
             Timber.tag(logTag).e("Bad stream player response - all clients failed")
             if (isUploadedTrack) {
                 println("[PLAYBACK_DEBUG] FAILURE: All clients failed for uploaded track videoId=$videoId")
@@ -717,11 +769,11 @@ object YTPlayerUtils {
             throw Exception("Bad stream player response")
         }
 
-        if (streamPlayerResponse.playabilityStatus.status != "OK") {
-            val errorReason = streamPlayerResponse.playabilityStatus.reason
+        if (streamUrl == null && streamPlayerResponse?.playabilityStatus?.status != "OK") {
+            val errorReason = streamPlayerResponse?.playabilityStatus?.reason
             Timber.tag(logTag).e("Playability status not OK: $errorReason")
             if (isUploadedTrack) {
-                println("[PLAYBACK_DEBUG] FAILURE: Playability not OK for uploaded track - status=${streamPlayerResponse.playabilityStatus.status}, reason=$errorReason")
+                println("[PLAYBACK_DEBUG] FAILURE: Playability not OK for uploaded track - status=${streamPlayerResponse?.playabilityStatus?.status}, reason=$errorReason")
             }
             throw PlaybackException(
                 errorReason,
@@ -756,7 +808,7 @@ object YTPlayerUtils {
             format,
             streamUrl,
             streamExpiresInSeconds,
-            streamClient = successClient?.clientName ?: "unknown",
+            streamClient = successClient?.clientName ?: if (streamUrl != null) "NEWPIPE" else "unknown",
             streamHeaders = successClient?.streamHeaders().orEmpty(),
         )
     }.onFailure { e ->
@@ -927,11 +979,6 @@ object YTPlayerUtils {
             Timber.tag(logTag).d("Custom cipher deobfuscation failed")
         }
 
-        // Skip NewPipe for age-restricted content
-        if (skipNewPipe) {
-            Timber.tag(logTag).d("Skipping NewPipe methods for age-restricted content")
-            return null
-        }
 
         // Try to get URL using NewPipeExtractor signature deobfuscation
         val deobfuscatedUrl = NewPipeExtractor.getStreamUrl(format, videoId)

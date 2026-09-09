@@ -184,7 +184,11 @@ fun SettingDialoge(
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
-                                text = if (isLoggedIn) accountName else "Anonymous",
+                                text = if (isLoggedIn) {
+                                    if (accountName.isBlank() || accountName.contains("vivimusic", ignoreCase = true)) "Nocturne Music" else accountName
+                                } else {
+                                    "Nocturne Music"
+                                },
                                 fontWeight = FontWeight.Normal,
                                 color = onSecondaryColor,
                                 fontSize = 15.sp,
@@ -193,9 +197,9 @@ fun SettingDialoge(
                             )
                             Text(
                                 text = if (isLoggedIn) {
-                                    accountEmail.ifEmpty { "Logged In" }
+                                    if (accountEmail.isBlank() || accountEmail.contains("vivimusic", ignoreCase = true)) "nocturnemusic@gmail.com" else accountEmail
                                 } else {
-                                    "guest@nocturne.app"
+                                    "nocturnemusic@gmail.com"
                                 },
                                 fontWeight = FontWeight.Light,
                                 color = onSecondaryColor,

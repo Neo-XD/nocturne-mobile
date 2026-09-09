@@ -21,15 +21,6 @@ data class MusicTwoRowItemRenderer(
     val navigationEndpoint: NavigationEndpoint,
     val thumbnailOverlay: MusicResponsiveListItemRenderer.Overlay?,
 ) {
-    val isSong: Boolean
-        get() = navigationEndpoint.endpoint is WatchEndpoint
-    val isPlaylist: Boolean
-        get() =
-            navigationEndpoint.browseEndpoint
-                ?.browseEndpointContextSupportedConfigs
-                ?.browseEndpointContextMusicConfig
-                ?.pageType ==
-                MUSIC_PAGE_TYPE_PLAYLIST
     val isAlbum: Boolean
         get() =
             navigationEndpoint.browseEndpoint
@@ -41,7 +32,18 @@ data class MusicTwoRowItemRenderer(
                     ?.browseEndpointContextSupportedConfigs
                     ?.browseEndpointContextMusicConfig
                     ?.pageType ==
-                MUSIC_PAGE_TYPE_AUDIOBOOK
+                MUSIC_PAGE_TYPE_AUDIOBOOK ||
+                navigationEndpoint.browseEndpoint?.browseId?.startsWith("MPREb_") == true ||
+                navigationEndpoint.browseEndpoint?.browseId?.startsWith("FEmusic_library_album") == true
+    val isPlaylist: Boolean
+        get() =
+            navigationEndpoint.browseEndpoint
+                ?.browseEndpointContextSupportedConfigs
+                ?.browseEndpointContextMusicConfig
+                ?.pageType ==
+                MUSIC_PAGE_TYPE_PLAYLIST
+    val isSong: Boolean
+        get() = !isAlbum && !isPlaylist && navigationEndpoint.endpoint is WatchEndpoint
     val isArtist: Boolean
         get() =
             navigationEndpoint.browseEndpoint

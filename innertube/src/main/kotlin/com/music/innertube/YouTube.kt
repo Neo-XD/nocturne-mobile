@@ -26,6 +26,8 @@ import com.music.innertube.models.YouTubeLocale
 import com.music.innertube.models.getContinuation
 import com.music.innertube.models.getItems
 import com.music.innertube.models.oddElements
+import com.music.innertube.models.splitBySeparator
+import com.music.innertube.pages.PageHelper
 import com.music.innertube.models.response.AccountMenuResponse
 import com.music.innertube.models.response.BrowseResponse
 import com.music.innertube.models.response.CreatePlaylistResponse
@@ -1126,14 +1128,16 @@ object YouTube {
                         browseId = renderer.navigationEndpoint.browseEndpoint?.browseId ?: return null,
                         playlistId = renderer.thumbnailOverlay?.musicItemThumbnailOverlayRenderer?.content
                             ?.musicPlayButtonRenderer?.playNavigationEndpoint
-                            ?.watchPlaylistEndpoint?.playlistId ?: return null,
+                            ?.anyWatchEndpoint?.playlistId ?: "",
                         title = renderer.title.runs?.firstOrNull()?.text ?: return null,
-                        artists = renderer.subtitle?.runs?.oddElements()?.drop(1)?.mapNotNull {
-                            it.navigationEndpoint?.browseEndpoint?.browseId?.let { id ->
-                                Artist(name = it.text, id = id)
-                            }
-                        },
-                        year = renderer.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull(),
+                        artists = renderer.subtitle?.runs?.splitBySeparator()?.let { PageHelper.extractArtistsFromSecondaryLine(it) }
+                            ?: renderer.subtitle?.runs?.oddElements()?.drop(1)?.mapNotNull {
+                                it.navigationEndpoint?.browseEndpoint?.browseId?.let { id ->
+                                    Artist(name = it.text, id = id)
+                                }
+                            },
+                        year = renderer.subtitle?.runs?.splitBySeparator()?.let { PageHelper.extractYearFromSecondaryLine(it) }
+                            ?: renderer.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull(),
                         thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
                         explicit = renderer.subtitleBadges?.any {
                             it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
