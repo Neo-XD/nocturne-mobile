@@ -47,7 +47,7 @@ fun buildNocturneDesktopColorScheme(
     pureBlack: Boolean
 ): ColorScheme {
     val accent = Color(preset.accentHex)
-    val onAccent = if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
+    val onAccent = if (preset == NocturneThemePreset.MONOCHROME || preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
 
     return if (darkTheme) {
         val bg = if (pureBlack) Color.Black else Color(0xFF131314)

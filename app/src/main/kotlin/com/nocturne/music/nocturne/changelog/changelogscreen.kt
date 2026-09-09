@@ -558,30 +558,35 @@ private fun getLocalFallbackChangelog(tag: String): CachedChangelogData {
     return CachedChangelogData(
         sections = listOf(
             ChangelogSection("✨ New Features", listOf(
-                "Queue Reordering & Disk Persistence: Interactive drag handles are now enabled by default, and custom queue orders are automatically saved to disk across timeline changes, task removals, and app restarts.",
-                "Dynamic Album Art Warping Background: Added a dynamic liquid-mesh background theme with pulsing breath scale, swaying rotation, wave distortion, and color saturation adapting to the currently playing song.",
-                "Convx-Style Player Theme Customizer: Added a dedicated theme customizer with real-time interactive preview and granular sliders for blur radius, overlay dim, saturation, motion speed, and specular glass borders.",
-                "Nocturne Frosted Glass (Acrylic Styling): Implemented high-performance frosted glass modifiers and containers with specular edge highlight reflections across navigation pills and player cards.",
-                "Dedicated Monochrome Theme: Added a one-click minimal achromatic grayscale and AMOLED pure black theme option.",
-                "Quick Access Nocturne Sync: Added direct Nocturne Sync entry to the top popup menu for fast pairing with Nocturne Desktop."
+                "NocturneUI Design System: Added Nocturne Desktop's signature design system with 10 presets (Monochrome, Rose, Blue, Lime, Purple, Teal, Catppuccin, Caffeine, Neon, Breeze), dark background tokens (#131314), surface cards, and accent borders.",
+                "Theme Category Separation: Separated Nocturne UI and Material 3 Expressive into distinct setting categories.",
+                "Dual Queue Sync & Device Swapping: Seamlessly swap between Mobile Queue and PC Queue in player sheets with live playing indicator dots and device badge status.",
+                "Sub-Second Playback Sync: Synchronized real-time playback position down to the millisecond with seek actions and remote timeline updates.",
+                "Top Bar Quick Nocturne Sync: Added dedicated quick-action button with modern vector icon on the TopAppBar for instant PC connection.",
+                "Liquid Glass & Lighting Customizer: Comprehensive customizer with live interactive preview and sliders for blur radius, color vibrancy, specular rim highlight, surface opacity, lens refraction depth, 3D specular lighting, and chromatic aberration dispersion.",
+                "Appearance Settings Visual Previews: Interactive mockup preview cards for Player Designs, Miniplayer Designs, Button Styles, and Background Styles."
             )),
             ChangelogSection("⚡ Improvements", listOf(
-                "Categorized Settings Screen: Reorganized all settings into clean, structured sections (Appearance & Playback, Connectivity & Sync, Content & Features, Storage & Privacy, Updates & About).",
-                "Robust Queue Deserialization: Added MediaMetadata fallback so media items without full tags are never lost when restoring playback from disk.",
-                "Floating navigation bar updated with acrylic translucent styling and specular border highlights.",
-                "Consistent slider track contrast and colors across all dynamic player background themes."
+                "Docked Navigation Bar Glass Clarity: Removed M3 surface tonalElevation overlay, allowing pure acrylic backdrop blur on docked bars and navigation rails.",
+                "Tablet Navigation: Fixed landscape tablets defaulting to docked rail when Floating Navbar is selected.",
+                "Audio Device Picker: Unified corner radius to 24dp for Nocturne PC output device button to match surrounding design language.",
+                "Settings Popup Default: Enabled popup menu by default for fast navigation.",
+                "History & Stats in Popup Menu: Relocated Playback History and Listening Stats into the top popup menu for cleaner TopAppBar layout.",
+                "Auto-Sync on Fresh Launch: Retains active collapsed player state on cold start when linked to Nocturne PC playing audio.",
+                "Optimized GitHub Actions CI: Replaced heavy multi-variant release APK builds on every commit with a fast quality-gate workflow (checks.yml)."
             )),
             ChangelogSection("🐛 Bug Fixes", listOf(
+                "Fixed invisible text and primary action button contents on Onboarding screens under NocturneUI Monochrome theme.",
+                "Fixed card title contrast on Onboarding permission and feature cards.",
                 "Fixed queue reordering being discarded when swiping away the app or closing playback.",
-                "Fixed restored media items occasionally dropping artist or album information.",
-                "Cleaned up legacy Vivimusic email and external URL links across dialogs and menus."
+                "Cleaned up redundant Privacy Policy and Terms of Service links from the settings popup footer."
             )),
             ChangelogSection("⚠️ Known Bugs", listOf(
                 "Remote playback sync on Android is in beta and may experience latency when recovering from background suspension."
             ))
         ),
         image = null,
-        description = "Nocturne Mobile v0.2.1-m Release",
+        description = "Nocturne Mobile v0.2.2-m Release",
         warning = null
     )
 }

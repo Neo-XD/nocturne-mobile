@@ -1,8 +1,37 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to Nocturne Mobile are documented in this file.
 
+## [v0.2.2-m] - 2026-09-09
+
+### ✨ New Features
+- **NocturneUI Design System & Theme Engine**: Complete recreation of Nocturne Desktop's design language with 10 presets (Monochrome, Rose, Blue, Lime, Purple, Teal, Catppuccin, Caffeine, Neon, Breeze), dark background tokens (`#131314`), elevated surface cards, and translucent accent borders.
+- **Theme Category Separation**: Clean top-level category tabs separating Nocturne UI from Material 3 Expressive.
+- **Dual-Queue Swapping & Device Indicator**: Added interactive queue tab switcher inside player queue sheets (`Queue` & `Queue_v2`) to seamlessly toggle between Mobile Queue and PC Queue with active playing indicators and device badges.
+- **Sub-Second Timestamp Playback Sync**: Real-time playback timeline tracking and seeking synchronized between PC and phone down to the millisecond.
+- **Top Bar Quick Nocturne Sync**: Added dedicated quick-action button with modern vector icon on the TopAppBar for 1-tap PC connection.
+- **Liquid Glass & Lighting Customizer**: Comprehensive customizer with live interactive preview and sliders for blur radius (10-120dp), color vibrancy, specular rim highlight, surface opacity, lens refraction depth, 3D specular lighting, and chromatic aberration dispersion.
+- **Appearance Settings Visual Previews**: Interactive mockup preview cards for Player Designs, Miniplayer Designs, Button Styles, and Background Styles.
+
+### ⚡ Improvements
+- **Docked Navigation Bar Glass Clarity**: Removed M3 surface `tonalElevation` overlay and windowInsets wash, allowing pure acrylic backdrop blur sampling on docked bars and navigation rails.
+- **Tablet Navigation**: Fixed landscape tablets forcing docked rail when Floating Navbar is selected.
+- **Audio Device Picker Harmony**: Unified Nocturne PC output device button corner radius to 24dp to match surrounding buttons.
+- **Settings Popup Default**: Enabled popup menu by default for faster navigation.
+- **History & Stats in Popup Menu**: Relocated Playback History and Listening Stats into the top popup menu for cleaner TopAppBar layout.
+- **Auto-Sync on Fresh Launch**: Cold starts automatically detect active PC playback and retain collapsed player state rather than dismissing.
+- **Optimized GitHub Actions CI**: Separated fast quality gate checks (`checks.yml`) from heavy release builds (`build.yml`).
+
+### 🐛 Bug Fixes
+- **Onboarding Text Visibility**: Fixed invisible text and primary action button contents on Onboarding screens under NocturneUI Monochrome theme.
+- **Card Contrast**: Fixed card headline title contrast on Onboarding permission and feature cards.
+- **Cold-Start Player Dismissal**: Fixed bottom sheet player prematurely collapsing on fresh launch when connected to remote desktop.
+- **Settings Footer Cleanup**: Removed redundant Privacy Policy and Terms of Service links from settings popup footer.
+
+---
+
 ## [v0.2.1-m] - 2026-09-06
+
 
 ### ✨ New Features
 - **Queue Reordering & Disk Persistence**: Interactive drag handles are now unlocked and visible by default. Reordered queue sequences automatically persist to disk across timeline changes, app swipes, and task termination.

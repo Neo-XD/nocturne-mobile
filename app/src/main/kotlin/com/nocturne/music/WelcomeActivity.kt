@@ -137,6 +137,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.nocturne.music.constants.IsFirstRunKey
 import com.nocturne.music.ui.theme.vivimusicTheme
+import com.nocturne.music.ui.theme.GoogleSansFontFamily
+import com.nocturne.music.ui.theme.SansFlexFontFamily
 import com.nocturne.music.ui.utils.safeOpenUri
 import com.nocturne.music.utils.dataStore
 import com.nocturne.music.utils.get
@@ -223,18 +225,7 @@ class WelcomeActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalTextApi::class)
-val GoogleSansFlex = FontFamily(
-    Font(
-        resId = com.nocturne.music.R.font.google_sans_flex,
-        weight = FontWeight.Normal,
-        style = FontStyle.Normal,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400),
-            FontVariation.width(100f),
-            FontVariation.Setting("ROND", 100f)
-        )
-    )
-)
+val GoogleSansFlex = GoogleSansFontFamily
 
 @Composable
 fun WelcomePagerScreen(onFinished: () -> Unit) {
@@ -263,21 +254,21 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
     val bottomCardShape =
         RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
 
-    val customWelcomeFontFamily = FontFamily(
+    val thinWelcomeFontFamily = FontFamily(
         Font(
             resId = com.nocturne.music.R.font.sans_flex,
+            weight = FontWeight.Light,
             variationSettings = FontVariation.Settings(
-                FontVariation.slant(-9f),
-                FontVariation.width(111f),
-                FontVariation.weight(333),
-                FontVariation.Setting("GRAD", 100f),
+                FontVariation.weight(300),
+                FontVariation.width(100f),
                 FontVariation.Setting("ROND", 100f)
             )
         )
     )
 
     val thinHeaderStyle = TextStyle(
-        fontFamily = customWelcomeFontFamily,
+        fontFamily = thinWelcomeFontFamily,
+        fontWeight = FontWeight.Light,
         fontSize = 48.sp
     )
 
@@ -354,13 +345,20 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     Spacer(modifier = Modifier.weight(1f))
 
                     val welcomeString = stringResource(id = com.nocturne.music.R.string.welcome_to_vivi)
-                    val annotatedWelcome = remember(welcomeString, primaryColor) {
+                    val onBackgroundColor = MaterialTheme.colorScheme.onBackground
+                    val annotatedWelcome = remember(welcomeString, primaryColor, onBackgroundColor) {
                         buildAnnotatedString {
                             val target = "Nocturne"
                             val index = welcomeString.indexOf(target)
                             if (index != -1) {
                                 val prefix = welcomeString.substring(0, index).trim()
-                                append(prefix)
+                                withStyle(
+                                    style = SpanStyle(
+                                        color = onBackgroundColor
+                                    )
+                                ) {
+                                    append(prefix)
+                                }
                                 append("\n")
                                 withStyle(
                                     style = SpanStyle(
@@ -371,9 +369,24 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                                 ) {
                                     append(target)
                                 }
-                                append(welcomeString.substring(index + target.length))
+                                val suffix = welcomeString.substring(index + target.length)
+                                if (suffix.isNotEmpty()) {
+                                    withStyle(
+                                        style = SpanStyle(
+                                            color = onBackgroundColor
+                                        )
+                                    ) {
+                                        append(suffix)
+                                    }
+                                }
                             } else {
-                                append(welcomeString)
+                                withStyle(
+                                    style = SpanStyle(
+                                        color = onBackgroundColor
+                                    )
+                                ) {
+                                    append(welcomeString)
+                                }
                             }
                         }
                     }
@@ -391,14 +404,16 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         label = {
                             Text(
                                 text = "${if (BuildConfig.VERSION_NAME.startsWith("v")) "" else "v"}${BuildConfig.VERSION_NAME}",
-                                fontFamily = GoogleSansFlex
+                                fontFamily = GoogleSansFlex,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         },
                         leadingIcon = {
                             Icon(
                                 painter = rememberVectorPainter(image = Icons.Rounded.Info),
                                 contentDescription = null,
-                                modifier = Modifier.size(AssistChipDefaults.IconSize)
+                                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         },
                         shape = CircleShape,
@@ -417,14 +432,16 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         label = {
                             Text(
                                 text = "By Neo-XD",
-                                fontFamily = GoogleSansFlex
+                                fontFamily = GoogleSansFlex,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         },
                         leadingIcon = {
                             Icon(
                                 painter = rememberVectorPainter(image = Icons.Rounded.Person),
                                 contentDescription = null,
-                                modifier = Modifier.size(AssistChipDefaults.IconSize)
+                                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         },
                         shape = CircleShape,
@@ -1102,13 +1119,17 @@ fun PermissionCard(
                 onClick = onClick
             ),
         shape = animatedShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         ListItem(
             headlineContent = {
                 Text(
                     text = title,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     fontFamily = GoogleSansFlex
                 )
@@ -1116,8 +1137,8 @@ fun PermissionCard(
             supportingContent = {
                 Text(
                     text = description,
-                    fontFamily = GoogleSansFlex,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = GoogleSansFlex
                 )
             },
             leadingContent = {
@@ -1137,7 +1158,11 @@ fun PermissionCard(
                 }
             },
             trailingContent = control,
-            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent)
+            colors = androidx.compose.material3.ListItemDefaults.colors(
+                containerColor = Color.Transparent,
+                headlineColor = MaterialTheme.colorScheme.onSurface,
+                supportingColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
     }
 }
@@ -1156,13 +1181,17 @@ fun FeatureCard(
             .fillMaxWidth()
             .clip(shape),
         shape = shape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         ListItem(
             headlineContent = {
                 Text(
                     text = title,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     fontFamily = GoogleSansFlex
                 )
@@ -1170,8 +1199,8 @@ fun FeatureCard(
             supportingContent = {
                 Text(
                     text = description,
-                    fontFamily = GoogleSansFlex,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = GoogleSansFlex
                 )
             },
             leadingContent = {
@@ -1190,7 +1219,11 @@ fun FeatureCard(
                     }
                 }
             },
-            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent)
+            colors = androidx.compose.material3.ListItemDefaults.colors(
+                containerColor = Color.Transparent,
+                headlineColor = MaterialTheme.colorScheme.onSurface,
+                supportingColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
     }
 }
@@ -1231,11 +1264,13 @@ fun WelcomeExpressiveButton(
                 Icon(
                     imageVector = Icons.Rounded.ArrowForward,
                     contentDescription = text,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
+                    tint = contentColor
                 )
             } else {
                 Text(
                     text = text,
+                    color = contentColor,
                     fontWeight = FontWeight.Bold,
                     fontFamily = GoogleSansFlex,
                     fontSize = 18.sp
