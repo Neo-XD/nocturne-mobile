@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
  *
@@ -9,6 +9,7 @@
  */
 package com.nocturne.music.ui.component.backdrop
 
+import android.os.Build
 import org.intellij.lang.annotations.Language
 
 sealed interface RuntimeShaderCache {
@@ -21,7 +22,10 @@ internal class RuntimeShaderCacheImpl : RuntimeShaderCache {
     private val runtimeShaders = mutableMapOf<String, RuntimeShader>()
 
     override fun obtainRuntimeShader(key: String, string: String): RuntimeShader {
-        return runtimeShaders.getOrPut(key) { RuntimeShader(string) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return runtimeShaders.getOrPut(key) { RuntimeShader(string) }
+        }
+        error("RuntimeShader is only supported on Android 13+ (API 33+)")
     }
 
     fun clear() {
