@@ -118,7 +118,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.buildAnnotatedString
@@ -256,13 +255,8 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
 
     val thinWelcomeFontFamily = FontFamily(
         Font(
-            resId = com.nocturne.music.R.font.sans_flex,
-            weight = FontWeight.Light,
-            variationSettings = FontVariation.Settings(
-                FontVariation.weight(300),
-                FontVariation.width(100f),
-                FontVariation.Setting("ROND", 100f)
-            )
+            resId = com.nocturne.music.R.font.outfit,
+            weight = FontWeight.Light
         )
     )
 

@@ -1,6 +1,7 @@
 package com.nocturne.music.ui.player
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -18,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.graphics.Color
@@ -88,10 +90,11 @@ fun QueueV2(
     val remoteRoomState by remoteSyncManager.remoteRoomState.collectAsState()
     val isRemoteDesktop by remoteSyncManager.isRemoteDesktop.collectAsState()
     val remoteConnState by remoteSyncManager.connectionState.collectAsState()
-    var selectedQueueTab by rememberSaveable { mutableStateOf(if (isRemoteDesktop) "PC" else "MOBILE") }
+    val isConnectedToDesktop = remoteConnState == RemoteConnectionState.CONNECTED || isRemoteDesktop
+    var selectedQueueTab by rememberSaveable { mutableStateOf(if (isConnectedToDesktop) "PC" else "MOBILE") }
 
-    LaunchedEffect(isRemoteDesktop) {
-        if (isRemoteDesktop) {
+    LaunchedEffect(isConnectedToDesktop) {
+        if (isConnectedToDesktop) {
             selectedQueueTab = "PC"
         }
     }
@@ -430,71 +433,119 @@ fun QueueV2(
                     )
                 }
             } else {
+                val pcLazyListState = rememberLazyListState()
+                val pcReorderableState = rememberReorderableLazyListState(
+                    lazyListState = pcLazyListState
+                ) { from, to ->
+                    remoteSyncManager.moveQueueTrack(from.index, to.index)
+                }
+
                 LazyColumn(
+                    state = pcLazyListState,
                     contentPadding = PaddingValues(bottom = 120.dp, top = 4.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     itemsIndexed(pcQueue, key = { index, track -> "${track.id}_$index" }) { index, track ->
-                        val isCurrent = track.id == remoteRoomState?.current_track?.id
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { remoteSyncManager.playQueueTrack(track) }
-                                .background(if (isCurrent) adaptivePrimary.copy(alpha = 0.15f) else Color.Transparent)
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            if (isCurrent) {
-                                Icon(
-                                    painter = painterResource(R.drawable.volume_up),
-                                    contentDescription = "Playing",
-                                    tint = adaptivePrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            } else {
-                                Text(
-                                    text = "${index + 1}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = adaptiveSecondary,
-                                    modifier = Modifier.width(20.dp),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-
-                            AsyncImage(
-                                model = track.thumbnail,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
+                        ReorderableItem(
+                            state = pcReorderableState,
+                            key = "${track.id}_$index"
+                        ) { isDragging ->
+                            val elevation by animateDpAsState(
+                                targetValue = if (isDragging) 6.dp else 0.dp,
+                                label = "pc_drag_elevation"
                             )
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = track.title,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                                    color = adaptivePrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = track.artist,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = adaptiveSecondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                            val isCurrent = track.id == remoteRoomState?.current_track?.id
+                            val rowBg = when {
+                                isDragging -> MaterialTheme.colorScheme.surfaceContainerHigh
+                                isCurrent -> adaptivePrimary.copy(alpha = 0.15f)
+                                else -> Color.Transparent
                             }
 
-                            if (track.duration_ms > 0) {
-                                Text(
-                                    text = makeTimeString(track.duration_ms),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = adaptiveSecondary
-                                )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(elevation, RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(rowBg)
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { remoteSyncManager.playQueueTrack(track) }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    if (isCurrent) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.volume_up),
+                                            contentDescription = "Playing",
+                                            tint = adaptivePrimary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "${index + 1}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = adaptiveSecondary,
+                                            modifier = Modifier.width(20.dp),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+
+                                    AsyncImage(
+                                        model = track.thumbnail,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = track.title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                            color = adaptivePrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = track.artist,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = adaptiveSecondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    if (track.duration_ms > 0) {
+                                        Text(
+                                            text = makeTimeString(track.duration_ms),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = adaptiveSecondary
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .draggableHandle()
+                                        .size(40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.drag_handle),
+                                        contentDescription = "Drag to reorder",
+                                        tint = adaptiveSecondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }

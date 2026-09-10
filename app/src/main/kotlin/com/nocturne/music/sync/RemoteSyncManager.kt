@@ -67,7 +67,9 @@ data class RemotePlaybackActionPayload(
     val position_ms: Long = 0,
     val track: RemoteTrack? = null,
     val playing: Boolean = false,
-    val volume: Double = 1.0
+    val volume: Double = 1.0,
+    val from_index: Int = 0,
+    val to_index: Int = 0
 )
 
 @Serializable
@@ -400,6 +402,23 @@ class RemoteSyncManager @Inject constructor(
     )
 
     fun playQueueTrack(track: RemoteTrack) = sendChangeTrack(track)
+
+    fun moveQueueTrack(fromIndex: Int, toIndex: Int) {
+        val currentRoom = _remoteRoomState.value ?: return
+        val currentQueue = currentRoom.queue.toMutableList()
+        if (fromIndex in currentQueue.indices && toIndex in currentQueue.indices && fromIndex != toIndex) {
+            val item = currentQueue.removeAt(fromIndex)
+            currentQueue.add(toIndex, item)
+            _remoteRoomState.value = currentRoom.copy(queue = currentQueue)
+            sendAction(
+                RemotePlaybackActionPayload(
+                    kind = "move_track",
+                    from_index = fromIndex,
+                    to_index = toIndex
+                )
+            )
+        }
+    }
 
     fun sendAction(action: RemotePlaybackActionPayload) {
         val ws = webSocket

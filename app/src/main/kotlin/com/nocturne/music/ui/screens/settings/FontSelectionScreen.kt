@@ -54,7 +54,7 @@ fun FontSelectionScreen(
 ) {
     val (selectedFont, onSelectedFontChange) = rememberPreference(
         SelectedFontKey,
-        defaultValue = AppFont.SYSTEM.value
+        defaultValue = AppFont.OUTFIT.value
     )
 
     val activeFontFamily = remember(selectedFont) {

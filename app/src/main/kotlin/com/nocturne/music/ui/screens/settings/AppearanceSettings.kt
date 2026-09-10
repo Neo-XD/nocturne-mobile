@@ -175,7 +175,7 @@ fun AppearanceSettings(
     )
     val (selectedFontValue) = rememberPreference(
         SelectedFontKey,
-        defaultValue = AppFont.SYSTEM.value
+        defaultValue = AppFont.OUTFIT.value
     )
     val (enableDynamicIcon, onEnableDynamicIconChange) = rememberPreference(
         EnableDynamicIconKey,

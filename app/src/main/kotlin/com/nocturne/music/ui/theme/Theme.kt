@@ -150,7 +150,7 @@ fun NocturneTheme(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val selectedFontValue by rememberPreference(SelectedFontKey, AppFont.SYSTEM.value)
+    val selectedFontValue by rememberPreference(SelectedFontKey, AppFont.OUTFIT.value)
 
     val (themeCategoryStr) = rememberPreference(ThemeCategoryKey, ThemeCategory.NOCTURNE_UI.name)
     val themeCategory = remember(themeCategoryStr) {

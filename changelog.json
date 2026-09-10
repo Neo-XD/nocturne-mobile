@@ -1,40 +1,50 @@
 {
-  "version": "v0.2.2-m",
-  "description": "Nocturne Mobile v0.2.2-m Release Notes",
+  "version": "v0.2.3-m",
+  "description": "Nocturne Mobile v0.2.3-m Release Notes",
   "warning": null,
   "image": null,
   "changelog": [
     {
-      "title": "✨ New Features",
+      "title": "🚀 New Features",
       "items": [
-        "NocturneUI Theme Engine: Added an authentic recreation of Nocturne Desktop's design system with 10 presets (Monochrome, Rose, Blue, Lime, Purple, Teal, Catppuccin, Caffeine, Neon, Breeze), dark background tokens (#131314), custom surface cards, and accent borders.",
-        "Theme Category Separation: Separated Nocturne UI and Material 3 Expressive into distinct setting categories to eliminate confusion.",
-        "Dual Queue Sync & Device Swapping: Seamlessly swap between Mobile Queue and PC Queue in player queue sheets with active playing indicator dots, device badge status, and remote track trigger support.",
-        "Sub-Second Timestamp Playback Sync: Synchronized real-time playback position down to the millisecond with seek actions and remote timeline updates.",
-        "Top Bar Quick Nocturne Sync: Added dedicated quick-action button with modern vector icon on the TopAppBar for instant access to PC sync.",
-        "Liquid Glass & Lighting Customizer: Comprehensive customizer with live interactive preview and sliders for blur radius (10-120dp), color vibrancy, specular rim highlight, surface opacity, lens refraction depth, 3D specular lighting, and chromatic aberration dispersion.",
-        "Appearance Settings Visual Previews: Interactive mockup preview cards for Player Designs (Classic, Modern/New, V2), Miniplayer Designs (Classic, Floating Pill/New, Apple Music), Button Styles, and Background Styles."
+        "Desktop-Style Customizable Home Layout: Added an interactive Home Layout customizer with drag-to-reorder support.",
+        "Granular Home Visibility Controls: Added individual visibility toggles for Quick Picks, Forgotten Favorites, Albums, Artists, Similar to..., and Mixes.",
+        "Edit Home Button: Added an 'Edit home' button directly to the Home screen for instant customization.",
+        "DataStore Persistence: Home layout order and section visibility preferences persist reliably across sessions using Jetpack DataStore.",
+        "Tablet Navigation Rail: Dedicated vertical navigation rail for tablets with screens ≥600dp wide.",
+        "Docked & Floating Nav Modes: Full support for both docked and floating navigation modes on tablet displays.",
+        "Liquid-Glass Navigation Pill: Translucent acrylic floating navigation pill with shader reflections when Floating Nav is enabled.",
+        "Tablet Settings Popover: Dedicated top-right settings popover appearing below the profile avatar in a compact 380dp popover card.",
+        "Remote PC Queue Selection: Automatic PC queue tab selection when opening the Queue sheet while connected to Nocturne Desktop.",
+        "Monotonic Clock Synchronization: Real-time playback synchronization using SystemClock.elapsedRealtime() to eliminate wall-clock drift.",
+        "PC Queue Track Reordering: Direct drag handles for smooth, responsive PC queue track reordering.",
+        "Account Identity: Storage of signed-in YouTube account's real email address and display name retrieved from YouTube account metadata."
       ]
     },
     {
-      "title": "⚡ Improvements",
+      "title": "✨ Improvements",
       "items": [
-        "Docked Navigation Bar Glass Clarity: Removed M3 surface tonalElevation overlay and windowInsets wash, allowing pure acrylic backdrop blur sampling on docked bars and navigation rails.",
-        "Tablet Navigation: Fixed landscape tablets defaulting to docked rail when Floating Navbar is selected.",
-        "Audio Device Picker: Unified corner radius to 24dp for Nocturne PC output device button to match surrounding design language.",
-        "Settings Popup Default: Enabled popup menu by default for fast navigation.",
-        "History & Stats in Popup Menu: Relocated Playback History and Listening Stats into the top popup menu for cleaner TopAppBar layout.",
-        "Auto-Sync on Fresh Launch: Retains active collapsed player state on cold start when linked to Nocturne PC playing audio.",
-        "Optimized GitHub Actions CI: Replaced heavy multi-variant release APK builds on every commit with a fast quality-gate workflow (checks.yml), reserving full release builds (build.yml) for version tags."
+        "Frosted Glass & Backdrop Blur: Improved Convx-inspired frosted-glass rendering and backdrop blur reliability.",
+        "Backdrop Lifecycle Reattachment: Automatic backdrop recapture when the application resumes and correct coordinate reattachment after lifecycle transitions.",
+        "Orientation & Restart Handling: Improved backdrop handling during rotation and activity restarts; prevented stale captures from being reused.",
+        "Remote Synchronization: Monotonic clock reference eliminates sync drift caused by system clock adjustments.",
+        "Queue Drag Responsiveness: Queue reordering is smoother and more responsive with dedicated, unblocked drag handles.",
+        "Clean Typography: Removed rigid FontVariation.Settings constraints; Nocturne Mobile now defaults cleanly to the Outfit typeface.",
+        "Theme System Polish: Purged legacy Monochrome theme preset; updated default theme to the Rose palette with dynamic tinting."
       ]
     },
     {
       "title": "🐛 Bug Fixes",
       "items": [
-        "Fixed invisible text and primary action button contents on Onboarding screens under NocturneUI Monochrome theme.",
-        "Fixed card title contrast on Onboarding permission and feature cards.",
-        "Fixed queue reordering being discarded when swiping away the app or closing playback.",
-        "Removed redundant Privacy Policy and Terms of Service links from the settings popup footer."
+        "Fixed backdrop blur disappearing or becoming detached after the app was paused, backgrounded, or resumed.",
+        "Fixed backdrop capture coordinates failing to reattach during lifecycle transitions.",
+        "Fixed blank/invalid backdrop captures being cached when coordinates were temporarily unavailable.",
+        "Fixed backdrop state becoming stale following screen rotation.",
+        "Fixed backdrop capture issues following Activity restarts.",
+        "Fixed custom fonts being negatively affected by rigid font variation settings.",
+        "Fixed PC queue synchronization drift caused by relying on the system clock.",
+        "Fixed PC queue drag interactions being blocked by button touch targets.",
+        "Fixed obsolete Monochrome theme behavior by removing the deprecated preset."
       ]
     }
   ]

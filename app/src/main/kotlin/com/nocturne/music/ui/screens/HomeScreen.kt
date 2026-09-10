@@ -621,12 +621,16 @@ fun HomeScreen(
         listOf(
             HomeLayoutSectionItem("speed_dial", "Speed Dial", !hiddenSections.contains("speed_dial")),
             HomeLayoutSectionItem("quick_picks", "Quick Picks", !hiddenSections.contains("quick_picks")),
+            HomeLayoutSectionItem("forgotten_favorites", "Forgotten Favorites", !hiddenSections.contains("forgotten_favorites")),
+            HomeLayoutSectionItem("albums", "Albums", !hiddenSections.contains("albums")),
+            HomeLayoutSectionItem("artists", "Artists", !hiddenSections.contains("artists")),
+            HomeLayoutSectionItem("similar_to", "Similar to...", !hiddenSections.contains("similar_to")),
+            HomeLayoutSectionItem("mixes", "Mixes", !hiddenSections.contains("mixes")),
             HomeLayoutSectionItem("covers_and_remixes", "Covers & Remixes", !hiddenSections.contains("covers_and_remixes")),
             HomeLayoutSectionItem("from_the_community", "From the Community", !hiddenSections.contains("from_the_community")),
             HomeLayoutSectionItem("daily_discover", "Daily Discover", !hiddenSections.contains("daily_discover")),
             HomeLayoutSectionItem("keep_listening", "Keep Listening", !hiddenSections.contains("keep_listening")),
             HomeLayoutSectionItem("account_playlists", "Playlists", !hiddenSections.contains("account_playlists")),
-            HomeLayoutSectionItem("forgotten_favorites", "Forgotten Favorites", !hiddenSections.contains("forgotten_favorites")),
             HomeLayoutSectionItem("mood_and_genres", "Mood & Genres", !hiddenSections.contains("mood_and_genres"))
         )
     }
@@ -891,9 +895,55 @@ fun HomeScreen(
 
         if (explorePage?.moodAndGenres != null) list.add(HomeSection.MoodAndGenres)
 
-        val visibleList = if (chipActive) list else list.filter { !hiddenSections.contains(it.id) }
+        fun sectionKey(section: HomeSection): String {
+            return when (section) {
+                is HomeSection.SpeedDial -> "speed_dial"
+                is HomeSection.QuickPicks -> "quick_picks"
+                is HomeSection.ForgottenFavorites -> "forgotten_favorites"
+                is HomeSection.CoversAndRemixes -> "covers_and_remixes"
+                is HomeSection.DailyDiscover -> "daily_discover"
+                is HomeSection.KeepListening -> "keep_listening"
+                is HomeSection.AccountPlaylists -> "account_playlists"
+                is HomeSection.FromTheCommunity -> "from_the_community"
+                is HomeSection.MoodAndGenres -> "mood_and_genres"
+                is HomeSection.SimilarRecommendation -> "similar_to"
+                is HomeSection.HomePageSection -> {
+                    val sectionData = homePage?.sections?.getOrNull(section.index)
+                    if (sectionData != null) {
+                        val titleLower = sectionData.title.lowercase()
+                        val labelLower = sectionData.label?.lowercase().orEmpty()
+                        when {
+                            titleLower.contains("quick pick") || titleLower.contains("listen again") -> "quick_picks"
+                            titleLower.contains("forgotten") -> "forgotten_favorites"
+                            titleLower.contains("similar") || labelLower.contains("similar") -> "similar_to"
+                            titleLower.contains("album") || (sectionData.items.isNotEmpty() && sectionData.items.count { it is AlbumItem } > sectionData.items.size / 2) -> "albums"
+                            titleLower.contains("artist") || (sectionData.items.isNotEmpty() && sectionData.items.count { it is ArtistItem } > sectionData.items.size / 2) -> "artists"
+                            titleLower.contains("mix") || sectionData.items.any { it is PlaylistItem && (it.title.contains("Mix", ignoreCase = true) || it.title.contains("My Supermix", ignoreCase = true)) } -> "mixes"
+                            else -> section.id
+                        }
+                    } else {
+                        section.id
+                    }
+                }
+            }
+        }
 
-        if (randomizeHomeOrder) {
+        val visibleList = if (chipActive) list else list.filter { section ->
+            val key = sectionKey(section)
+            !hiddenSections.contains(key) && !hiddenSections.contains(section.id)
+        }
+
+        if (customOrderList.isNotEmpty() && !chipActive) {
+            val orderMap = customOrderList.withIndex().associate { it.value to it.index }
+            visibleList.sortedBy { section ->
+                val key = sectionKey(section)
+                orderMap[key] ?: orderMap[section.id] ?: (1000 + when (section) {
+                    is HomeSection.SimilarRecommendation -> section.index
+                    is HomeSection.HomePageSection -> section.index
+                    else -> 0
+                })
+            }
+        } else if (randomizeHomeOrder) {
             visibleList.sortedByDescending { section ->
                 // Use a stable seed for each section based on the session seed + section ID hash
                 // This ensures the weight for a specific section remains constant during a session (until refresh)
@@ -935,15 +985,6 @@ fun HomeScreen(
                     else -> sectionRandom.nextInt(-50, 50)
                 }
                 base + modifier
-            }
-        } else if (customOrderList.isNotEmpty() && !chipActive) {
-            val orderMap = customOrderList.withIndex().associate { it.value to it.index }
-            visibleList.sortedBy { section ->
-                orderMap[section.id] ?: (1000 + when (section) {
-                    is HomeSection.SimilarRecommendation -> section.index
-                    is HomeSection.HomePageSection -> section.index
-                    else -> 0
-                })
             }
         } else {
             val defaultOrder = mapOf(
@@ -2157,6 +2198,7 @@ fun HomeScreen(
                         context.dataStore.edit { prefs ->
                             prefs[HomeCustomSectionOrderKey] = order.joinToString(",")
                             prefs[HomeHiddenSectionsKey] = hidden.joinToString(",")
+                            prefs[RandomizeHomeOrderKey] = false
                         }
                     }
                 }
