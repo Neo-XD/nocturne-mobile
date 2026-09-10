@@ -47,6 +47,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
@@ -133,6 +134,12 @@ import com.nocturne.music.playback.queues.LocalAlbumRadio
 import com.nocturne.music.playback.queues.YouTubeAlbumRadio
 import com.nocturne.music.playback.queues.YouTubeQueue
 import com.nocturne.music.R
+import androidx.datastore.preferences.core.edit
+import com.nocturne.music.constants.HomeCustomSectionOrderKey
+import com.nocturne.music.constants.HomeHiddenSectionsKey
+import com.nocturne.music.ui.component.HomeLayoutDialog
+import com.nocturne.music.ui.component.HomeLayoutSectionItem
+import com.nocturne.music.utils.dataStore
 import com.nocturne.music.ui.component.AlbumGridItem
 import com.nocturne.music.ui.component.ArtistGridItem
 import com.nocturne.music.ui.component.ChipsRow
@@ -597,6 +604,40 @@ fun HomeScreen(
     val accountImageUrl by viewModel.accountImageUrl.collectAsState()
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
     val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
+    val (customSectionOrderStr) = rememberPreference(HomeCustomSectionOrderKey, "")
+    val (hiddenSectionsStr) = rememberPreference(HomeHiddenSectionsKey, "")
+    var showHomeLayoutDialog by remember { mutableStateOf(false) }
+
+    val hiddenSections = remember(hiddenSectionsStr) {
+        if (hiddenSectionsStr.isBlank()) emptySet<String>()
+        else hiddenSectionsStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+    val customOrderList = remember(customSectionOrderStr) {
+        if (customSectionOrderStr.isBlank()) emptyList<String>()
+        else customSectionOrderStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    val knownSections = remember(hiddenSections) {
+        listOf(
+            HomeLayoutSectionItem("speed_dial", "Speed Dial", !hiddenSections.contains("speed_dial")),
+            HomeLayoutSectionItem("quick_picks", "Quick Picks", !hiddenSections.contains("quick_picks")),
+            HomeLayoutSectionItem("covers_and_remixes", "Covers & Remixes", !hiddenSections.contains("covers_and_remixes")),
+            HomeLayoutSectionItem("from_the_community", "From the Community", !hiddenSections.contains("from_the_community")),
+            HomeLayoutSectionItem("daily_discover", "Daily Discover", !hiddenSections.contains("daily_discover")),
+            HomeLayoutSectionItem("keep_listening", "Keep Listening", !hiddenSections.contains("keep_listening")),
+            HomeLayoutSectionItem("account_playlists", "Playlists", !hiddenSections.contains("account_playlists")),
+            HomeLayoutSectionItem("forgotten_favorites", "Forgotten Favorites", !hiddenSections.contains("forgotten_favorites")),
+            HomeLayoutSectionItem("mood_and_genres", "Mood & Genres", !hiddenSections.contains("mood_and_genres"))
+        )
+    }
+
+    val dialogSections = remember(knownSections, customOrderList) {
+        if (customOrderList.isEmpty()) knownSections
+        else {
+            val orderMap = customOrderList.withIndex().associate { it.value to it.index }
+            knownSections.sortedBy { orderMap[it.key] ?: Int.MAX_VALUE }
+        }
+    }
 
     val shouldShowWrappedCard by viewModel.showWrappedCard.collectAsState()
     val wrappedState by viewModel.wrappedManager.state.collectAsState()
@@ -822,7 +863,9 @@ fun HomeScreen(
         communityPlaylists,
         similarRecommendations,
         homePage?.sections,
-        explorePage?.moodAndGenres
+        explorePage?.moodAndGenres,
+        customOrderList,
+        hiddenSections
     ) {
         val list = mutableListOf<HomeSection>()
         val chipActive = selectedChip != null
@@ -848,8 +891,10 @@ fun HomeScreen(
 
         if (explorePage?.moodAndGenres != null) list.add(HomeSection.MoodAndGenres)
 
+        val visibleList = if (chipActive) list else list.filter { !hiddenSections.contains(it.id) }
+
         if (randomizeHomeOrder) {
-            list.sortedByDescending { section ->
+            visibleList.sortedByDescending { section ->
                 // Use a stable seed for each section based on the session seed + section ID hash
                 // This ensures the weight for a specific section remains constant during a session (until refresh)
                 // even if other sections appear/disappear, preventing jumping.
@@ -891,6 +936,15 @@ fun HomeScreen(
                 }
                 base + modifier
             }
+        } else if (customOrderList.isNotEmpty() && !chipActive) {
+            val orderMap = customOrderList.withIndex().associate { it.value to it.index }
+            visibleList.sortedBy { section ->
+                orderMap[section.id] ?: (1000 + when (section) {
+                    is HomeSection.SimilarRecommendation -> section.index
+                    is HomeSection.HomePageSection -> section.index
+                    else -> 0
+                })
+            }
         } else {
             val defaultOrder = mapOf(
                 HomeSection.SpeedDial to 100,
@@ -904,7 +958,7 @@ fun HomeScreen(
                 HomeSection.MoodAndGenres to 10
             )
 
-            list.sortedByDescending { section ->
+            visibleList.sortedByDescending { section ->
                 when(section) {
                     is HomeSection.SimilarRecommendation -> 30 - section.index
                     is HomeSection.HomePageSection -> 20 - section.index
@@ -1028,6 +1082,36 @@ fun HomeScreen(
                 }
 
                 if (selectedChip == null) {
+                    item(key = "home_customization_row") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = { showHomeLayoutDialog = true },
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.tune),
+                                    contentDescription = "Edit home",
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Edit home",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
                     item(key = "wrapped_card") {
                         AnimatedVisibility(visible = shouldShowWrappedCard) {
                             Card(
@@ -2059,6 +2143,22 @@ fun HomeScreen(
                 },
                 onRecognitionClick = {
                     navController.navigate("recognition")
+                }
+            )
+        }
+
+        if (showHomeLayoutDialog) {
+            val context = LocalContext.current
+            HomeLayoutDialog(
+                sections = dialogSections,
+                onDismissRequest = { showHomeLayoutDialog = false },
+                onSave = { order, hidden ->
+                    scope.launch(Dispatchers.IO) {
+                        context.dataStore.edit { prefs ->
+                            prefs[HomeCustomSectionOrderKey] = order.joinToString(",")
+                            prefs[HomeHiddenSectionsKey] = hidden.joinToString(",")
+                        }
+                    }
                 }
             )
         }

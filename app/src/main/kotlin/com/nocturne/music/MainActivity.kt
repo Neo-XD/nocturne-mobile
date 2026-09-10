@@ -731,8 +731,9 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val isLandscape = configuration.containerDpSize.width > configuration.containerDpSize.height
+                val isTablet = configuration.containerDpSize.width >= 600.dp
 
-                val showRail = isLandscape && !inSearchScreen && !floatingNav
+                val showRail = (isLandscape || isTablet) && !inSearchScreen
 
                 val navPadding = if (shouldShowNavigationBar && !showRail) {
                     if (slimNav) SlimNavBarHeight else NavigationBarHeight
@@ -981,6 +982,19 @@ class MainActivity : ComponentActivity() {
                     backdropFreeze.frozen() || navTransitionFreeze.frozen()
                 }
                 val glassConfig = rememberGlassEffectConfig()
+
+                val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                            appBackdrop.contentRecorded()
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                    }
+                }
 
                 // Shared Haze graph kept for fallback/legacy compatibility
                 val appHazeState = remember { HazeState() }
@@ -1286,6 +1300,7 @@ class MainActivity : ComponentActivity() {
                                     currentRoute = currentRoute,
                                     onItemClick = onRailItemClick,
                                     pureBlack = pureBlack,
+                                    floatingNav = floatingNav,
                                     onSearchLongClick = onRailSearchLongClick
                                 )
                             }

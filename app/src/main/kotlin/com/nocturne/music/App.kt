@@ -179,8 +179,8 @@ class App : Application(), SingletonImageLoader.Factory {
         applicationScope.launch(Dispatchers.IO) {
             dataStore.edit { settings ->
                 val email = settings[AccountEmailKey]
-                if (email != null && email.contains("vivimusic", ignoreCase = true)) {
-                    settings[AccountEmailKey] = "nocturnemusic@gmail.com"
+                if (email != null && (email.contains("vivimusic", ignoreCase = true) || email == "nocturnemusic@gmail.com")) {
+                    settings.remove(AccountEmailKey)
                 }
                 val name = settings[AccountNameKey]
                 if (name != null && name.contains("vivimusic", ignoreCase = true)) {

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
  *
@@ -538,9 +538,13 @@ private class DrawBackdropNode(
                     size = recordSize,
                     block = recordBackdropBlock
                 )
-                recordedBackdropVersion = version
-                recordedBackdropOffset = offset
-                recordedBackdropSize = recordSize
+                if (offset != null) {
+                    recordedBackdropVersion = version
+                    recordedBackdropOffset = offset
+                    recordedBackdropSize = recordSize
+                } else {
+                    surfaceDirty = true
+                }
             }
 
             layer.topLeft =
@@ -597,8 +601,13 @@ private class DrawBackdropNode(
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
         if (coordinates.isAttached) {
+            val wasAttached = layoutCoordinates != null
             if (backdrop.isCoordinatesDependent) {
                 layoutCoordinates = coordinates
+                if (!wasAttached || surfaceDirty) {
+                    surfaceDirty = true
+                    invalidateDrawCache()
+                }
             } else {
                 if (layoutCoordinates != null) {
                     layoutCoordinates = null

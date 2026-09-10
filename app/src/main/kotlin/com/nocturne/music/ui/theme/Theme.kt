@@ -47,7 +47,7 @@ fun buildNocturneDesktopColorScheme(
     pureBlack: Boolean
 ): ColorScheme {
     val accent = Color(preset.accentHex)
-    val onAccent = if (preset == NocturneThemePreset.MONOCHROME || preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
+    val onAccent = if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
 
     return if (darkTheme) {
         val bg = if (pureBlack) Color.Black else Color(0xFF131314)
@@ -102,8 +102,8 @@ fun buildNocturneDesktopColorScheme(
         val secondary = Color(0xFFE4E4E8)
 
         ColorScheme(
-            primary = if (preset == NocturneThemePreset.MONOCHROME) Color(0xFF18181B) else accent,
-            onPrimary = if (preset == NocturneThemePreset.MONOCHROME) Color.White else onAccent,
+            primary = accent,
+            onPrimary = onAccent,
             primaryContainer = accent.copy(alpha = 0.12f),
             onPrimaryContainer = Color(0xFF1C1C1E),
             inversePrimary = Color(0xFFF5F5F7),
@@ -156,18 +156,21 @@ fun NocturneTheme(
     val themeCategory = remember(themeCategoryStr) {
         runCatching { ThemeCategory.valueOf(themeCategoryStr) }.getOrDefault(ThemeCategory.NOCTURNE_UI)
     }
-    val (nocturnePresetStr) = rememberPreference(NocturneThemePresetKey, NocturneThemePreset.MONOCHROME.name)
+    val (nocturnePresetStr) = rememberPreference(NocturneThemePresetKey, NocturneThemePreset.ROSE.name)
     val nocturnePreset = remember(nocturnePresetStr) {
         NocturneThemePreset.fromName(nocturnePresetStr)
     }
 
-    val brandFont = remember(selectedFontValue) {
-        when (AppFont.fromValue(selectedFontValue)) {
-            AppFont.SYSTEM -> FontFamily.Default
-            AppFont.GOOGLE_SANS -> GoogleSansFontFamily
-            AppFont.SANS_FLEX -> SansFlexFontFamily
-            AppFont.OUTFIT -> OutfitFontFamily
-            AppFont.PLUS_JAKARTA_SANS -> PlusJakartaSansFontFamily
+    val brandFont = remember(selectedFontValue, themeCategory) {
+        val font = AppFont.fromValue(selectedFontValue)
+        when {
+            font == AppFont.SYSTEM && themeCategory == ThemeCategory.NOCTURNE_UI -> OutfitFontFamily
+            font == AppFont.SYSTEM -> FontFamily.Default
+            font == AppFont.GOOGLE_SANS -> GoogleSansFontFamily
+            font == AppFont.SANS_FLEX -> SansFlexFontFamily
+            font == AppFont.OUTFIT -> OutfitFontFamily
+            font == AppFont.PLUS_JAKARTA_SANS -> PlusJakartaSansFontFamily
+            else -> if (themeCategory == ThemeCategory.NOCTURNE_UI) OutfitFontFamily else FontFamily.Default
         }
     }
 

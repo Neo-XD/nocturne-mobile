@@ -75,6 +75,9 @@ fun SettingDialoge(
     }
     val albumCount by albumCountFlow.collectAsState(initial = 0)
 
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isTablet = configuration.screenWidthDp >= 600
+
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -84,14 +87,25 @@ fun SettingDialoge(
         val secondaryColor = MaterialTheme.colorScheme.secondaryContainer
         val onSecondaryColor = MaterialTheme.colorScheme.onSecondaryContainer
 
-        Surface(
+        Box(
             modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            color = primaryColor,
-            tonalElevation = 8.dp
+                .fillMaxSize()
+                .then(
+                    if (isTablet) {
+                        Modifier.padding(top = 56.dp, end = 24.dp)
+                    } else {
+                        Modifier.padding(24.dp)
+                    }
+                ),
+            contentAlignment = if (isTablet) Alignment.TopEnd else Alignment.Center
         ) {
+            Surface(
+                modifier = Modifier
+                    .then(if (isTablet) Modifier.widthIn(max = 380.dp) else Modifier.fillMaxWidth()),
+                shape = RoundedCornerShape(28.dp),
+                color = primaryColor,
+                tonalElevation = 8.dp
+            ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -185,9 +199,9 @@ fun SettingDialoge(
                         ) {
                             Text(
                                 text = if (isLoggedIn) {
-                                    if (accountName.isBlank() || accountName.contains("vivimusic", ignoreCase = true)) "Nocturne Music" else accountName
+                                    if (accountName.isNotBlank() && !accountName.contains("vivimusic", ignoreCase = true)) accountName else "Nocturne Music"
                                 } else {
-                                    "Nocturne Music"
+                                    "Guest"
                                 },
                                 fontWeight = FontWeight.Normal,
                                 color = onSecondaryColor,
@@ -197,13 +211,13 @@ fun SettingDialoge(
                             )
                             Text(
                                 text = if (isLoggedIn) {
-                                    if (accountEmail.isBlank() || accountEmail.contains("vivimusic", ignoreCase = true)) "nocturnemusic@gmail.com" else accountEmail
+                                    if (accountEmail.isNotBlank()) accountEmail else "Logged in"
                                 } else {
-                                    "nocturnemusic@gmail.com"
+                                    "Sign in to sync"
                                 },
                                 fontWeight = FontWeight.Light,
-                                color = onSecondaryColor,
-                                fontSize = 14.sp,
+                                color = onSecondaryColor.copy(alpha = 0.8f),
+                                fontSize = 13.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -319,6 +333,7 @@ fun SettingDialoge(
             }
         }
     }
+}
 }
 
 private data class Option(

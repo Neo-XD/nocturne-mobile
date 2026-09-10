@@ -7,9 +7,19 @@ package com.nocturne.music.ui.component
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.shadow
 import com.nocturne.music.constants.EnableFrostedGlassKey
 import com.nocturne.music.utils.rememberPreference
 
@@ -66,6 +76,7 @@ fun AppNavigationRail(
     onItemClick: (Screens, Boolean) -> Unit,
     modifier: Modifier = Modifier,
     pureBlack: Boolean = false,
+    floatingNav: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
     val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
@@ -76,98 +87,182 @@ fun AppNavigationRail(
         pureBlack -> Color.Black
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
+    val outlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
     val glassBorderBrush = rememberNocturneGlassBorderBrush()
     
-    NavigationRail(
-        modifier = modifier
-            .then(
-                if (isGlassActive) {
-                    Modifier.liquidGlass(
-                        config = glassConfig,
-                        shape = RoundedCornerShape(0.dp),
-                        applyEdgeEffects = false
+    if (floatingNav) {
+        val pillShape = RoundedCornerShape(32.dp)
+        Box(
+            modifier = modifier
+                .fillMaxHeight()
+                .padding(start = 12.dp, top = 16.dp, bottom = 16.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Column(
+                modifier = Modifier
+                    .width(72.dp)
+                    .then(
+                        if (isGlassActive) {
+                            Modifier.liquidGlass(
+                                config = glassConfig,
+                                shape = pillShape,
+                                applyEdgeEffects = true
+                            )
+                        } else {
+                            Modifier
+                                .shadow(elevation = 6.dp, shape = pillShape)
+                                .background(containerColor, shape = pillShape)
+                                .border(width = 1.dp, color = outlineColor, shape = pillShape)
+                        }
                     )
-                } else {
-                    Modifier
-                }
-            )
-            .then(
-                if (isGlassActive) {
-                    Modifier.drawBehind {
-                        drawLine(
-                            brush = glassBorderBrush,
-                            start = Offset(size.width, 0f),
-                            end = Offset(size.width, size.height),
-                            strokeWidth = 1.dp.toPx()
-                        )
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
+            ) {
+                navigationItems.forEach { screen ->
+                    val isSelected = remember(currentRoute, screen.route) {
+                        isRouteSelected(currentRoute, screen.route, navigationItems)
                     }
-                } else {
-                    Modifier
-                }
-            ),
-        containerColor = containerColor,
-        windowInsets = WindowInsets(0.dp)
-    ) {
-        Spacer(modifier = Modifier.weight(1f))
-        
-        navigationItems.forEach { screen ->
-            val isSelected = remember(currentRoute, screen.route) {
-                isRouteSelected(currentRoute, screen.route, navigationItems)
-            }
-            val iconRes = remember(isSelected, screen) {
-                if (isSelected) screen.iconIdActive else screen.iconIdInactive
-            }
-            
-            val isSearchItem = screen == Screens.Search && onSearchLongClick != null
-            val interactionSource = remember { MutableInteractionSource() }
-            
-            // Long press detection using InteractionSource
-            if (isSearchItem) {
-                LaunchedEffect(interactionSource) {
-                    var isLongClick = false
-                    interactionSource.interactions.collectLatest { interaction ->
-                        when (interaction) {
-                            is PressInteraction.Press -> {
-                                isLongClick = false
-                                delay(viewConfiguration.longPressTimeoutMillis)
-                                isLongClick = true
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onSearchLongClick.invoke()
-                            }
-                            is PressInteraction.Release -> {
-                                if (!isLongClick) {
-                                    onItemClick(screen, isSelected)
+                    val iconRes = remember(isSelected, screen) {
+                        if (isSelected) screen.iconIdActive else screen.iconIdInactive
+                    }
+                    
+                    val isSearchItem = screen == Screens.Search && onSearchLongClick != null
+                    val interactionSource = remember { MutableInteractionSource() }
+                    
+                    if (isSearchItem) {
+                        LaunchedEffect(interactionSource) {
+                            var isLongClick = false
+                            interactionSource.interactions.collectLatest { interaction ->
+                                when (interaction) {
+                                    is PressInteraction.Press -> {
+                                        isLongClick = false
+                                        delay(viewConfiguration.longPressTimeoutMillis)
+                                        isLongClick = true
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onSearchLongClick?.invoke()
+                                    }
+                                    is PressInteraction.Release -> {
+                                        if (!isLongClick) {
+                                            onItemClick(screen, isSelected)
+                                        }
+                                    }
+                                    is PressInteraction.Cancel -> {
+                                        isLongClick = false
+                                    }
                                 }
                             }
-                            is PressInteraction.Cancel -> {
-                                isLongClick = false
+                        }
+                    }
+                    
+                    NavigationRailItem(
+                        selected = isSelected,
+                        onClick = { 
+                            if (!isSearchItem) {
+                                onItemClick(screen, isSelected)
+                            }
+                        },
+                        interactionSource = interactionSource,
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = iconRes),
+                                contentDescription = stringResource(screen.titleId)
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    } else {
+        NavigationRail(
+            modifier = modifier
+                .then(
+                    if (isGlassActive) {
+                        Modifier.liquidGlass(
+                            config = glassConfig,
+                            shape = RoundedCornerShape(0.dp),
+                            applyEdgeEffects = false
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .then(
+                    if (isGlassActive) {
+                        Modifier.drawBehind {
+                            drawLine(
+                                brush = glassBorderBrush,
+                                start = Offset(size.width, 0f),
+                                end = Offset(size.width, size.height),
+                                strokeWidth = 1.dp.toPx()
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                ),
+            containerColor = containerColor,
+            windowInsets = WindowInsets(0.dp)
+        ) {
+            Spacer(modifier = Modifier.weight(1f))
+            
+            navigationItems.forEach { screen ->
+                val isSelected = remember(currentRoute, screen.route) {
+                    isRouteSelected(currentRoute, screen.route, navigationItems)
+                }
+                val iconRes = remember(isSelected, screen) {
+                    if (isSelected) screen.iconIdActive else screen.iconIdInactive
+                }
+                
+                val isSearchItem = screen == Screens.Search && onSearchLongClick != null
+                val interactionSource = remember { MutableInteractionSource() }
+                
+                if (isSearchItem) {
+                    LaunchedEffect(interactionSource) {
+                        var isLongClick = false
+                        interactionSource.interactions.collectLatest { interaction ->
+                            when (interaction) {
+                                is PressInteraction.Press -> {
+                                    isLongClick = false
+                                    delay(viewConfiguration.longPressTimeoutMillis)
+                                    isLongClick = true
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onSearchLongClick?.invoke()
+                                }
+                                is PressInteraction.Release -> {
+                                    if (!isLongClick) {
+                                        onItemClick(screen, isSelected)
+                                    }
+                                }
+                                is PressInteraction.Cancel -> {
+                                    isLongClick = false
+                                }
                             }
                         }
                     }
                 }
+                
+                NavigationRailItem(
+                    selected = isSelected,
+                    onClick = { 
+                        if (!isSearchItem) {
+                            onItemClick(screen, isSelected)
+                        }
+                    },
+                    interactionSource = interactionSource,
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = iconRes),
+                            contentDescription = stringResource(screen.titleId)
+                        )
+                    }
+                )
             }
             
-            NavigationRailItem(
-                selected = isSelected,
-                onClick = { 
-                    if (!isSearchItem) {
-                        onItemClick(screen, isSelected)
-                    }
-                    // For search item, click is handled via InteractionSource
-                },
-                interactionSource = interactionSource,
-                icon = {
-                    Icon(
-                        painter = painterResource(id = iconRes),
-                        contentDescription = stringResource(screen.titleId)
-                    )
-                }
-            )
+            Spacer(modifier = Modifier.weight(1f))
         }
-        
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

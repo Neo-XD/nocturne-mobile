@@ -150,7 +150,7 @@ fun ThemeScreen(
 
     val (nocturnePresetStr, onNocturnePresetChange) = rememberPreference(
         NocturneThemePresetKey,
-        defaultValue = NocturneThemePreset.MONOCHROME.name
+        defaultValue = NocturneThemePreset.ROSE.name
     )
     val nocturnePreset = remember(nocturnePresetStr) {
         NocturneThemePreset.fromName(nocturnePresetStr)

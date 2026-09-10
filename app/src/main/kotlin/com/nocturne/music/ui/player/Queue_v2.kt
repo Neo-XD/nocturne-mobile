@@ -88,7 +88,13 @@ fun QueueV2(
     val remoteRoomState by remoteSyncManager.remoteRoomState.collectAsState()
     val isRemoteDesktop by remoteSyncManager.isRemoteDesktop.collectAsState()
     val remoteConnState by remoteSyncManager.connectionState.collectAsState()
-    var selectedQueueTab by rememberSaveable { mutableStateOf("MOBILE") }
+    var selectedQueueTab by rememberSaveable { mutableStateOf(if (isRemoteDesktop) "PC" else "MOBILE") }
+
+    LaunchedEffect(isRemoteDesktop) {
+        if (isRemoteDesktop) {
+            selectedQueueTab = "PC"
+        }
+    }
 
     var locked by rememberPreference(QueueEditLockKey, false)
 
@@ -209,8 +215,8 @@ fun QueueV2(
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp)
-                    .background(if (shuffleModeEnabled) activeColor else inactiveColor, pillShape)
                     .clip(pillShape)
+                    .background(if (shuffleModeEnabled) activeColor else inactiveColor)
                     .clickable { playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled },
                 contentAlignment = Alignment.Center
             ) {
@@ -221,8 +227,8 @@ fun QueueV2(
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp)
-                    .background(if (repeatMode != Player.REPEAT_MODE_OFF) activeColor else inactiveColor, pillShape)
                     .clip(pillShape)
+                    .background(if (repeatMode != Player.REPEAT_MODE_OFF) activeColor else inactiveColor)
                     .clickable { playerConnection.player.toggleRepeatMode() },
                 contentAlignment = Alignment.Center
             ) {
@@ -243,8 +249,8 @@ fun QueueV2(
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp)
-                    .background(if (sleepTimerEnabled) activeColor else inactiveColor, pillShape)
                     .clip(pillShape)
+                    .background(if (sleepTimerEnabled) activeColor else inactiveColor)
                     .clickable {
                         if (sleepTimerEnabled) {
                             playerConnection.service.sleepTimer.clear()
@@ -564,13 +570,16 @@ fun QueueV2(
                                     }
 
                                     if (!locked) {
-                                        IconButton(
-                                            onClick = { },
-                                            modifier = Modifier.draggableHandle()
+                                        Box(
+                                            modifier = Modifier
+                                                .draggableHandle()
+                                                .size(40.dp),
+                                            contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.drag_handle),
-                                                contentDescription = "Drag to reorder"
+                                                contentDescription = "Drag to reorder",
+                                                tint = adaptiveSecondary
                                             )
                                         }
                                     }

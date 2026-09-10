@@ -1,6 +1,24 @@
 # Changelog
-
+ 
 All notable changes to Nocturne Mobile are documented in this file.
+
+## [v0.2.3-m] - 2026-09-10
+
+### ✨ New Features
+- **Desktop-Style Customizable Home Layout**: Added interactive `HomeLayoutDialog` matching Nocturne Desktop's layout customizer with drag-to-reorder, eye visibility toggles for home sections, and direct "Edit home" access on the Home screen.
+- **Tablet Vertical Navigation Rail**: Dedicated vertical Navigation Rail for tablets (`screenWidth >= 600dp`) that honors the user's Docked vs. Floating navigation selection with liquid-glass styling.
+- **Tablet Anchored Settings Popover**: Settings modal on tablet displays pops up directly beneath the profile avatar in the top-right corner with a sleek 380dp popover layout.
+
+### ⚡ Improvements & Sync Enhancements
+- **PC Queue Auto-Tab & Drift-Free Sync**: Connecting to Desktop automatically switches the Queue sheet to the "PC" tab with real-time bidirectional queue reordering and Orchard-style monotonic timestamp synchronization.
+- **Backdrop Blur Persistence**: Recreated Convx-inspired acrylic blur pipeline with lifecycle-aware re-recording on app resume and layout coordinate attachment, eliminating blur loss after reopening.
+- **Account Identity & Email Display**: Real signed-in Google account email and name fetched and displayed across settings and account popups, removing placeholder defaults.
+
+### 🎨 Theme & Typography
+- **Typography Overhaul**: Removed rigid `FontVariation.Settings` across font families; Nocturne UI now seamlessly defaults to the **Outfit** typeface.
+- **Monochrome Preset Deprecation**: Purged legacy monochrome preset in favor of dynamic Nocturne theme presets with default **Rose** accent styling.
+
+---
 
 ## [v0.2.2-m] - 2026-09-09
 

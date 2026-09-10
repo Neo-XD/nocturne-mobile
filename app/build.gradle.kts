@@ -24,8 +24,8 @@ android {
         applicationId = "com.nocturne.music"
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "v0.2.2-m"
+        versionCode = 5
+        versionName = "v0.2.3-m"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

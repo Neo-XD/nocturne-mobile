@@ -25,6 +25,8 @@ import com.music.innertube.models.filterYoutubeShorts
 import com.music.innertube.pages.ExplorePage
 import com.music.innertube.pages.HomePage
 import com.music.innertube.utils.completed
+import com.nocturne.music.constants.AccountEmailKey
+import com.nocturne.music.constants.AccountNameKey
 import com.nocturne.music.constants.HideExplicitKey
 import com.nocturne.music.constants.HideVideoSongsKey
 import com.nocturne.music.constants.HideYoutubeShortsKey
@@ -807,6 +809,15 @@ class HomeViewModel @Inject constructor(
                             YouTube.accountInfo().onSuccess { info ->
                                 accountName.value = info.name
                                 accountImageUrl.value = info.thumbnailUrl
+                                viewModelScope.launch(Dispatchers.IO) {
+                                    context.dataStore.edit { settings ->
+                                        settings[AccountNameKey] = info.name
+                                        val email = info.email
+                                        if (!email.isNullOrEmpty()) {
+                                            settings[AccountEmailKey] = email
+                                        }
+                                    }
+                                }
                             }.onFailure {
                                 reportException(it)
                             }
@@ -814,6 +825,12 @@ class HomeViewModel @Inject constructor(
                             accountName.value = "Guest"
                             accountImageUrl.value = null
                             accountPlaylists.value = null
+                            viewModelScope.launch(Dispatchers.IO) {
+                                context.dataStore.edit { settings ->
+                                    settings.remove(AccountNameKey)
+                                    settings.remove(AccountEmailKey)
+                                }
+                            }
                         }
                     } finally {
                         isProcessingAccountData = false

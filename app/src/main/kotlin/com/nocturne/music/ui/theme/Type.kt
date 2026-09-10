@@ -15,115 +15,63 @@ import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-@OptIn(ExperimentalTextApi::class)
 val GoogleSansFontFamily = FontFamily(
     Font(
         resId = com.nocturne.music.R.font.google_sans_flex,
-        weight = FontWeight.Normal,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400),
-            FontVariation.width(100f),
-            FontVariation.Setting("ROND", 100f)
-        )
+        weight = FontWeight.Normal
     ),
     Font(
         resId = com.nocturne.music.R.font.google_sans_flex,
-        weight = FontWeight.Medium,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(500),
-            FontVariation.width(100f),
-            FontVariation.Setting("ROND", 100f)
-        )
+        weight = FontWeight.Medium
     ),
     Font(
         resId = com.nocturne.music.R.font.google_sans_flex,
-        weight = FontWeight.Bold,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700),
-            FontVariation.width(100f),
-            FontVariation.Setting("ROND", 100f)
-        )
+        weight = FontWeight.Bold
     )
 )
 
-@OptIn(ExperimentalTextApi::class)
 val SansFlexFontFamily = FontFamily(
     Font(
         resId = com.nocturne.music.R.font.sans_flex,
-        weight = FontWeight.Normal,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400),
-            FontVariation.width(100f),
-            FontVariation.Setting("ROND", 100f)
-        )
+        weight = FontWeight.Normal
     ),
     Font(
         resId = com.nocturne.music.R.font.sans_flex,
-        weight = FontWeight.Medium,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(500),
-            FontVariation.width(100f),
-            FontVariation.Setting("ROND", 100f)
-        )
+        weight = FontWeight.Medium
     ),
     Font(
         resId = com.nocturne.music.R.font.sans_flex,
-        weight = FontWeight.Bold,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700),
-            FontVariation.width(100f),
-            FontVariation.Setting("ROND", 100f)
-        )
+        weight = FontWeight.Bold
     )
 )
 
-@OptIn(ExperimentalTextApi::class)
 val OutfitFontFamily = FontFamily(
     Font(
         resId = com.nocturne.music.R.font.outfit,
-        weight = FontWeight.Normal,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400)
-        )
+        weight = FontWeight.Normal
     ),
     Font(
         resId = com.nocturne.music.R.font.outfit,
-        weight = FontWeight.Medium,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(500)
-        )
+        weight = FontWeight.Medium
     ),
     Font(
         resId = com.nocturne.music.R.font.outfit,
-        weight = FontWeight.Bold,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700)
-        )
+        weight = FontWeight.Bold
     )
 )
 
-@OptIn(ExperimentalTextApi::class)
 val PlusJakartaSansFontFamily = FontFamily(
     Font(
         resId = com.nocturne.music.R.font.plus_jakarta_sans,
-        weight = FontWeight.Normal,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400)
-        )
+        weight = FontWeight.Normal
     ),
     Font(
         resId = com.nocturne.music.R.font.plus_jakarta_sans,
-        weight = FontWeight.Medium,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(500)
-        )
+        weight = FontWeight.Medium
     ),
     Font(
         resId = com.nocturne.music.R.font.plus_jakarta_sans,
-        weight = FontWeight.Bold,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700)
-        )
+        weight = FontWeight.Bold
     )
 )
 

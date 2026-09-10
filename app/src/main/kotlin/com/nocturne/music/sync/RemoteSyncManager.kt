@@ -136,10 +136,13 @@ class RemoteSyncManager @Inject constructor(
     private val _remoteRoomState = MutableStateFlow<RemoteRoomState?>(null)
     val remoteRoomState: StateFlow<RemoteRoomState?> = _remoteRoomState.asStateFlow()
 
+    @Volatile
+    private var lastReceivedRealtimeMs: Long = android.os.SystemClock.elapsedRealtime()
+
     fun calculateCurrentPositionMs(): Long {
         val state = _remoteRoomState.value ?: return 0L
         if (!state.is_playing) return state.position_ms
-        val elapsed = System.currentTimeMillis() - state.last_update_ms
+        val elapsed = android.os.SystemClock.elapsedRealtime() - lastReceivedRealtimeMs
         val duration = state.current_track?.duration_ms ?: Long.MAX_VALUE
         return (state.position_ms + elapsed.coerceAtLeast(0L)).coerceAtMost(duration)
     }
@@ -333,6 +336,7 @@ class RemoteSyncManager @Inject constructor(
                         }
                         "sync_state" -> {
                             msg.state?.let { newState ->
+                                lastReceivedRealtimeMs = android.os.SystemClock.elapsedRealtime()
                                 _remoteRoomState.value = newState
                             }
                         }
@@ -379,9 +383,13 @@ class RemoteSyncManager @Inject constructor(
     fun sendNext() = sendAction(RemotePlaybackActionPayload(kind = "next_track"))
     fun sendPrevious() = sendAction(RemotePlaybackActionPayload(kind = "previous_track"))
 
-    fun sendSeek(positionMs: Long) = sendAction(
-        RemotePlaybackActionPayload(kind = "seek", position_ms = positionMs)
-    )
+    fun sendSeek(positionMs: Long) {
+        lastReceivedRealtimeMs = android.os.SystemClock.elapsedRealtime()
+        _remoteRoomState.value = _remoteRoomState.value?.copy(position_ms = positionMs)
+        sendAction(
+            RemotePlaybackActionPayload(kind = "seek", position_ms = positionMs)
+        )
+    }
 
     fun sendVolume(volume: Float) = sendAction(
         RemotePlaybackActionPayload(kind = "set_volume", volume = volume.toDouble())

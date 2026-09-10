@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
  *
@@ -177,8 +177,13 @@ private class LayerBackdropNode(
     }
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
+        val wasAttached = backdrop.layerCoordinates != null
         if (coordinates.isAttached) {
             backdrop.layerCoordinates = coordinates
+            if (!wasAttached) {
+                backdrop.contentRecorded()
+                invalidateDraw()
+            }
         }
     }
 
