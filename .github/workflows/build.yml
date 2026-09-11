@@ -46,9 +46,10 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 -d > app/keystore/release.keystore
           fi
 
-          # 2. Always ensure a clean, standard Java RSA 2048 keystore for debug signing
-          rm -f app/debug.keystore
-          keytool -genkeypair -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -deststoretype pkcs12
+          # 2. Ensure persistent debug keystore for consistent signing across builds
+          if [ ! -f app/debug.keystore ]; then
+            keytool -genkeypair -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -deststoretype pkcs12
+          fi
 
           mkdir -p ~/.android ~/.config/.android
           cp app/debug.keystore ~/.android/debug.keystore

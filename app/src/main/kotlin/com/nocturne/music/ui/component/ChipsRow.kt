@@ -110,7 +110,14 @@ fun <E> ChipsRow(
                     null
                 },
                 shape = RoundedCornerShape(cornerRadius),
-                border = null,
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    borderWidth = 1.dp,
+                    selectedBorderWidth = 1.dp
+                ),
                 modifier = Modifier
                     .height(35.dp)
                     .animateContentSize(
@@ -190,7 +197,14 @@ fun <Int> ChoiceChipsRow(
                         )
                     },
                     shape = RoundedCornerShape(16.dp),
-                    border = null,
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = true,
+                        borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        borderWidth = 1.dp,
+                        selectedBorderWidth = 1.dp
+                    ),
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = containerColor,
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -259,7 +273,14 @@ fun <Int> ChoiceChipsRow(
                         null
                     },
                     shape = RoundedCornerShape(cornerRadius),
-                    border = null,
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = isSelected,
+                        borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        borderWidth = 1.dp,
+                        selectedBorderWidth = 1.dp
+                    ),
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .animateContentSize(

@@ -150,7 +150,7 @@ fun ThemeScreen(
 
     val (nocturnePresetStr, onNocturnePresetChange) = rememberPreference(
         NocturneThemePresetKey,
-        defaultValue = NocturneThemePreset.ROSE.name
+        defaultValue = NocturneThemePreset.MONOCHROME.name
     )
     val nocturnePreset = remember(nocturnePresetStr) {
         NocturneThemePreset.fromName(nocturnePresetStr)
@@ -540,7 +540,11 @@ fun NocturnePresetItem(
         label = "preset_scale"
     )
     val interactionSource = remember { MutableInteractionSource() }
-    val accentColor = Color(preset.accentHex)
+    val accentColor = if (preset == NocturneThemePreset.MONOCHROME) {
+        if (darkTheme) Color.White else Color.Black
+    } else {
+        Color(preset.accentHex)
+    }
     val cardBg = if (darkTheme) {
         if (pureBlack) Color(0xFF101012) else Color(0xFF1E1E22)
     } else {
@@ -581,7 +585,13 @@ fun NocturnePresetItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (isSelected) {
-                    val checkTint = if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
+                    val checkTint = if (preset == NocturneThemePreset.MONOCHROME) {
+                        if (darkTheme) Color.Black else Color.White
+                    } else if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) {
+                        Color(0xFF131314)
+                    } else {
+                        Color.White
+                    }
                     Icon(
                         painter = painterResource(R.drawable.check),
                         contentDescription = null,

@@ -83,8 +83,8 @@ fun AppNavigationRail(
     val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
     val glassConfig = LocalGlassEffectConfig.current
     val containerColor = when {
-        isGlassActive -> Color.Transparent
         pureBlack -> Color.Black
+        isGlassActive -> MaterialTheme.colorScheme.surface.copy(alpha = 0.80f)
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
     val outlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -183,7 +183,7 @@ fun AppNavigationRail(
                         Modifier.liquidGlass(
                             config = glassConfig,
                             shape = RoundedCornerShape(0.dp),
-                            applyEdgeEffects = false
+                            applyEdgeEffects = true
                         )
                     } else {
                         Modifier
@@ -294,8 +294,8 @@ fun AppNavigationBar(
         val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
         val glassConfig = LocalGlassEffectConfig.current
         val containerColor = when {
-            isGlassActive -> Color.Transparent
             pureBlack -> Color.Black
+            isGlassActive -> MaterialTheme.colorScheme.surface.copy(alpha = 0.80f)
             else -> MaterialTheme.colorScheme.surfaceContainer
         }
         val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -310,7 +310,7 @@ fun AppNavigationBar(
                         Modifier.liquidGlass(
                             config = glassConfig,
                             shape = RoundedCornerShape(0.dp),
-                            applyEdgeEffects = false
+                            applyEdgeEffects = true
                         )
                     } else {
                         Modifier

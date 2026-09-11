@@ -433,11 +433,19 @@ fun QueueV2(
                     )
                 }
             } else {
+                val mutablePcQueue = remember { mutableStateListOf<RemoteTrack>() }
+                LaunchedEffect(pcQueue) {
+                    mutablePcQueue.clear()
+                    mutablePcQueue.addAll(pcQueue)
+                }
                 val pcLazyListState = rememberLazyListState()
                 val pcReorderableState = rememberReorderableLazyListState(
                     lazyListState = pcLazyListState
                 ) { from, to ->
-                    remoteSyncManager.moveQueueTrack(from.index, to.index)
+                    if (from.index in mutablePcQueue.indices && to.index in mutablePcQueue.indices) {
+                        mutablePcQueue.add(to.index, mutablePcQueue.removeAt(from.index))
+                        remoteSyncManager.moveQueueTrack(from.index, to.index)
+                    }
                 }
 
                 LazyColumn(
@@ -445,7 +453,7 @@ fun QueueV2(
                     contentPadding = PaddingValues(bottom = 120.dp, top = 4.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    itemsIndexed(pcQueue, key = { index, track -> "${track.id}_$index" }) { index, track ->
+                    itemsIndexed(mutablePcQueue, key = { index, track -> "${track.id}_$index" }) { index, track ->
                         ReorderableItem(
                             state = pcReorderableState,
                             key = "${track.id}_$index"

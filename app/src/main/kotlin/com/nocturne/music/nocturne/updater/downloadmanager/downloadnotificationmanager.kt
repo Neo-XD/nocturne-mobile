@@ -118,7 +118,7 @@ object DownloadNotificationManager {
         val file = File(filePath)
         val fileUri = FileProvider.getUriForFile(
             appContext,
-            "${appContext.packageName}.provider",
+            "${appContext.packageName}.FileProvider",
             file
         )
 

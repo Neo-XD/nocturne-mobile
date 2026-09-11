@@ -54,6 +54,7 @@ import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -1026,7 +1027,7 @@ class MainActivity : ComponentActivity() {
                                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                                 exit = fadeOut(animationSpec = tween(durationMillis = 200))
                             ) {
-                                Row {
+                                Column {
                                     TopAppBar(
                                         navigationIcon = {
                                             Box(modifier = Modifier.padding(start = 12.dp)) {
@@ -1117,6 +1118,10 @@ class MainActivity : ComponentActivity() {
                                                 cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
                                             }
                                         )
+                                    )
+                                    HorizontalDivider(
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                                     )
                                 }
                             }

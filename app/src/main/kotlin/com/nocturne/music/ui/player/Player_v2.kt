@@ -139,7 +139,8 @@ fun PlayerV2(
     val remoteConnectionState by remoteSyncManager.connectionState.collectAsState()
     val remoteRoomState by remoteSyncManager.remoteRoomState.collectAsState()
 
-    val isRemoteDesktop = remotePlaybackTarget == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+    val isRemoteDesktop = (remotePlaybackTarget == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP ||
+                          (mediaMetadata == null && remoteRoomState?.current_track != null)) && 
                           remoteConnectionState == com.nocturne.music.sync.RemoteConnectionState.CONNECTED
 
     val effectiveMediaMetadata = remember(mediaMetadata, isRemoteDesktop, remoteRoomState) {

@@ -29,6 +29,7 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.nocturne.music.LocalPlayerAwareWindowInsets
+import com.nocturne.music.sync.DiscoveredDevice
 import com.nocturne.music.sync.PlaybackDeviceTarget
 import com.nocturne.music.sync.RemoteConnectionState
 import com.nocturne.music.sync.RemoteSyncManager
@@ -63,6 +64,20 @@ fun RemoteSyncSettingsScreen(
     var hostInput by remember(savedHost) { mutableStateOf(savedHost) }
     var portInput by remember(savedPort) { mutableStateOf(savedPort.toString()) }
     var pinInput by remember(savedPin) { mutableStateOf(savedPin) }
+
+    val sessionToken by syncManager.sessionToken.collectAsState()
+    var pairingDeviceToConnect by remember { mutableStateOf<DiscoveredDevice?>(null) }
+    var dialogPinInput by remember { mutableStateOf("") }
+
+    val onConnectDevice: (DiscoveredDevice) -> Unit = { device ->
+        if (syncManager.hasSessionToken() || pinInput.isNotBlank()) {
+            syncManager.connect(device.ip, device.port, pinInput.trim())
+            syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
+        } else {
+            pairingDeviceToConnect = device
+            dialogPinInput = ""
+        }
+    }
 
     val isConnected = connectionState == RemoteConnectionState.CONNECTED
     val isConnecting = connectionState == RemoteConnectionState.CONNECTING
@@ -277,10 +292,7 @@ fun RemoteSyncSettingsScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            syncManager.connect(device.ip, device.port, pinInput.trim())
-                                            syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
-                                        },
+                                        .clickable { onConnectDevice(device) },
                                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
@@ -315,10 +327,7 @@ fun RemoteSyncSettingsScreen(
                                         }
 
                                         Button(
-                                            onClick = {
-                                                syncManager.connect(device.ip, device.port, pinInput.trim())
-                                                syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
-                                            },
+                                            onClick = { onConnectDevice(device) },
                                             shape = RoundedCornerShape(8.dp),
                                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                         ) {
@@ -330,6 +339,55 @@ fun RemoteSyncSettingsScreen(
                         }
                     }
                 }
+            }
+
+            pairingDeviceToConnect?.let { targetDevice ->
+                AlertDialog(
+                    onDismissRequest = { pairingDeviceToConnect = null },
+                    title = {
+                        Text(
+                            text = "Pair with ${targetDevice.name}",
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Enter the 4-8 digit pairing PIN shown on your desktop in Settings > General > Nocturne Sync:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            OutlinedTextField(
+                                value = dialogPinInput,
+                                onValueChange = { if (it.length <= 8 && it.all { c -> c.isDigit() }) dialogPinInput = it },
+                                label = { Text("Pairing PIN") },
+                                placeholder = { Text("e.g. 1234") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                val pin = dialogPinInput.trim()
+                                pairingDeviceToConnect = null
+                                syncManager.connect(targetDevice.ip, targetDevice.port, pin)
+                                syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
+                            },
+                            enabled = dialogPinInput.length in 4..8
+                        ) {
+                            Text("Connect")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { pairingDeviceToConnect = null }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
 
             // Connection Card (Manual Connect & Status)

@@ -931,15 +931,34 @@ suspend fun checkForUpdate(
 
                     var apkSizeInMB = ""
                     var apkDownloadUrl = ""
+                    var candidateAsset: JSONObject? = null
+
                     for (j in 0 until assets.length()) {
                         val asset = assets.getJSONObject(j)
-                        val assetName = asset.getString("name")
-                        if (assetName == "vivi.apk") {
-                            val apkSizeInBytes = asset.getLong("size")
-                            apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
-                            apkDownloadUrl = asset.getString("browser_download_url")
+                        val assetName = asset.getString("name").lowercase()
+                        if (!assetName.endsWith(".apk")) continue
+
+                        val isExactVivi = assetName == "vivi.apk"
+                        val isArm64 = assetName.contains("arm64")
+                        val isUniversal = assetName.contains("universal")
+                        val isRelease = assetName.contains("release")
+
+                        if (isExactVivi) {
+                            candidateAsset = asset
                             break
+                        } else if (candidateAsset == null) {
+                            candidateAsset = asset
+                        } else if (isRelease && !candidateAsset.getString("name").lowercase().contains("release")) {
+                            candidateAsset = asset
+                        } else if (isUniversal && !candidateAsset.getString("name").lowercase().contains("universal")) {
+                            candidateAsset = asset
                         }
+                    }
+
+                    candidateAsset?.let { asset ->
+                        val apkSizeInBytes = asset.getLong("size")
+                        apkSizeInMB = String.format("%.1f", apkSizeInBytes / (1024.0 * 1024.0))
+                        apkDownloadUrl = asset.getString("browser_download_url")
                     }
 
                     if (apkDownloadUrl.isNotEmpty()) {

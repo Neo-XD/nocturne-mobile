@@ -388,7 +388,8 @@ fun BottomSheetPlayer(
     val remoteConnectionState by remoteSyncManager?.connectionState?.collectAsState() ?: remember { mutableStateOf(com.nocturne.music.sync.RemoteConnectionState.DISCONNECTED) }
     val remoteRoomState by remoteSyncManager?.remoteRoomState?.collectAsState() ?: remember { mutableStateOf(null) }
 
-    val isRemoteDesktop = remotePlaybackTarget == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
+    val isRemoteDesktop = (remotePlaybackTarget == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP ||
+                          (mediaMetadata == null && remoteRoomState?.current_track != null)) && 
                           remoteConnectionState == com.nocturne.music.sync.RemoteConnectionState.CONNECTED
 
     val effectiveMediaMetadata = remember(mediaMetadata, isRemoteDesktop, remoteRoomState) {

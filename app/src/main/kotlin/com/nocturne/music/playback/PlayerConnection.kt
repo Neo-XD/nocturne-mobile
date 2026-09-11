@@ -341,15 +341,19 @@ class PlayerConnection(
         }
     }
 
+    fun isRemoteSyncActive(): Boolean {
+        val sync = remoteSyncManager ?: return false
+        if (sync.connectionState.value != com.nocturne.music.sync.RemoteConnectionState.CONNECTED) return false
+        return sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP ||
+                (player.currentMediaItem == null && sync.remoteRoomState.value?.current_track != null)
+    }
+
     /**
      * Toggle play/pause - handles Cast and Remote PC when active
      */
     fun togglePlayPause() {
-        val sync = remoteSyncManager
-        if (sync != null && 
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendToggle()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendToggle()
             return
         }
         try {
@@ -375,11 +379,8 @@ class PlayerConnection(
      * Start playback - handles Cast and Remote PC when active
      */
     fun play() {
-        val sync = remoteSyncManager
-        if (sync != null && 
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendPlay()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendPlay()
             return
         }
         try {
@@ -401,11 +402,8 @@ class PlayerConnection(
      * Pause playback - handles Cast and Remote PC when active
      */
     fun pause() {
-        val sync = remoteSyncManager
-        if (sync != null && 
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendPause()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendPause()
             return
         }
         try {
@@ -424,11 +422,8 @@ class PlayerConnection(
      * Seek to position - handles Cast and Remote PC when active
      */
     fun seekTo(position: Long) {
-        val sync = remoteSyncManager
-        if (sync != null && 
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendSeek(position)
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendSeek(position)
             return
         }
         try {
@@ -444,11 +439,8 @@ class PlayerConnection(
     }
 
     fun seekToNext() {
-        val sync = remoteSyncManager
-        if (sync != null && 
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendNext()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendNext()
             return
         }
         try {
@@ -473,11 +465,8 @@ class PlayerConnection(
 
     /** Next item, without seekToNext's prepare-and-play follow-up that the compact players never applied. */
     fun seekToNextMediaItem() {
-        val sync = remoteSyncManager
-        if (sync != null &&
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP &&
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendNext()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendNext()
             return
         }
         try {
@@ -489,11 +478,8 @@ class PlayerConnection(
 
     /** Media3's own previous behaviour, restart-then-skip, as the v2 player applied it directly. */
     fun seekToPreviousOrRestart() {
-        val sync = remoteSyncManager
-        if (sync != null &&
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP &&
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendPrevious()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendPrevious()
             return
         }
         try {
@@ -505,11 +491,8 @@ class PlayerConnection(
 
     /** Previous item, without seekToPrevious's restart-if-3s-in rule that the compact players never applied. */
     fun seekToPreviousMediaItem() {
-        val sync = remoteSyncManager
-        if (sync != null &&
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP &&
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendPrevious()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendPrevious()
             return
         }
         try {
@@ -520,11 +503,8 @@ class PlayerConnection(
     }
 
     fun seekToPrevious() {
-        val sync = remoteSyncManager
-        if (sync != null && 
-            sync.playbackTarget.value == com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP && 
-            sync.connectionState.value == com.nocturne.music.sync.RemoteConnectionState.CONNECTED) {
-            sync.sendPrevious()
+        if (isRemoteSyncActive()) {
+            remoteSyncManager?.sendPrevious()
             return
         }
         try {

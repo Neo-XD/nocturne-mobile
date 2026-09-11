@@ -46,8 +46,18 @@ fun buildNocturneDesktopColorScheme(
     darkTheme: Boolean,
     pureBlack: Boolean
 ): ColorScheme {
-    val accent = Color(preset.accentHex)
-    val onAccent = if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) Color(0xFF131314) else Color.White
+    val accent = if (preset == NocturneThemePreset.MONOCHROME) {
+        if (darkTheme) Color.White else Color.Black
+    } else {
+        Color(preset.accentHex)
+    }
+    val onAccent = if (preset == NocturneThemePreset.MONOCHROME) {
+        if (darkTheme) Color.Black else Color.White
+    } else if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) {
+        Color(0xFF131314)
+    } else {
+        Color.White
+    }
 
     return if (darkTheme) {
         val bg = if (pureBlack) Color.Black else Color(0xFF131314)
@@ -156,7 +166,7 @@ fun NocturneTheme(
     val themeCategory = remember(themeCategoryStr) {
         runCatching { ThemeCategory.valueOf(themeCategoryStr) }.getOrDefault(ThemeCategory.NOCTURNE_UI)
     }
-    val (nocturnePresetStr) = rememberPreference(NocturneThemePresetKey, NocturneThemePreset.ROSE.name)
+    val (nocturnePresetStr) = rememberPreference(NocturneThemePresetKey, NocturneThemePreset.MONOCHROME.name)
     val nocturnePreset = remember(nocturnePresetStr) {
         NocturneThemePreset.fromName(nocturnePresetStr)
     }

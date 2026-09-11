@@ -1962,48 +1962,6 @@ fun AppearanceSettings(
                         isExpressive = true
                     )
                 )
-                val isMonochrome = selectedThemeColorInt == 0xFF000000.toInt()
-                add(
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.contrast),
-                        title = { Text("Monochrome Theme") },
-                        description = { Text("Minimalist achromatic grayscale & pure black theme") },
-                        trailingContent = {
-                            Switch(
-                                checked = isMonochrome,
-                                onCheckedChange = { enableMonochrome ->
-                                    if (enableMonochrome) {
-                                        onSelectedThemeColorChange(0xFF000000.toInt())
-                                        onDynamicThemeChange(false)
-                                    } else {
-                                        onSelectedThemeColorChange(DefaultThemeColor.toArgb())
-                                        onDynamicThemeChange(true)
-                                    }
-                                },
-                                thumbContent = {
-                                    Icon(
-                                        painter = painterResource(
-                                            id = if (isMonochrome) R.drawable.check else R.drawable.close
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
-                            )
-                        },
-                        onClick = {
-                            if (!isMonochrome) {
-                                onSelectedThemeColorChange(0xFF000000.toInt())
-                                onDynamicThemeChange(false)
-                            } else {
-                                onSelectedThemeColorChange(DefaultThemeColor.toArgb())
-                                onDynamicThemeChange(true)
-                            }
-                        },
-                        isExpressive = true,
-                        descriptionBelow = true
-                    )
-                )
                 add(
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.alphabet_cyrillic),

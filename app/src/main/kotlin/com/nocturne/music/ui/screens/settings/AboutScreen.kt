@@ -195,6 +195,19 @@ fun AboutScreen(
             title = stringResource(R.string.app_info_section),
             items = listOf(
                 Material3SettingsItem(
+                    icon = painterResource(R.drawable.info),
+                    title = { Text("Quick Tour & App Guide") },
+                    description = { Text("Interactive walkthrough of Nocturne's features and tips") },
+                    onClick = {
+                        val intent = android.content.Intent(context, com.nocturne.music.WelcomeActivity::class.java).apply {
+                            putExtra("FORCE_SHOW", true)
+                        }
+                        context.startActivity(intent)
+                    },
+                    isExpressive = true,
+                    descriptionBelow = true
+                ),
+                Material3SettingsItem(
                     icon = painterResource(R.drawable.deployed_app_update),
                     title = { Text(stringResource(R.string.installed_date_title)) },
                     description = { Text(installedDate) },

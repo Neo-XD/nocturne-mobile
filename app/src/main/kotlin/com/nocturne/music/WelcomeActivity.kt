@@ -701,6 +701,107 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     }
                 }
             }
+        ),
+        OnboardingPageInfo(
+            content = { onUpdateScroll ->
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Spacer(modifier = Modifier.height(80.dp))
+
+                    Column(modifier = Modifier.padding(bottom = 16.dp)) {
+                        Text(
+                            text = "Quick Tour",
+                            style = thinHeaderStyle,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "App Guide & Tips",
+                            fontFamily = GoogleSansFlex,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 44.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            lineHeight = 52.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Get the most out of your Nocturne listening experience with these power features.",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = GoogleSansFlex
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Box(modifier = Modifier.weight(1f)) {
+                        val scrollState = rememberScrollState()
+
+                        val isAtBottom by remember {
+                            derivedStateOf {
+                                val layoutInfo = scrollState.maxValue
+                                layoutInfo == 0 || scrollState.value >= (layoutInfo - 20)
+                            }
+                        }
+
+                        LaunchedEffect(isAtBottom) {
+                            onUpdateScroll(isAtBottom)
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(scrollState)
+                        ) {
+                            FeatureCard(
+                                icon = painterResource(com.nocturne.music.R.drawable.tune),
+                                iconColor = Color(0xFFffaee4),
+                                iconTint = Color(0xFF8d0053),
+                                title = "Desktop-Style Home Layout",
+                                description = "Tap 'Edit Home' on your Home tab to rearrange, hide, or show any music sections with drag and drop.",
+                                shape = topCardShape
+                            )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            FeatureCard(
+                                icon = painterResource(com.nocturne.music.R.drawable.ic_nocturne_sync),
+                                iconColor = Color(0xFF80da88),
+                                iconTint = Color(0xFF00522c),
+                                shape = middleCardShape,
+                                title = "Nocturne PC Remote Sync",
+                                description = "Wirelessly stream or control playback to Nocturne Desktop with instant PIN pairing and auto-reconnect."
+                            )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            FeatureCard(
+                                icon = painterResource(com.nocturne.music.R.drawable.ic_push_pin),
+                                iconColor = Color(0xFFffb683),
+                                iconTint = Color(0xFF753403),
+                                shape = middleCardShape,
+                                title = "Speed Dial & Shortcuts",
+                                description = "Pin your favorite songs, playlists, or albums directly to your home screen shortcuts grid."
+                            )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            FeatureCard(
+                                icon = painterResource(com.nocturne.music.R.drawable.palette),
+                                iconColor = Color(0xFF67d4ff),
+                                iconTint = Color(0xFF004e5d),
+                                title = "Monochrome & Liquid Glass",
+                                description = "Minimalist monochrome styling, adaptive tablet navigation rails, and dynamic glass shaders.",
+                                shape = bottomCardShape
+                            )
+
+                            Spacer(modifier = Modifier.height(100.dp))
+                        }
+                    }
+                }
+            }
         )
     )
 

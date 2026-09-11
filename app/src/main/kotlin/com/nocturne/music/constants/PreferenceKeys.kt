@@ -46,6 +46,7 @@ enum class ThemeCategory {
 val NocturneThemePresetKey = stringPreferencesKey("nocturne_theme_preset")
 
 enum class NocturneThemePreset(val label: String, val accentHex: Long) {
+    MONOCHROME("Monochrome", 0xFFFFFFFF),
     ROSE("Rose", 0xFFE54D60),
     BLUE("Blue", 0xFF3B82F6),
     LIME("Lime", 0xFF84CC16),
@@ -58,7 +59,7 @@ enum class NocturneThemePreset(val label: String, val accentHex: Long) {
 
     companion object {
         fun fromName(name: String?): NocturneThemePreset =
-            entries.find { it.name.equals(name, ignoreCase = true) } ?: ROSE
+            entries.find { it.name.equals(name, ignoreCase = true) } ?: MONOCHROME
     }
 }
 

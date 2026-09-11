@@ -35,7 +35,7 @@ fun rememberIsPlayingOnActiveTarget(playerConnection: PlayerConnection): Boolean
     return when {
         // Matches PlayerConnection's dispatch predicate exactly; a connected desktop with no room
         // state yet reports not-playing rather than falling back to the local player it is not using.
-        target == PlaybackDeviceTarget.REMOTE_DESKTOP &&
+        (target == PlaybackDeviceTarget.REMOTE_DESKTOP || (!localIsPlaying && playerConnection.mediaMetadata.value == null && roomState?.current_track != null)) &&
             connectionState == RemoteConnectionState.CONNECTED -> roomState?.is_playing == true
 
         isCasting -> castIsPlaying

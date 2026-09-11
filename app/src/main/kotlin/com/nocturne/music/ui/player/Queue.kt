@@ -779,15 +779,15 @@ fun Queue(
             }
         }
 
-        LaunchedEffect(currentWindowIndex) {
-            if (currentWindowIndex != -1 && !reorderableState.isAnyItemDragging) {
-                lazyListState.scrollToItem(currentWindowIndex)
+        LaunchedEffect(currentWindowIndex, queueWindows.size) {
+            if (currentWindowIndex in queueWindows.indices && !reorderableState.isAnyItemDragging) {
+                runCatching { lazyListState.scrollToItem(currentWindowIndex) }
             }
         }
 
-        LaunchedEffect(state.isExpanded) {
-            if (state.isExpanded && currentWindowIndex != -1 && !reorderableState.isAnyItemDragging) {
-                lazyListState.scrollToItem(currentWindowIndex)
+        LaunchedEffect(state.isExpanded, queueWindows.size) {
+            if (state.isExpanded && currentWindowIndex in queueWindows.indices && !reorderableState.isAnyItemDragging) {
+                runCatching { lazyListState.scrollToItem(currentWindowIndex) }
             }
         }
 

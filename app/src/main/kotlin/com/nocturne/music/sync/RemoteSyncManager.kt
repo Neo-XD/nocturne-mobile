@@ -105,6 +105,7 @@ private data class DiscoveryPayload(
 val RemoteSyncHostKey = stringPreferencesKey("remote_sync_host")
 val RemoteSyncPortKey = intPreferencesKey("remote_sync_port")
 val RemoteSyncPinKey = stringPreferencesKey("remote_sync_pin")
+val RemoteSyncSessionTokenKey = stringPreferencesKey("remote_sync_session_token")
 val RemoteSyncAutoConnectKey = booleanPreferencesKey("remote_sync_auto_connect")
 val RemotePlaybackTargetKey = stringPreferencesKey("remote_playback_target")
 
@@ -127,6 +128,10 @@ class RemoteSyncManager @Inject constructor(
 
     private val _connectionState = MutableStateFlow(RemoteConnectionState.DISCONNECTED)
     val connectionState: StateFlow<RemoteConnectionState> = _connectionState.asStateFlow()
+
+    private val _sessionToken = MutableStateFlow<String?>(null)
+    val sessionToken: StateFlow<String?> = _sessionToken.asStateFlow()
+    fun hasSessionToken(): Boolean = !_sessionToken.value.isNullOrEmpty()
 
     private val _playbackTarget = MutableStateFlow(PlaybackDeviceTarget.LOCAL)
     val playbackTarget: StateFlow<PlaybackDeviceTarget> = _playbackTarget.asStateFlow()
@@ -164,6 +169,7 @@ class RemoteSyncManager @Inject constructor(
 
         scope.launch {
             context.dataStore.data.collectLatest { prefs ->
+                _sessionToken.value = prefs[RemoteSyncSessionTokenKey]
                 val targetStr = prefs[RemotePlaybackTargetKey] ?: PlaybackDeviceTarget.LOCAL.name
                 _playbackTarget.value = runCatching { PlaybackDeviceTarget.valueOf(targetStr) }
                     .getOrDefault(PlaybackDeviceTarget.LOCAL)
@@ -269,13 +275,17 @@ class RemoteSyncManager @Inject constructor(
         }
     }
 
-    fun connect(host: String, port: Int = 8080, pin: String) {
+    fun connect(host: String, port: Int = 8080, pin: String = "") {
         disconnectInternal(clearAutoConnect = false)
 
-        // The desktop only accepts 4 to 8 digits, so sending anything else spends a lockout slot on a guess already known to be wrong.
-        if (pin.length !in 4..8 || !pin.all { it.isDigit() }) {
+        val trimmedPin = pin.trim()
+        val currentToken = _sessionToken.value
+        val hasValidPin = trimmedPin.length in 4..8 && trimmedPin.all { it.isDigit() }
+        val canAuthenticate = hasValidPin || !currentToken.isNullOrEmpty()
+
+        if (!canAuthenticate) {
             _connectionState.value = RemoteConnectionState.ERROR
-            _statusMessage.value = "Enter the desktop's 4-8 digit pairing PIN in Remote Sync settings first"
+            _statusMessage.value = "Enter the desktop's 4-8 digit pairing PIN to connect"
             return
         }
 
@@ -285,7 +295,9 @@ class RemoteSyncManager @Inject constructor(
             context.dataStore.edit {
                 it[RemoteSyncHostKey] = cleanHost
                 it[RemoteSyncPortKey] = port
-                it[RemoteSyncPinKey] = pin
+                if (hasValidPin) {
+                    it[RemoteSyncPinKey] = trimmedPin
+                }
             }
         }
 
@@ -312,12 +324,15 @@ class RemoteSyncManager @Inject constructor(
                     when (msg.type) {
                         "auth_challenge" -> {
                             val nonce = msg.nonce.orEmpty()
+                            val tokenToSend = _sessionToken.value
+                            val pinHashToSend = if (hasValidPin) pinProof(nonce, trimmedPin) else null
                             webSocket.send(
                                 json.encodeToString(
                                     RemoteWireMessage(
                                         type = "auth_response",
                                         client_device_name = "Nocturne Mobile (${android.os.Build.MODEL})",
-                                        pin_hash = pinProof(nonce, pin)
+                                        pin_hash = pinHashToSend,
+                                        session_token = tokenToSend
                                     )
                                 )
                             )
@@ -326,6 +341,12 @@ class RemoteSyncManager @Inject constructor(
                             if (msg.success == true) {
                                 _connectionState.value = RemoteConnectionState.CONNECTED
                                 _statusMessage.value = "Connected to $cleanHost:$port"
+                                msg.session_token?.let { newToken ->
+                                    _sessionToken.value = newToken
+                                    scope.launch {
+                                        context.dataStore.edit { it[RemoteSyncSessionTokenKey] = newToken }
+                                    }
+                                }
                                 scope.launch {
                                     context.dataStore.edit { it[RemoteSyncAutoConnectKey] = true }
                                 }
@@ -333,6 +354,10 @@ class RemoteSyncManager @Inject constructor(
                                 authRejected = true
                                 _connectionState.value = RemoteConnectionState.ERROR
                                 _statusMessage.value = msg.message ?: "Pairing rejected"
+                                _sessionToken.value = null
+                                scope.launch {
+                                    context.dataStore.edit { it.remove(RemoteSyncSessionTokenKey) }
+                                }
                                 webSocket.close(1000, "auth failed")
                             }
                         }
@@ -361,6 +386,17 @@ class RemoteSyncManager @Inject constructor(
                 _statusMessage.value = "Disconnected"
             }
         })
+    }
+
+    fun clearPairingSession() {
+        disconnect()
+        _sessionToken.value = null
+        scope.launch {
+            context.dataStore.edit {
+                it.remove(RemoteSyncSessionTokenKey)
+                it.remove(RemoteSyncPinKey)
+            }
+        }
     }
 
     fun disconnect() {
