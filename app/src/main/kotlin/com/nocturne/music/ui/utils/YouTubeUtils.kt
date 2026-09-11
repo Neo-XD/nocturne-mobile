@@ -43,12 +43,12 @@ private fun String.resizeGoogleCdn(width: Int?, height: Int?, isDataSaverEnabled
     val w = if (isDataSaverEnabled) {
         (width ?: height ?: 150).coerceAtMost(150)
     } else {
-        (width ?: height ?: 1200).coerceAtLeast(544)
+        width ?: height ?: 544
     }
     val h = if (isDataSaverEnabled) {
         (height ?: width ?: 150).coerceAtMost(150)
     } else {
-        (height ?: width ?: 1200).coerceAtLeast(544)
+        height ?: width ?: 544
     }
 
     // Handle wNNN-hNNN path segment style parameters
@@ -83,7 +83,7 @@ private fun String.resizeYtimg(width: Int?, height: Int?, isDataSaverEnabled: Bo
         }
     }
 
-    val w = width ?: height ?: 1200
+    val w = width ?: height ?: 544
 
     return when {
         w >= 800 -> {

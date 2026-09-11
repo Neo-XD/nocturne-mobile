@@ -85,6 +85,8 @@ import com.nocturne.music.constants.CropAlbumArtKey
 import com.nocturne.music.constants.DefaultOpenTabKey
 import com.nocturne.music.constants.DensityScale
 import com.nocturne.music.constants.DensityScaleKey
+import com.nocturne.music.constants.CustomizationMode
+import com.nocturne.music.constants.CustomizationModeKey
 import com.nocturne.music.constants.DynamicAppBackgroundKey
 import com.nocturne.music.constants.DynamicThemeKey
 import com.nocturne.music.constants.EnableDynamicIconKey
@@ -169,6 +171,12 @@ fun AppearanceSettings(
     activity: Activity,
     snackbarHostState: SnackbarHostState,
 ) {
+    val (customizationMode, onCustomizationModeChange) = rememberEnumPreference(
+        CustomizationModeKey,
+        defaultValue = CustomizationMode.BASIC
+    )
+    val isExtreme = customizationMode == CustomizationMode.EXTREME
+
     val (dynamicTheme, onDynamicThemeChange) = rememberPreference(
         DynamicThemeKey,
         defaultValue = true
@@ -1929,6 +1937,129 @@ fun AppearanceSettings(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
     ) {
+        // Customization Mode Selector
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            ),
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.sliders),
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.customization_mode),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (isExtreme) {
+                                stringResource(R.string.customization_mode_extreme_desc)
+                            } else {
+                                stringResource(R.string.customization_mode_basic_desc)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val basicSelected = !isExtreme
+                    val extremeSelected = isExtreme
+
+                    // Basic Mode Button
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onCustomizationModeChange(CustomizationMode.BASIC) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (basicSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                        ),
+                        border = BorderStroke(
+                            width = if (basicSelected) 1.5.dp else 1.dp,
+                            color = if (basicSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp, horizontal = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.customization_mode_basic),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (basicSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (basicSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    // Extreme Mode Button
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onCustomizationModeChange(CustomizationMode.EXTREME) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (extremeSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                        ),
+                        border = BorderStroke(
+                            width = if (extremeSelected) 1.5.dp else 1.dp,
+                            color = if (extremeSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp, horizontal = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.customization_mode_extreme),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (extremeSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (extremeSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Material3SettingsGroup(
             title = stringResource(R.string.theme),
             items = buildList {
@@ -2055,8 +2186,8 @@ fun AppearanceSettings(
                         descriptionBelow = true
                     )
                 )
-                // Blur radius & glass lighting customizer — only shown when frosted glass is on
-                if (enableFrostedGlass) {
+                // Blur radius & glass lighting customizer — only shown when frosted glass is on and extreme mode is enabled
+                if (enableFrostedGlass && isExtreme) {
                     add(
                         Material3SettingsItem(
                             icon = painterResource(R.drawable.sliders),
@@ -2291,7 +2422,7 @@ fun AppearanceSettings(
                     isExpressive = true,
                     descriptionBelow = true
                 ),
-                if (showPlayerThumbnailShadow) {
+                if (showPlayerThumbnailShadow && isExtreme) {
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.sliders),
                         title = { Text(stringResource(R.string.player_thumbnail_shadow_depth)) },
@@ -2457,7 +2588,7 @@ fun AppearanceSettings(
                     isExpressive = true,
                     descriptionBelow = true
                 )
-            ) + if (swipeThumbnail) listOf(
+            ) + if (swipeThumbnail && isExtreme) listOf(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.tune),
                     title = { Text(stringResource(R.string.swipe_sensitivity)) },
@@ -2827,7 +2958,7 @@ fun AppearanceSettings(
 
         Material3SettingsGroup(
             title = stringResource(R.string.misc),
-            items = listOf(
+            items = listOfNotNull(
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.nav_bar),
                     title = { Text(stringResource(R.string.default_open_tab)) },
@@ -2939,15 +3070,17 @@ fun AppearanceSettings(
                     onClick = { showGridSizeDialog = true },
                     isExpressive = true
                 ),
-                Material3SettingsItem(
-                    icon = painterResource(R.drawable.grid_view),
-                    title = { Text(stringResource(R.string.display_density)) },
-                    description = {
-                        Text(DensityScale.fromValue(densityScale).label)
-                    },
-                    onClick = { showDensityScaleDialog = true },
-                    isExpressive = true
-                )
+                if (isExtreme) {
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.grid_view),
+                        title = { Text(stringResource(R.string.display_density)) },
+                        description = {
+                            Text(DensityScale.fromValue(densityScale).label)
+                        },
+                        onClick = { showDensityScaleDialog = true },
+                        isExpressive = true
+                    )
+                } else null
             )
         )
 

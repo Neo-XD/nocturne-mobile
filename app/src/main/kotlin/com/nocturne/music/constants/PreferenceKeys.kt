@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
@@ -37,6 +38,15 @@ val GlassSurfaceOpacityKey = floatPreferencesKey("glass_surface_opacity")
 val HasPromptedSignInKey = booleanPreferencesKey("has_prompted_sign_in")
 
 val ThemeCategoryKey = stringPreferencesKey("theme_category")
+
+enum class CustomizationMode {
+    BASIC,
+    EXTREME
+}
+
+val CustomizationModeKey = stringPreferencesKey("customization_mode")
+val BlockedArtistsKey = stringSetPreferencesKey("blocked_artists")
+val StoredGoogleAccountsKey = stringPreferencesKey("stored_google_accounts")
 
 enum class ThemeCategory {
     NOCTURNE_UI,

@@ -25,7 +25,15 @@ import com.nocturne.music.extensions.togglePlayPause
 import com.nocturne.music.playback.MusicService.MusicBinder
 import com.nocturne.music.playback.queues.Queue
 import com.nocturne.music.utils.reportException
+import android.os.Handler
+import android.os.Looper
+import coil3.SingletonImageLoader
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import com.nocturne.music.constants.BlockedArtistsKey
+import com.nocturne.music.utils.dataStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -112,9 +120,19 @@ class PlayerConnection(
                 }
             }
         }
+
+        // Collect blocked artists from DataStore for auto-skipping
+        scope.launch(Dispatchers.IO) {
+            service.dataStore.data.collect { prefs ->
+                blockedArtists = prefs[BlockedArtistsKey] ?: emptySet()
+            }
+        }
         
         Timber.tag(TAG).d("PlayerConnection state flows initialized successfully")
     }
+
+    private var blockedArtists: Set<String> = emptySet()
+    private val mainHandler = Handler(Looper.getMainLooper())
     
     // Effective playing state, considers Cast when active
     val isEffectivelyPlaying = combine(
@@ -558,6 +576,9 @@ class PlayerConnection(
         currentMediaItemIndex.value = player.currentMediaItemIndex
         currentWindowIndex.value = player.getCurrentQueueIndex()
         updateCanSkipPreviousAndNext()
+
+        checkBlockedArtist(mediaItem)
+        prefetchUpcomingThumbnails()
     }
 
     override fun onTimelineChanged(
@@ -570,6 +591,8 @@ class PlayerConnection(
         currentMediaItemIndex.value = player.currentMediaItemIndex
         currentWindowIndex.value = player.getCurrentQueueIndex()
         updateCanSkipPreviousAndNext()
+
+        prefetchUpcomingThumbnails()
     }
 
     override fun onShuffleModeEnabledChanged(enabled: Boolean) {
@@ -604,6 +627,51 @@ class PlayerConnection(
         } else {
             canSkipPrevious.value = false
             canSkipNext.value = false
+        }
+    }
+
+    private fun checkBlockedArtist(mediaItem: MediaItem?) {
+        if (mediaItem == null || blockedArtists.isEmpty()) return
+        val artistName = mediaItem.mediaMetadata.artist?.toString()?.trim()
+        val artists = mediaItem.metadata?.artists?.map { it.name.trim() } ?: emptyList()
+
+        val isBlocked = (!artistName.isNullOrBlank() && blockedArtists.any { it.equals(artistName, ignoreCase = true) }) ||
+            artists.any { name -> blockedArtists.any { it.equals(name, ignoreCase = true) } }
+
+        if (isBlocked) {
+            Timber.tag(TAG).i("Track blocked by artist filter ($artistName), auto-skipping...")
+            mainHandler.post {
+                if (player.hasNextMediaItem()) {
+                    player.seekToNextMediaItem()
+                } else {
+                    player.pause()
+                }
+            }
+        }
+    }
+
+    private fun prefetchUpcomingThumbnails() {
+        try {
+            val count = player.mediaItemCount
+            val currentIndex = player.currentMediaItemIndex
+            val loader = SingletonImageLoader.get(service)
+            for (offset in 1..3) {
+                val nextIdx = currentIndex + offset
+                if (nextIdx < count) {
+                    val item = player.getMediaItemAt(nextIdx)
+                    val uri = item.mediaMetadata.artworkUri
+                    if (uri != null) {
+                        val request = ImageRequest.Builder(service)
+                            .data(uri)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build()
+                        loader.enqueue(request)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Error prefetching queue thumbnails")
         }
     }
 

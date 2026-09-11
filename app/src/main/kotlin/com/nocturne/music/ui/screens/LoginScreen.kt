@@ -38,6 +38,12 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.datastore.preferences.core.edit
+import com.nocturne.music.constants.StoredGoogleAccountsKey
+import com.nocturne.music.models.StoredGoogleAccount
+import com.nocturne.music.utils.dataStore
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -130,6 +136,40 @@ fun LoginScreen(
                 accountEmail = it.email.orEmpty()
                 accountChannelHandle = it.channelHandle.orEmpty()
 
+                val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
+                val accountId = dataSyncId.ifBlank { accountEmail.ifBlank { it.name } }
+
+                context.dataStore.edit { settings ->
+                    settings[InnerTubeCookieKey] = innerTubeCookie
+                    settings[VisitorDataKey] = visitorData
+                    settings[DataSyncIdKey] = dataSyncId
+                    settings[AccountNameKey] = it.name
+                    settings[AccountEmailKey] = it.email.orEmpty()
+                    settings[AccountChannelHandleKey] = it.channelHandle.orEmpty()
+
+                    val raw = settings[StoredGoogleAccountsKey]
+                    val existing = if (!raw.isNullOrBlank()) {
+                        try {
+                            json.decodeFromString<List<StoredGoogleAccount>>(raw).map { acc -> acc.copy(isActive = false) }
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+                    } else emptyList()
+
+                    val newAcc = StoredGoogleAccount(
+                        id = accountId,
+                        name = it.name,
+                        email = it.email.orEmpty(),
+                        channelHandle = it.channelHandle.orEmpty(),
+                        cookie = innerTubeCookie,
+                        visitorData = visitorData,
+                        dataSyncId = dataSyncId,
+                        isActive = true,
+                    )
+                    val updated = existing.filterNot { acc -> acc.id == accountId || (it.email?.isNotBlank() == true && acc.email == it.email) } + newAcc
+                    settings[StoredGoogleAccountsKey] = json.encodeToString(updated)
+                }
+
                 Timber.d("Login: Successfully logged in as ${it.name}, restarting app...")
 
                 webView?.apply {
@@ -193,7 +233,7 @@ fun LoginScreen(
                         }
                     }, "Android")
                     webView = this
-                    loadUrl("https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com")
+                    loadUrl("https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fmusic.youtube.com")
                 }
             }
         )

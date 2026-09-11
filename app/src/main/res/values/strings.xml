@@ -450,6 +450,29 @@
     <string name="theme_category_material3">Material 3 Expressive</string>
     <string name="theme_category_desc">Choose between the Nocturne Desktop design system and Material 3 Expressive</string>
     <string name="nocturne_desktop_presets">Desktop Presets</string>
+
+    <!-- Customization Mode -->
+    <string name="customization_mode">Customization Mode</string>
+    <string name="customization_mode_basic">Basic</string>
+    <string name="customization_mode_extreme">Extreme</string>
+    <string name="customization_mode_basic_desc">Clean, curated Nocturne experience</string>
+    <string name="customization_mode_extreme_desc">Full access to fine sliders, shaders, and micro-tuning</string>
+
+    <!-- Artist Blocking -->
+    <string name="block_artist">Block artist</string>
+    <string name="unblock_artist">Unblock artist</string>
+    <string name="artist_blocked">Blocked %s</string>
+    <string name="artist_unblocked">Unblocked %s</string>
+    <string name="blocked_artists">Blocked Artists</string>
+    <string name="no_blocked_artists">No blocked artists</string>
+    <string name="blocked_artists_desc">Tracks by blocked artists are automatically skipped</string>
+
+    <!-- Multi-Account Management -->
+    <string name="accounts">Google Accounts</string>
+    <string name="add_another_account">Add another Google account</string>
+    <string name="switch_account">Switch account</string>
+    <string name="remove_account">Remove account</string>
+    <string name="active_account">Active</string>
 </resources>
 
 

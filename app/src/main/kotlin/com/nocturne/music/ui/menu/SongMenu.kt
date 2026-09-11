@@ -95,6 +95,9 @@ import com.nocturne.music.ui.component.TextFieldDialog
 import com.nocturne.music.utils.listItemShape
 import com.nocturne.music.ui.utils.ShowMediaInfo
 import com.nocturne.music.viewmodels.CachePlaylistViewModel
+import com.nocturne.music.constants.BlockedArtistsKey
+import com.nocturne.music.utils.rememberPreference
+import androidx.compose.material3.LocalContentColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -121,7 +124,7 @@ fun SongMenu(
     val listenTogetherManager = LocalListenTogetherManager.current
     val scope = rememberCoroutineScope()
     var refetchIconDegree by remember { mutableFloatStateOf(0f) }
-
+    val (blockedArtists, onBlockedArtistsChange) = rememberPreference(BlockedArtistsKey, emptySet())
     val cacheViewModel = hiltViewModel<CachePlaylistViewModel>()
 
     val rotationAnimation by animateFloatAsState(
@@ -799,6 +802,35 @@ fun SongMenu(
                             }
                         )
                     )
+                    val primaryArtist = song.artists.firstOrNull()?.name
+                    if (!primaryArtist.isNullOrBlank()) {
+                        val isArtistBlocked = blockedArtists.any { it.equals(primaryArtist, ignoreCase = true) }
+                        add(
+                            Material3MenuItemData(
+                                title = {
+                                    Text(text = if (isArtistBlocked) stringResource(R.string.unblock_artist) else stringResource(R.string.block_artist))
+                                },
+                                description = { Text(text = primaryArtist) },
+                                icon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.block),
+                                        contentDescription = null,
+                                        tint = if (isArtistBlocked) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                                    )
+                                },
+                                onClick = {
+                                    onDismiss()
+                                    if (isArtistBlocked) {
+                                        onBlockedArtistsChange(blockedArtists.filterNot { it.equals(primaryArtist, ignoreCase = true) }.toSet())
+                                        android.widget.Toast.makeText(context, context.getString(R.string.artist_unblocked, primaryArtist), android.widget.Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        onBlockedArtistsChange(blockedArtists + primaryArtist)
+                                        android.widget.Toast.makeText(context, context.getString(R.string.artist_blocked, primaryArtist), android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        )
+                    }
                 }
             )
         }

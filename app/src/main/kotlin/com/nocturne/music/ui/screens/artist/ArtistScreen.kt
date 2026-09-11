@@ -137,6 +137,8 @@ import com.valentinilk.shimmer.shimmer
 import com.nocturne.artistvideo.ArtistVideo
 import com.nocturne.music.constants.ShowArtistVideoKey
 import com.nocturne.music.constants.ShowArtistBackgroundVideoKey
+import com.nocturne.music.constants.BlockedArtistsKey
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -179,6 +181,9 @@ fun ArtistScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showLocal by rememberSaveable { mutableStateOf(false) }
     val density = LocalDensity.current
+    val (blockedArtists, onBlockedArtistsChange) = rememberPreference(BlockedArtistsKey, emptySet())
+    val artistName = artistPage?.artist?.title ?: libraryArtist?.artist?.name ?: ""
+    val isArtistBlocked = artistName.isNotBlank() && blockedArtists.any { it.equals(artistName, ignoreCase = true) }
 
     // Calculate the offset value outside of the offset lambda
     val systemBarsTopPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
@@ -1099,6 +1104,25 @@ fun ArtistScreen(
             }
         },
         actions = {
+            if (artistName.isNotBlank()) {
+                IconButton(
+                    onClick = {
+                        if (isArtistBlocked) {
+                            onBlockedArtistsChange(blockedArtists.filterNot { it.equals(artistName, ignoreCase = true) }.toSet())
+                            android.widget.Toast.makeText(context, context.getString(R.string.artist_unblocked, artistName), android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            onBlockedArtistsChange(blockedArtists + artistName)
+                            android.widget.Toast.makeText(context, context.getString(R.string.artist_blocked, artistName), android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.block),
+                        contentDescription = if (isArtistBlocked) stringResource(R.string.unblock_artist) else stringResource(R.string.block_artist),
+                        tint = if (isArtistBlocked) MaterialTheme.colorScheme.error else LocalContentColor.current
+                    )
+                }
+            }
             IconButton(
                 onClick = {
                     viewModel.artistPage?.artist?.shareLink?.let { link ->

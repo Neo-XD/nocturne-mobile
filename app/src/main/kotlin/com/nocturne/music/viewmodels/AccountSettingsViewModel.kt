@@ -24,6 +24,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import androidx.datastore.preferences.core.edit
+import com.nocturne.music.constants.StoredGoogleAccountsKey
+import com.nocturne.music.models.StoredGoogleAccount
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @HiltViewModel
 class AccountSettingsViewModel @Inject constructor(
@@ -81,12 +85,95 @@ class AccountSettingsViewModel @Inject constructor(
                 settings[AccountNameKey] = accountName
                 settings[AccountEmailKey] = accountEmail
                 settings[AccountChannelHandleKey] = accountChannelHandle
+
+                val accountId = dataSyncId.ifBlank { accountEmail.ifBlank { accountName } }
+                val raw = settings[StoredGoogleAccountsKey]
+                val existing = parseStoredAccounts(raw).map { it.copy(isActive = false) }
+                val newAcc = StoredGoogleAccount(
+                    id = accountId,
+                    name = accountName,
+                    email = accountEmail,
+                    channelHandle = accountChannelHandle,
+                    cookie = cookie,
+                    visitorData = visitorData,
+                    dataSyncId = dataSyncId,
+                    isActive = true,
+                )
+                val updated = existing.filterNot { it.id == accountId || (accountEmail.isNotBlank() && it.email == accountEmail) } + newAcc
+                settings[StoredGoogleAccountsKey] = json.encodeToString(updated)
             }
             withContext(Dispatchers.Main) {
                 val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
                 intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 context.startActivity(intent)
                 Runtime.getRuntime().exit(0)
+            }
+        }
+    }
+
+    fun switchAccount(context: Context, targetAccount: StoredGoogleAccount) {
+        saveTokenAndRestart(
+            context = context,
+            cookie = targetAccount.cookie,
+            visitorData = targetAccount.visitorData,
+            dataSyncId = targetAccount.dataSyncId,
+            accountName = targetAccount.name,
+            accountEmail = targetAccount.email,
+            accountChannelHandle = targetAccount.channelHandle,
+        )
+    }
+
+    fun removeAccount(context: Context, accountId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            context.dataStore.edit { settings ->
+                val existing = parseStoredAccounts(settings[StoredGoogleAccountsKey])
+                val updated = existing.filterNot { it.id == accountId }
+                settings[StoredGoogleAccountsKey] = json.encodeToString(updated)
+            }
+        }
+    }
+
+    fun syncCurrentAccountIfMissing(
+        context: Context,
+        cookie: String,
+        visitorData: String,
+        dataSyncId: String,
+        accountName: String,
+        accountEmail: String,
+        accountChannelHandle: String,
+    ) {
+        if (cookie.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            context.dataStore.edit { settings ->
+                val raw = settings[StoredGoogleAccountsKey]
+                val existing = parseStoredAccounts(raw)
+                val accountId = dataSyncId.ifBlank { accountEmail.ifBlank { accountName } }
+                if (existing.none { it.id == accountId || (accountEmail.isNotBlank() && it.email == accountEmail) }) {
+                    val newAcc = StoredGoogleAccount(
+                        id = accountId,
+                        name = accountName,
+                        email = accountEmail,
+                        channelHandle = accountChannelHandle,
+                        cookie = cookie,
+                        visitorData = visitorData,
+                        dataSyncId = dataSyncId,
+                        isActive = true,
+                    )
+                    settings[StoredGoogleAccountsKey] = json.encodeToString(existing + newAcc)
+                }
+            }
+        }
+    }
+
+    companion object {
+        private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
+
+        fun parseStoredAccounts(rawJson: String?): List<StoredGoogleAccount> {
+            if (rawJson.isNullOrBlank()) return emptyList()
+            return try {
+                json.decodeFromString<List<StoredGoogleAccount>>(rawJson)
+            } catch (e: Exception) {
+                emptyList()
             }
         }
     }

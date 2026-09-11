@@ -15,12 +15,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
@@ -95,6 +100,8 @@ import com.nocturne.music.constants.ShowArtistVideoKey
 import com.nocturne.music.constants.ShowArtistBackgroundVideoKey
 import com.nocturne.music.constants.ShowWrappedCardKey
 import com.nocturne.music.constants.TopSize
+import com.nocturne.music.constants.BlockedArtistsKey
+import com.nocturne.music.ui.component.DefaultDialog
 import com.nocturne.music.ui.component.EnumDialog
 import com.nocturne.music.ui.component.IconButton
 import com.nocturne.music.ui.component.Material3SettingsGroup
@@ -133,6 +140,8 @@ fun ContentSettings(
     val (suggestionRegion, onSuggestionRegionChange) = rememberPreference(key = SuggestionRegionKey, defaultValue = "system")
     val (hideExplicit, onHideExplicitChange) = rememberPreference(key = HideExplicitKey, defaultValue = false)
     val (hideVideoSongs, onHideVideoSongsChange) = rememberPreference(key = HideVideoSongsKey, defaultValue = false)
+    val (blockedArtists, onBlockedArtistsChange) = rememberPreference(key = BlockedArtistsKey, defaultValue = emptySet())
+    var showBlockedArtistsDialog by rememberSaveable { mutableStateOf(false) }
 
     val (hideYoutubeShorts, onHideYoutubeShortsChange) = rememberPreference(key = HideYoutubeShortsKey, defaultValue = false)
     val (showArtistDescription, onShowArtistDescriptionChange) = rememberPreference(key = ShowArtistDescriptionKey, defaultValue = true)
@@ -294,6 +303,76 @@ fun ContentSettings(
                 }
             }
         )
+    }
+
+    if (showBlockedArtistsDialog) {
+        DefaultDialog(
+            onDismiss = { showBlockedArtistsDialog = false },
+            title = { Text(stringResource(R.string.blocked_artists)) },
+            buttons = {
+                TextButton(onClick = { showBlockedArtistsDialog = false }) {
+                    Text(stringResource(R.string.done))
+                }
+            }
+        ) {
+            if (blockedArtists.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.no_blocked_artists),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 350.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.blocked_artists_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    blockedArtists.sorted().forEach { name ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            IconButton(
+                                onClick = {
+                                    onBlockedArtistsChange(blockedArtists - name)
+                                },
+                                onLongClick = {},
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.close),
+                                    contentDescription = stringResource(R.string.unblock_artist),
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     var showContentLanguageDialog by rememberSaveable {
@@ -821,6 +900,19 @@ fun ContentSettings(
                         )
                     },
                     onClick = { onShowArtistBackgroundVideoChange(!showArtistBackgroundVideo) },
+                    isExpressive = true,
+                    descriptionBelow = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.block),
+                    title = { Text(stringResource(R.string.blocked_artists)) },
+                    description = {
+                        Text(
+                            if (blockedArtists.isEmpty()) stringResource(R.string.no_blocked_artists)
+                            else "${blockedArtists.size} blocked"
+                        )
+                    },
+                    onClick = { showBlockedArtistsDialog = true },
                     isExpressive = true,
                     descriptionBelow = true
                 )

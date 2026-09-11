@@ -2,7 +2,10 @@ package com.nocturne.music.ui.menu
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -305,12 +308,26 @@ fun OldPlayerMenu(
                             Material3MenuItemData(
                                 title = { Text(stringResource(R.string.shuffle)) },
                                 icon = {
-                                    Icon(
-                                        painter = painterResource(R.drawable.shuffle),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = if (shuffleModeEnabled) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current
-                                    )
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.shuffle),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(22.dp),
+                                            tint = if (shuffleModeEnabled) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current
+                                        )
+                                        if (shuffleModeEnabled) {
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(3.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.primary)
+                                            )
+                                        }
+                                    }
                                 },
                                 onClick = {
                                     playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled

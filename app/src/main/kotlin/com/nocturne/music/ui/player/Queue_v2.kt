@@ -223,7 +223,21 @@ fun QueueV2(
                     .clickable { playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(painterResource(R.drawable.shuffle), contentDescription = "Shuffle", tint = adaptivePrimary, modifier = Modifier.size(24.dp))
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(painterResource(R.drawable.shuffle), contentDescription = "Shuffle", tint = adaptivePrimary, modifier = Modifier.size(22.dp))
+                    if (shuffleModeEnabled) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .clip(CircleShape)
+                                .background(adaptivePrimary)
+                        )
+                    }
+                }
             }
             // Repeat
             Box(
@@ -235,17 +249,31 @@ fun QueueV2(
                     .clickable { playerConnection.player.toggleRepeatMode() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(
-                        when (repeatMode) {
-                            Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
-                            else -> R.drawable.repeat
-                        }
-                    ),
-                    contentDescription = "Repeat",
-                    tint = adaptivePrimary,
-                    modifier = Modifier.size(24.dp)
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            when (repeatMode) {
+                                Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                                else -> R.drawable.repeat
+                            }
+                        ),
+                        contentDescription = "Repeat",
+                        tint = adaptivePrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    if (repeatMode != Player.REPEAT_MODE_OFF) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .clip(CircleShape)
+                                .background(adaptivePrimary)
+                        )
+                    }
+                }
             }
             // Timer
             Box(

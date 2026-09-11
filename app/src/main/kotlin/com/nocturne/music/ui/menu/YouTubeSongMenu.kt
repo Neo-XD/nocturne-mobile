@@ -68,6 +68,9 @@ import com.nocturne.music.R
 import com.nocturne.music.constants.ListItemHeight
 import com.nocturne.music.constants.ListThumbnailSize
 import com.nocturne.music.constants.ThumbnailCornerRadius
+import com.nocturne.music.constants.BlockedArtistsKey
+import com.nocturne.music.utils.rememberPreference
+import androidx.compose.material3.LocalContentColor
 import com.nocturne.music.db.entities.SpeedDialItem
 import com.nocturne.music.db.entities.SongEntity
 import com.nocturne.music.extensions.toMediaItem
@@ -114,6 +117,7 @@ fun YouTubeSongMenu(
             }
         }
     }
+    val (blockedArtists, onBlockedArtistsChange) = rememberPreference(BlockedArtistsKey, emptySet())
 
     var showChoosePlaylistDialog by rememberSaveable {  
         mutableStateOf(false)  
@@ -633,6 +637,35 @@ fun YouTubeSongMenu(
                             }
                         )
                     )
+                    val primaryArtist = song.artists.firstOrNull()?.name
+                    if (!primaryArtist.isNullOrBlank()) {
+                        val isArtistBlocked = blockedArtists.any { it.equals(primaryArtist, ignoreCase = true) }
+                        add(
+                            Material3MenuItemData(
+                                title = {
+                                    Text(text = if (isArtistBlocked) stringResource(R.string.unblock_artist) else stringResource(R.string.block_artist))
+                                },
+                                description = { Text(text = primaryArtist) },
+                                icon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.block),
+                                        contentDescription = null,
+                                        tint = if (isArtistBlocked) MaterialTheme.colorScheme.error else LocalContentColor.current,
+                                    )
+                                },
+                                onClick = {
+                                    onDismiss()
+                                    if (isArtistBlocked) {
+                                        onBlockedArtistsChange(blockedArtists.filterNot { it.equals(primaryArtist, ignoreCase = true) }.toSet())
+                                        android.widget.Toast.makeText(context, context.getString(R.string.artist_unblocked, primaryArtist), android.widget.Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        onBlockedArtistsChange(blockedArtists + primaryArtist)
+                                        android.widget.Toast.makeText(context, context.getString(R.string.artist_blocked, primaryArtist), android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        )
+                    }
                 }
             )
         }
