@@ -2,6 +2,29 @@
  
 All notable changes to Nocturne Mobile are documented in this file.
 
+## [v0.2.4-m] - 2026-09-11
+
+### 🚀 New Features
+- **Artist Blocking & Auto-Skip**: Block unwanted artists directly from song menus, YouTube song menus, and artist screens. Blocked artists are skipped and suppressed automatically during playback.
+- **Multi-Account Switcher & Profile Management**: Seamlessly switch between multiple signed-in Google/YouTube accounts directly within Account Settings without re-authenticating.
+- **Seamless Remote Sync Reconnect & PIN Pairing**: Streamlined PC connection recovery with dedicated pairing PIN modal dialog and connection persistence.
+- **Customizable Home Layout & Drag-to-Reorder**: Customize Home feed section order and visibility with instant DataStore persistence.
+- **Tablet Navigation Rail & Settings Popover**: Tailored tablet interface with vertical navigation rail and compact popover card for quick settings access.
+
+### ✨ Improvements
+- **Monotonic Clock Synchronization**: Sub-second timestamp synchronization with Nocturne Desktop eliminating clock drift during remote control.
+- **Queue Drag Handles**: Responsive drag-to-reorder in the PC queue sheet with dedicated touch handles.
+- **Frosted Glass & Acrylic Visuals**: High-performance backdrop blur recapturing after screen rotation and lifecycle changes.
+- **Outfit Typeface Default**: Clean typography without rigid font variation constraints across all screens.
+
+### 🐛 Bug Fixes
+- Fixed Android CI build and quality gate failures by resolving vector drawable lint and Compose state collection warnings.
+- Fixed `StateFlow.value` invocation inside composition in `ActivePlaybackTarget`.
+- Fixed `LocalContext` resource lookups within click listener callbacks in `ArtistScreen` and `SongMenu`.
+- Fixed remote sync connection drops and improved reconnect resilience across network switches.
+
+---
+
 ## [v0.2.3-m] - 2026-09-10
 
 ### 🚀 New Features

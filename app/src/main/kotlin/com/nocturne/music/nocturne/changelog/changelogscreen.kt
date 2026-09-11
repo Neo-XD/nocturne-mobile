@@ -558,42 +558,27 @@ private fun getLocalFallbackChangelog(tag: String): CachedChangelogData {
     return CachedChangelogData(
         sections = listOf(
             ChangelogSection("🚀 New Features", listOf(
-                "Desktop-Style Customizable Home Layout: Added an interactive Home Layout customizer with drag-to-reorder support.",
-                "Granular Home Visibility Controls: Added individual visibility toggles for Quick Picks, Forgotten Favorites, Albums, Artists, Similar to..., and Mixes.",
-                "Edit Home Button: Added an 'Edit home' button directly to the Home screen for instant customization.",
-                "DataStore Persistence: Home layout order and section visibility preferences persist reliably across sessions using Jetpack DataStore.",
-                "Tablet Navigation Rail: Dedicated vertical navigation rail for tablets with screens ≥600dp wide.",
-                "Docked & Floating Nav Modes: Full support for both docked and floating navigation modes on tablet displays.",
-                "Liquid-Glass Navigation Pill: Translucent acrylic floating navigation pill with shader reflections when Floating Nav is enabled.",
-                "Tablet Settings Popover: Dedicated top-right settings popover appearing below the profile avatar in a compact 380dp popover card.",
-                "Remote PC Queue Selection: Automatic PC queue tab selection when opening the Queue sheet while connected to Nocturne Desktop.",
-                "Monotonic Clock Synchronization: Real-time playback synchronization using SystemClock.elapsedRealtime() to eliminate wall-clock drift.",
-                "PC Queue Track Reordering: Direct drag handles for smooth, responsive PC queue track reordering.",
-                "Account Identity: Storage of signed-in YouTube account's real email address and display name retrieved from YouTube account metadata."
+                "Artist Blocking & Auto-Skip: Block unwanted artists directly from song menus, YouTube song menus, and artist screens. Blocked artists are skipped and suppressed automatically.",
+                "Multi-Account Switcher & Profile Management: Seamlessly switch between multiple signed-in Google/YouTube accounts directly within Account Settings without re-authenticating.",
+                "Seamless Remote Sync Reconnect & PIN Pairing: Streamlined PC connection recovery with dedicated pairing PIN modal dialog and connection persistence.",
+                "Customizable Home Layout & Drag-to-Reorder: Customize Home feed section order and visibility with instant DataStore persistence.",
+                "Tablet Navigation Rail & Settings Popover: Tailored tablet interface with vertical navigation rail and compact popover card for quick settings access."
             )),
             ChangelogSection("✨ Improvements", listOf(
-                "Frosted Glass & Backdrop Blur: Improved Convx-inspired frosted-glass rendering and backdrop blur reliability.",
-                "Backdrop Lifecycle Reattachment: Automatic backdrop recapture when the application resumes and correct coordinate reattachment after lifecycle transitions.",
-                "Orientation & Restart Handling: Improved backdrop handling during rotation and activity restarts; prevented stale captures from being reused.",
-                "Remote Synchronization: Monotonic clock reference eliminates sync drift caused by system clock adjustments.",
-                "Queue Drag Responsiveness: Queue reordering is smoother and more responsive with dedicated, unblocked drag handles.",
-                "Clean Typography: Removed rigid FontVariation.Settings constraints; Nocturne Mobile now defaults cleanly to the Outfit typeface.",
-                "Theme System Polish: Purged legacy Monochrome theme preset; updated default theme to the Rose palette with dynamic tinting."
+                "Monotonic Clock Synchronization: Sub-second timestamp synchronization with Nocturne Desktop eliminating clock drift during remote control.",
+                "Queue Drag Handles: Responsive drag-to-reorder in the PC queue sheet with dedicated touch handles.",
+                "Frosted Glass & Acrylic Visuals: High-performance backdrop blur recapturing after screen rotation and lifecycle changes.",
+                "Outfit Typeface Default: Clean typography without rigid font variation constraints across all screens."
             )),
             ChangelogSection("🐛 Bug Fixes", listOf(
-                "Fixed backdrop blur disappearing or becoming detached after the app was paused, backgrounded, or resumed.",
-                "Fixed backdrop capture coordinates failing to reattach during lifecycle transitions.",
-                "Fixed blank/invalid backdrop captures being cached when coordinates were temporarily unavailable.",
-                "Fixed backdrop state becoming stale following screen rotation.",
-                "Fixed backdrop capture issues following Activity restarts.",
-                "Fixed custom fonts being negatively affected by rigid font variation settings.",
-                "Fixed PC queue synchronization drift caused by relying on the system clock.",
-                "Fixed PC queue drag interactions being blocked by button touch targets.",
-                "Fixed obsolete Monochrome theme behavior by removing the deprecated preset."
+                "Fixed Android CI build and quality gate failures by resolving vector drawable lint and Compose state collection warnings.",
+                "Fixed StateFlow value read inside composition in ActivePlaybackTarget.",
+                "Fixed LocalContext resource lookups within click listener callbacks in ArtistScreen and SongMenu.",
+                "Fixed remote sync connection drops and improved reconnect resilience across network switches."
             ))
         ),
         image = null,
-        description = "Nocturne Mobile v0.2.3-m Release",
+        description = "Nocturne Mobile v0.2.4-m Release",
         warning = null
     )
 }

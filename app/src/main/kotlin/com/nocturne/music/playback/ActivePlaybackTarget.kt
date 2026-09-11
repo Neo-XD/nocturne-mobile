@@ -31,11 +31,12 @@ fun rememberIsPlayingOnActiveTarget(playerConnection: PlayerConnection): Boolean
     val target by sync.playbackTarget.collectAsState()
     val connectionState by sync.connectionState.collectAsState()
     val roomState by sync.remoteRoomState.collectAsState()
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     return when {
         // Matches PlayerConnection's dispatch predicate exactly; a connected desktop with no room
         // state yet reports not-playing rather than falling back to the local player it is not using.
-        (target == PlaybackDeviceTarget.REMOTE_DESKTOP || (!localIsPlaying && playerConnection.mediaMetadata.value == null && roomState?.current_track != null)) &&
+        (target == PlaybackDeviceTarget.REMOTE_DESKTOP || (!localIsPlaying && mediaMetadata == null && roomState?.current_track != null)) &&
             connectionState == RemoteConnectionState.CONNECTED -> roomState?.is_playing == true
 
         isCasting -> castIsPlaying

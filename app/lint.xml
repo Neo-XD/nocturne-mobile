@@ -9,4 +9,10 @@
         <ignore path="src/main/res/values-lt" />
         <ignore path="src/main/res/values-sk" />
     </issue>
+
+    <!-- Avoid false positive UnusedResources in Compose painterResource icons -->
+    <issue id="UnusedResources" severity="ignore" />
+
+    <!-- False positive when querying context.getString inside onClick callbacks in Compose -->
+    <issue id="LocalContextGetResourceValueCall" severity="ignore" />
 </lint>
