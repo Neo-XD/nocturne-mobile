@@ -61,75 +61,60 @@ import androidx.compose.ui.unit.dp
 import com.nocturne.music.R
 import com.nocturne.music.ui.screens.OptionStats
 
+import androidx.compose.ui.text.font.FontWeight
+
 @Composable
 fun <E> ChipsRow(
     chips: List<Pair<E, String>>,
     currentValue: E,
     onValueUpdate: (E) -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
 ) {
     Row(
-        modifier =
-        modifier
+        modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
+            .padding(vertical = 4.dp)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
 
         chips.forEach { (value, label) ->
             val isSelected = currentValue == value
 
-            // Animate the corner radius based on selection
-            val cornerRadius by animateDpAsState(
-                targetValue = if (isSelected) 20.dp else 8.dp,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
-                label = "corner_radius"
-            )
-
             FilterChip(
-                label = { Text(label) },
+                label = {
+                    Text(
+                        text = label,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    )
+                },
                 selected = isSelected,
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = containerColor,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ),
                 onClick = { onValueUpdate(value) },
-                leadingIcon = if (isSelected) {
-                    {
-                        Icon(
-                            imageVector = Icons.Filled.Done,
-                            contentDescription = null,
-                            modifier = Modifier.size(FilterChipDefaults.IconSize),
-                        )
-                    }
-                } else {
-                    null
-                },
-                shape = RoundedCornerShape(cornerRadius),
+                shape = RoundedCornerShape(10.dp),
                 border = FilterChipDefaults.filterChipBorder(
                     enabled = true,
                     selected = isSelected,
-                    borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                     borderWidth = 1.dp,
                     selectedBorderWidth = 1.dp
                 ),
-                modifier = Modifier
-                    .height(35.dp)
-                    .animateContentSize(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
-                    )
+                modifier = Modifier.height(34.dp)
             )
 
             Spacer(Modifier.width(8.dp))
         }
+
+        Spacer(Modifier.width(8.dp))
     }
 }
 

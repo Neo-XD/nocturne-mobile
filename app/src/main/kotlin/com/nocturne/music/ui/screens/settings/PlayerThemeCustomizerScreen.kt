@@ -85,6 +85,7 @@ import com.nocturne.music.constants.SliderStyleKey
 import com.nocturne.music.constants.SquigglySliderKey
 import com.nocturne.music.constants.ShowAudioQualityBadgeKey
 import com.nocturne.music.constants.FloatingNavBarKey
+import com.nocturne.music.constants.FloatingTopBarKey
 import com.nocturne.music.constants.SlimNavBarKey
 import com.nocturne.music.ui.component.GlassyWarpBackground
 import com.nocturne.music.ui.component.NocturneGlassCard
@@ -145,6 +146,10 @@ fun PlayerThemeCustomizerScreen(
         FloatingNavBarKey,
         defaultValue = true
     )
+    val (floatingTopBar, onFloatingTopBarChange) = rememberPreference(
+        FloatingTopBarKey,
+        defaultValue = true
+    )
     val (slimNav, onSlimNavChange) = rememberPreference(
         SlimNavBarKey,
         defaultValue = false
@@ -195,6 +200,7 @@ fun PlayerThemeCustomizerScreen(
                     onSquigglySliderChange(false)
                     onShowAudioQualityBadgeChange(false)
                     onFloatingNavBarChange(true)
+                    onFloatingTopBarChange(true)
                     onSlimNavChange(false)
                 }
             ) {
@@ -867,6 +873,81 @@ fun PlayerThemeCustomizerScreen(
                     }
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // -------------------------------------------------------------
+        // TOP BAR
+        // -------------------------------------------------------------
+        Text(
+            text = "Top Bar",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "Docked classic bar or modern floating pill top bar",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                modifier = Modifier.weight(1f),
+                selected = floatingTopBar,
+                onClick = { onFloatingTopBarChange(true) },
+                label = {
+                    Text(
+                        text = "Floating (Default)",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                leadingIcon = if (floatingTopBar) {
+                    {
+                        Icon(
+                            painter = painterResource(R.drawable.check),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+
+            FilterChip(
+                modifier = Modifier.weight(1f),
+                selected = !floatingTopBar,
+                onClick = { onFloatingTopBarChange(false) },
+                label = {
+                    Text(
+                        text = "Docked",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                leadingIcon = if (!floatingTopBar) {
+                    {
+                        Icon(
+                            painter = painterResource(R.drawable.check),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
         }
 
         Spacer(modifier = Modifier.height(60.dp))

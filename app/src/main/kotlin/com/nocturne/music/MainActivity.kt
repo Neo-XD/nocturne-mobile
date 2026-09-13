@@ -46,10 +46,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -180,6 +190,12 @@ import com.nocturne.music.constants.SelectedThemeColorKey
 import com.nocturne.music.constants.SlimNavBarHeight
 import com.nocturne.music.constants.SlimNavBarKey
 import com.nocturne.music.constants.FloatingNavBarKey
+import com.nocturne.music.constants.FloatingTopBarKey
+import com.nocturne.music.sync.RemoteConnectionState
+import com.nocturne.music.ui.component.GlassStyle
+import com.nocturne.music.ui.component.isGlassAllowed
+import com.nocturne.music.ui.component.liquidGlass
+import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
 import com.nocturne.music.constants.StopMusicOnTaskClearKey
 import com.nocturne.music.constants.UseNewMiniPlayerDesignKey
 import com.nocturne.music.constants.UseAppleMiniPlayerKey
@@ -678,8 +694,8 @@ class MainActivity : ComponentActivity() {
                 }
                 val tabOpenedFromShortcut = remember {
                     when (intent?.action) {
-                        ACTION_SEARCH -> NavigationTab.LIBRARY
-                        ACTION_LIBRARY -> NavigationTab.SEARCH
+                        ACTION_SEARCH -> NavigationTab.SEARCH
+                        ACTION_LIBRARY -> NavigationTab.LIBRARY
                         else -> null
                     }
                 }
@@ -1027,102 +1043,304 @@ class MainActivity : ComponentActivity() {
                                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                                 exit = fadeOut(animationSpec = tween(durationMillis = 200))
                             ) {
-                                Column {
-                                    TopAppBar(
-                                        navigationIcon = {
-                                            Box(modifier = Modifier.padding(start = 12.dp)) {
-                                                Image(
-                                                    painter = painterResource(R.drawable.icon),
-                                                    contentDescription = null,
-                                                    modifier = Modifier
-                                                        .size(32.dp)
-                                                        .clip(CircleShape),
-                                                    contentScale = ContentScale.Crop
-                                                )
-                                            }
-                                        },
-                                        title = {
-                                            Text(
-                                                text = currentTitleRes?.let { stringResource(it) } ?: "",
-                                                style = MaterialTheme.typography.titleLarge.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 24.sp
-                                                ),
-                                            )
-                                        },
-                                        actions = {
-                                            IconButton(onClick = { navController.navigate("settings/remote_sync") }) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.ic_nocturne_sync),
-                                                    contentDescription = stringResource(R.string.nocturne_sync)
-                                                )
-                                            }
-                                            if (listenTogetherInTopBar) {
-                                                IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.group_outlined),
-                                                        contentDescription = stringResource(R.string.together)
-                                                    )
-                                                }
-                                            }
-                                             IconButton(onClick = {
-                                                  if (enableSettingsPopup) {
-                                                      showSettingDialoge = true
-                                                  } else {
-                                                      navController.navigate("settings")
-                                                  }
-                                              }) {
-                                                BadgedBox(badge = {}) {
-                                                    if (accountImageUrl != null) {
-                                                        AsyncImage(
-                                                            model = accountImageUrl,
-                                                            contentDescription = stringResource(R.string.account),
-                                                            modifier = Modifier
-                                                                .size(24.dp)
-                                                                .clip(CircleShape)
-                                                        )
-                                                    } else {
-                                                        val composition by rememberLottieComposition(
-                                                            LottieCompositionSpec.RawRes(R.raw.setting)
-                                                        )
-                                                        val progress by animateLottieCompositionAsState(
-                                                            composition = composition,
-                                                            isPlaying = true,
-                                                            iterations = 1,
-                                                            speed = 1.5f
-                                                        )
+                                val (floatingTopBar) = rememberPreference(FloatingTopBarKey, defaultValue = true)
+                                val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+                                val glassBorderBrush = rememberNocturneGlassBorderBrush()
+                                val syncConnectionState by remoteSyncManager.connectionState.collectAsState()
+                                val isListenTogetherInRoom = listenTogetherManager.isInRoom
+                                val isSleepTimerActive = playerConnection?.service?.sleepTimer?.isActive == true
 
-                                                        LottieAnimation(
-                                                            composition = composition,
-                                                            progress = { progress },
-                                                            modifier = Modifier.size(50.dp),
-                                                            contentScale = ContentScale.Fit
+                                val topBarContainerColor = when {
+                                    pureBlack -> Color.Black
+                                    isGlassActive -> Color.Transparent
+                                    else -> MaterialTheme.colorScheme.surfaceContainer
+                                }
+                                val topBarOutlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+
+                                val greetingText = remember(accountName, navBackStackEntry) {
+                                    if (navBackStackEntry?.destination?.route == Screens.Home.route) {
+                                        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                                        val greetingPrefix = when (hour) {
+                                            in 5..11 -> "Good morning"
+                                            in 12..16 -> "Good afternoon"
+                                            else -> "Good evening"
+                                        }
+                                        val firstName = accountName.trim().split(" ").firstOrNull { it.isNotBlank() }
+                                        if (!firstName.isNullOrEmpty()) {
+                                            "$greetingPrefix, $firstName"
+                                        } else {
+                                            greetingPrefix
+                                        }
+                                    } else {
+                                        null
+                                    }
+                                }
+
+                                val topBarRowContent: @Composable () -> Unit = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Image(
+                                            painter = painterResource(R.drawable.icon),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+
+                                        Spacer(modifier = Modifier.width(10.dp))
+
+                                        Text(
+                                            text = greetingText ?: currentTitleRes?.let { stringResource(it) } ?: "",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            IconButton(
+                                                onClick = { navController.navigate("settings/remote_sync") },
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        painter = painterResource(R.drawable.ic_nocturne_sync),
+                                                        contentDescription = stringResource(R.string.nocturne_sync),
+                                                        modifier = Modifier.size(19.dp),
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                    val dotColor = when (syncConnectionState) {
+                                                        RemoteConnectionState.CONNECTED -> Color(0xFF10B981)
+                                                        RemoteConnectionState.CONNECTING -> Color(0xFFF59E0B)
+                                                        else -> null
+                                                    }
+                                                    if (dotColor != null) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(7.dp)
+                                                                .align(Alignment.TopEnd)
+                                                                .clip(CircleShape)
+                                                                .background(dotColor)
+                                                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape)
                                                         )
                                                     }
                                                 }
                                             }
-                                        },
-                                        scrollBehavior = topAppBarScrollBehavior,
-                                        colors = TopAppBarDefaults.topAppBarColors(
-                                            containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface,
-                                            scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface,
-                                            titleContentColor = MaterialTheme.colorScheme.onSurface,
-                                            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                        ),
-                                        modifier = Modifier.windowInsetsPadding(
-                                            if (showRail) {
-                                                WindowInsets(left = NavigationBarHeight)
-                                                    .add(cutoutInsets.only(WindowInsetsSides.Start))
-                                            } else {
-                                                cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
+
+                                            if (listenTogetherInTopBar) {
+                                                IconButton(
+                                                    onClick = { navController.navigate("listen_together_from_topbar") },
+                                                    modifier = Modifier.size(36.dp)
+                                                ) {
+                                                    Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.group_outlined),
+                                                            contentDescription = stringResource(R.string.together),
+                                                            modifier = Modifier.size(19.dp),
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                        if (isListenTogetherInRoom) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(7.dp)
+                                                                    .align(Alignment.TopEnd)
+                                                                    .clip(CircleShape)
+                                                                    .background(Color(0xFF10B981))
+                                                                    .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                             }
+
+                                            if (isSleepTimerActive) {
+                                                IconButton(
+                                                    onClick = { playerBottomSheetState.expandSoft() },
+                                                    modifier = Modifier.size(36.dp)
+                                                ) {
+                                                    Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.sleep_timer),
+                                                            contentDescription = "Sleep Timer",
+                                                            modifier = Modifier.size(19.dp),
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(7.dp)
+                                                                .align(Alignment.TopEnd)
+                                                                .clip(CircleShape)
+                                                                .background(Color(0xFF10B981))
+                                                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(horizontal = 2.dp)
+                                                    .width(1.dp)
+                                                    .height(16.dp)
+                                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                            )
+
+                                            IconButton(
+                                                onClick = {
+                                                    if (enableSettingsPopup) {
+                                                        showSettingDialoge = true
+                                                    } else {
+                                                        navController.navigate("settings")
+                                                    }
+                                                },
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.settings),
+                                                    contentDescription = stringResource(R.string.settings),
+                                                    modifier = Modifier.size(19.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(start = 2.dp)
+                                                    .size(30.dp)
+                                                    .clip(CircleShape)
+                                                    .then(
+                                                        if (accountImageUrl != null) {
+                                                            Modifier.border(
+                                                                width = 1.dp,
+                                                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                                                shape = CircleShape
+                                                            )
+                                                        } else {
+                                                            Modifier
+                                                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                                                .border(
+                                                                    width = 1.dp,
+                                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                                                    shape = CircleShape
+                                                                )
+                                                        }
+                                                    )
+                                                    .clickable {
+                                                        navController.navigate("account")
+                                                    },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                if (accountImageUrl != null) {
+                                                    AsyncImage(
+                                                        model = accountImageUrl,
+                                                        contentDescription = stringResource(R.string.account),
+                                                        modifier = Modifier
+                                                            .fillMaxSize()
+                                                            .clip(CircleShape),
+                                                        contentScale = ContentScale.Crop
+                                                    )
+                                                } else {
+                                                    Icon(
+                                                        painter = painterResource(R.drawable.person),
+                                                        contentDescription = stringResource(R.string.account),
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (floatingTopBar) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .windowInsetsPadding(
+                                                WindowInsets.statusBars
+                                                    .add(
+                                                        if (showRail) {
+                                                            WindowInsets(left = NavigationBarHeight)
+                                                                .add(cutoutInsets.only(WindowInsetsSides.Start))
+                                                        } else {
+                                                            cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
+                                                        }
+                                                    )
+                                            )
+                                            .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 6.dp)
+                                            .height(52.dp)
+                                            .then(
+                                                if (isGlassActive) {
+                                                    Modifier
+                                                        .liquidGlass(
+                                                            config = glassConfig.copy(style = GlassStyle.BLUR),
+                                                            shape = RoundedCornerShape(24.dp),
+                                                            applyEdgeEffects = false
+                                                        )
+                                                        .border(1.dp, glassBorderBrush, RoundedCornerShape(24.dp))
+                                                } else {
+                                                    Modifier
+                                                        .shadow(elevation = 6.dp, shape = RoundedCornerShape(24.dp))
+                                                        .background(topBarContainerColor, shape = RoundedCornerShape(24.dp))
+                                                        .border(1.dp, topBarOutlineColor, RoundedCornerShape(24.dp))
+                                                }
+                                            )
+                                            .padding(start = 12.dp, end = 8.dp),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        topBarRowContent()
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .then(
+                                                if (isGlassActive) {
+                                                    Modifier.liquidGlass(
+                                                        config = glassConfig.copy(style = GlassStyle.BLUR),
+                                                        shape = RoundedCornerShape(0.dp),
+                                                        applyEdgeEffects = false
+                                                    )
+                                                } else {
+                                                    Modifier.background(topBarContainerColor)
+                                                }
+                                            )
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .windowInsetsPadding(
+                                                    WindowInsets.statusBars
+                                                        .add(
+                                                            if (showRail) {
+                                                                WindowInsets(left = NavigationBarHeight)
+                                                                    .add(cutoutInsets.only(WindowInsetsSides.Start))
+                                                            } else {
+                                                                cutoutInsets.only(WindowInsetsSides.Start + WindowInsetsSides.End)
+                                                            }
+                                                        )
+                                                )
+                                                .height(56.dp)
+                                                .padding(start = 16.dp, end = 12.dp),
+                                            contentAlignment = Alignment.CenterStart
+                                        ) {
+                                            topBarRowContent()
+                                        }
+                                        HorizontalDivider(
+                                            thickness = 0.5.dp,
+                                            color = if (isGlassActive) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f) else topBarOutlineColor
                                         )
-                                    )
-                                    HorizontalDivider(
-                                        thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                                    )
+                                    }
                                 }
                             }
                         },

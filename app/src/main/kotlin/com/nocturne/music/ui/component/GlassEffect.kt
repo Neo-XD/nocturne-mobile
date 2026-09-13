@@ -206,7 +206,7 @@ fun Modifier.liquidGlass(
     loopBucket: (() -> Int)? = LocalBackdropLoopBucket.current,
 ): Modifier {
     if (!isGlassAllowed() || !config.globalEnabled) return this
-    val backdrop = LocalAppBackdrop.current ?: return this
+    val backdrop = LocalAppBackdrop.current
     val density = LocalDensity.current
     val resolutionScale = backdropScale.coerceIn(0.05f, 1f)
     val blurPx = with(density) { blurRadiusDp.dp.toPx() } * resolutionScale
@@ -222,7 +222,7 @@ fun Modifier.liquidGlass(
         Color(0xFF2C2C2E)
     }
 
-    if (shouldUseTranslucentGlassFallback(config.style, isRenderEffectSupported())) {
+    if (backdrop == null || shouldUseTranslucentGlassFallback(config.style, isRenderEffectSupported())) {
         return this
             .clip(shape)
             .background(surfaceTintColor.copy(alpha = config.surfaceOpacity.coerceIn(0f, 1f)))

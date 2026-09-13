@@ -169,7 +169,10 @@ fun HomeLayoutDialog(
                                 ) {
                                     IconButton(
                                         onClick = {
-                                            items[index] = item.copy(shown = !item.shown)
+                                            val targetIndex = items.indexOfFirst { it.key == item.key }
+                                            if (targetIndex != -1) {
+                                                items[targetIndex] = item.copy(shown = !item.shown)
+                                            }
                                         },
                                         modifier = Modifier.size(36.dp)
                                     ) {

@@ -124,6 +124,7 @@ import com.nocturne.music.constants.ShowUploadedPlaylistKey
 import com.nocturne.music.constants.SliderStyle
 import com.nocturne.music.constants.SliderStyleKey
 import com.nocturne.music.constants.FloatingNavBarKey
+import com.nocturne.music.constants.FloatingTopBarKey
 import com.nocturne.music.constants.SlimNavBarKey
 import com.nocturne.music.constants.SquigglySliderKey
 import com.nocturne.music.constants.SwipeSensitivityKey
@@ -399,6 +400,10 @@ fun AppearanceSettings(
     )
     val (floatingNavBar, onFloatingNavBarChange) = rememberPreference(
         FloatingNavBarKey,
+        defaultValue = true
+    )
+    val (floatingTopBar, onFloatingTopBarChange) = rememberPreference(
+        FloatingTopBarKey,
         defaultValue = true
     )
 
@@ -1594,6 +1599,27 @@ fun AppearanceSettings(
             valueText = { isFloating ->
                 if (isFloating) stringResource(R.string.nav_style_floating)
                 else stringResource(R.string.nav_style_docked)
+            }
+        )
+    }
+
+    var showTopBarStyleDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if (showTopBarStyleDialog) {
+        EnumDialog(
+            onDismiss = { showTopBarStyleDialog = false },
+            onSelect = { isFloating ->
+                onFloatingTopBarChange(isFloating)
+                showTopBarStyleDialog = false
+            },
+            title = "Top Bar Style",
+            current = floatingTopBar,
+            values = listOf(false, true),
+            valueText = { isFloating ->
+                if (isFloating) "Floating"
+                else "Docked"
             }
         )
     }
@@ -2959,6 +2985,24 @@ fun AppearanceSettings(
         Material3SettingsGroup(
             title = stringResource(R.string.misc),
             items = listOfNotNull(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.nav_bar),
+                    title = { Text("Top Bar Style") },
+                    description = {
+                        Text(if (floatingTopBar) "Floating" else "Docked")
+                    },
+                    onClick = { showTopBarStyleDialog = true },
+                    isExpressive = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.nav_bar),
+                    title = { Text(stringResource(R.string.navigation_bar_style)) },
+                    description = {
+                        Text(if (floatingNavBar) stringResource(R.string.nav_style_floating) else stringResource(R.string.nav_style_docked))
+                    },
+                    onClick = { showNavBarStyleDialog = true },
+                    isExpressive = true
+                ),
                 Material3SettingsItem(
                     icon = painterResource(R.drawable.nav_bar),
                     title = { Text(stringResource(R.string.default_open_tab)) },

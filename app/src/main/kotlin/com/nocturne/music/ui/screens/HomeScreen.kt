@@ -621,7 +621,7 @@ fun HomeScreen(
 
     val knownSections = remember(hiddenSections) {
         listOf(
-            HomeLayoutSectionItem("speed_dial", "Speed Dial", !hiddenSections.contains("speed_dial")),
+            HomeLayoutSectionItem("speed_dial", "Shortcuts", !hiddenSections.contains("speed_dial")),
             HomeLayoutSectionItem("quick_picks", "Quick Picks", !hiddenSections.contains("quick_picks")),
             HomeLayoutSectionItem("forgotten_favorites", "Forgotten Favorites", !hiddenSections.contains("forgotten_favorites")),
             HomeLayoutSectionItem("albums", "Albums", !hiddenSections.contains("albums")),
@@ -876,7 +876,7 @@ fun HomeScreen(
         val list = mutableListOf<HomeSection>()
         val chipActive = selectedChip != null
 
-        if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)
+        if (!chipActive) list.add(HomeSection.SpeedDial)
         if (!chipActive && quickPicks?.isNotEmpty() == true) list.add(HomeSection.QuickPicks)
         if (!chipActive && coversAndRemixes?.items?.isNotEmpty() == true) list.add(HomeSection.CoversAndRemixes)
         if (!chipActive && communityPlaylists?.isNotEmpty() == true) list.add(HomeSection.FromTheCommunity)
@@ -1092,7 +1092,7 @@ fun HomeScreen(
             ) {
                 stickyHeader(key = "chips_header") {
                     Surface(
-                        color = MaterialTheme.colorScheme.surface,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         ChipsRow(
@@ -1102,7 +1102,8 @@ fun HomeScreen(
                             currentValue = selectedChip,
                             onValueUpdate = {
                                 viewModel.toggleChip(it)
-                            }
+                            },
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
                 }
