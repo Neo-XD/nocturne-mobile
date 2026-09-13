@@ -2,6 +2,26 @@
  
 All notable changes to Nocturne Mobile are documented in this file.
 
+## [v0.2.5] - 2026-09-13
+
+### 🚀 New Features
+- **Floating Top Bar**: Brand-new desktop-inspired top bar with frosted glass capsule design. Displays a dynamic time-of-day greeting ("Good morning/afternoon/evening, [Name]") alongside the app icon, settings gear, and compact account avatar pill.
+- **Status Indicator Dots**: Real-time status badges on the top bar for Remote Sync (PC connection), Listen Together (active room), and Sleep Timer (when armed).
+- **Docked / Floating Top Bar Toggle**: New setting in Player Theme Customizer and Appearance Settings to switch between floating (frosted glass capsule) and docked (edge-to-edge with blur) top bar modes.
+- **Redesigned Filter Tags (ChipsRow)**: Desktop-style filter chips with clean SemiBold typography, uniform 34dp height, 10dp corner radius, 8dp spacing, and no bulky checkmark icon. Sticky header with subtle surface background.
+
+### ✨ Improvements
+- **Navbar Blur Fix**: Corrected `containerColor` transparency in `AppNavigation` and `GlassEffect` so the frosted glass backdrop samples correctly on both floating and docked bars.
+- **Shortcuts Rebranding**: Renamed "Speed Dial" to "Shortcuts" consistently across all song/album/playlist/YouTube menus and string resources.
+- **Home Sticky Tags**: Filter chips section in Home is now sticky with a clean `surface.copy(alpha=0.95f)` background and proper vertical padding.
+
+### 🐛 Bug Fixes
+- **Shortcuts Customization Bug**: Fixed inverted launcher intents (ACTION_SEARCH / ACTION_LIBRARY) in `HomeLayoutDialog` that caused shortcuts to misbehave after reordering.
+- **Stale Index Bug**: Fixed stale shortcut index in `HomeLayoutDialog` that caused the wrong shortcut to be removed when deleting from a reordered list.
+- **Shortcuts Visibility Bug**: Removed the erroneous condition that caused shortcuts to disappear from the Home screen after customization.
+
+---
+
 ## [v0.2.4-m] - 2026-09-11
 
 ### 🚀 New Features
