@@ -1,4 +1,4 @@
-package com.nocturne.music.nocturne.changelog
+﻿package com.nocturne.music.nocturne.changelog
 
 
 
@@ -557,25 +557,28 @@ private fun loadChangelogFromCache(context: Context, versionTag: String): Cached
 private fun getLocalFallbackChangelog(tag: String): CachedChangelogData {
     return CachedChangelogData(
         sections = listOf(
-            ChangelogSection("🚀 New Features", listOf(
-                "Floating Top Bar: Brand-new desktop-inspired top bar with frosted glass capsule design. Displays a dynamic time-of-day greeting alongside the app icon, settings gear, and compact account avatar pill.",
-                "Status Indicator Dots: Real-time status badges on the top bar for Remote Sync (PC connection), Listen Together (active room), and Sleep Timer (when armed).",
-                "Docked / Floating Top Bar Toggle: New setting in Player Theme Customizer and Appearance Settings to switch between floating (frosted glass capsule) and docked top bar modes.",
-                "Redesigned Filter Tags: Desktop-style filter chips with clean SemiBold typography, uniform height, rounded corners, and no bulky checkmark icon. Sticky header with subtle surface background."
+            ChangelogSection("≡ƒÜÇ New Features", listOf(
+                "Artist Blocking & Auto-Skip: Block unwanted artists directly from song menus, YouTube song menus, and artist screens. Blocked artists are skipped and suppressed automatically.",
+                "Multi-Account Switcher & Profile Management: Seamlessly switch between multiple signed-in Google/YouTube accounts directly within Account Settings without re-authenticating.",
+                "Seamless Remote Sync Reconnect & PIN Pairing: Streamlined PC connection recovery with dedicated pairing PIN modal dialog and connection persistence.",
+                "Customizable Home Layout & Drag-to-Reorder: Customize Home feed section order and visibility with instant DataStore persistence.",
+                "Tablet Navigation Rail & Settings Popover: Tailored tablet interface with vertical navigation rail and compact popover card for quick settings access."
             )),
-            ChangelogSection("✨ Improvements", listOf(
-                "Navbar Blur Fix: Corrected glass transparency in AppNavigation and GlassEffect so the frosted backdrop samples correctly on both floating and docked bars.",
-                "Shortcuts Rebranding: Renamed 'Speed Dial' to 'Shortcuts' consistently across all song, album, playlist, and YouTube menus.",
-                "Home Sticky Tags: Filter chips section in Home is now sticky with a clean surface background and proper vertical padding."
+            ChangelogSection("Γ£¿ Improvements", listOf(
+                "Monotonic Clock Synchronization: Sub-second timestamp synchronization with Nocturne Desktop eliminating clock drift during remote control.",
+                "Queue Drag Handles: Responsive drag-to-reorder in the PC queue sheet with dedicated touch handles.",
+                "Frosted Glass & Acrylic Visuals: High-performance backdrop blur recapturing after screen rotation and lifecycle changes.",
+                "Outfit Typeface Default: Clean typography without rigid font variation constraints across all screens."
             )),
-            ChangelogSection("🐛 Bug Fixes", listOf(
-                "Shortcuts Customization Bug: Fixed inverted launcher intents in HomeLayoutDialog that caused shortcuts to misbehave after reordering.",
-                "Stale Index Bug: Fixed stale shortcut index that caused the wrong shortcut to be removed when deleting from a reordered list.",
-                "Shortcuts Visibility Bug: Fixed shortcuts disappearing from the Home screen after customization."
+            ChangelogSection("≡ƒÉ¢ Bug Fixes", listOf(
+                "Fixed Android CI build and quality gate failures by resolving vector drawable lint and Compose state collection warnings.",
+                "Fixed StateFlow value read inside composition in ActivePlaybackTarget.",
+                "Fixed LocalContext resource lookups within click listener callbacks in ArtistScreen and SongMenu.",
+                "Fixed remote sync connection drops and improved reconnect resilience across network switches."
             ))
         ),
         image = null,
-        description = "Nocturne Mobile v0.2.5 Release",
+        description = "Nocturne Mobile v0.2.4-m Release",
         warning = null
     )
 }

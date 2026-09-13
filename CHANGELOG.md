@@ -1,43 +1,23 @@
-# Changelog
+﻿# Changelog
  
 All notable changes to Nocturne Mobile are documented in this file.
 
-## [v0.2.5] - 2026-09-13
-
-### 🚀 New Features
-- **Floating Top Bar**: Brand-new desktop-inspired top bar with frosted glass capsule design. Displays a dynamic time-of-day greeting ("Good morning/afternoon/evening, [Name]") alongside the app icon, settings gear, and compact account avatar pill.
-- **Status Indicator Dots**: Real-time status badges on the top bar for Remote Sync (PC connection), Listen Together (active room), and Sleep Timer (when armed).
-- **Docked / Floating Top Bar Toggle**: New setting in Player Theme Customizer and Appearance Settings to switch between floating (frosted glass capsule) and docked (edge-to-edge with blur) top bar modes.
-- **Redesigned Filter Tags (ChipsRow)**: Desktop-style filter chips with clean SemiBold typography, uniform 34dp height, 10dp corner radius, 8dp spacing, and no bulky checkmark icon. Sticky header with subtle surface background.
-
-### ✨ Improvements
-- **Navbar Blur Fix**: Corrected `containerColor` transparency in `AppNavigation` and `GlassEffect` so the frosted glass backdrop samples correctly on both floating and docked bars.
-- **Shortcuts Rebranding**: Renamed "Speed Dial" to "Shortcuts" consistently across all song/album/playlist/YouTube menus and string resources.
-- **Home Sticky Tags**: Filter chips section in Home is now sticky with a clean `surface.copy(alpha=0.95f)` background and proper vertical padding.
-
-### 🐛 Bug Fixes
-- **Shortcuts Customization Bug**: Fixed inverted launcher intents (ACTION_SEARCH / ACTION_LIBRARY) in `HomeLayoutDialog` that caused shortcuts to misbehave after reordering.
-- **Stale Index Bug**: Fixed stale shortcut index in `HomeLayoutDialog` that caused the wrong shortcut to be removed when deleting from a reordered list.
-- **Shortcuts Visibility Bug**: Removed the erroneous condition that caused shortcuts to disappear from the Home screen after customization.
-
----
-
 ## [v0.2.4-m] - 2026-09-11
 
-### 🚀 New Features
+### ≡ƒÜÇ New Features
 - **Artist Blocking & Auto-Skip**: Block unwanted artists directly from song menus, YouTube song menus, and artist screens. Blocked artists are skipped and suppressed automatically during playback.
 - **Multi-Account Switcher & Profile Management**: Seamlessly switch between multiple signed-in Google/YouTube accounts directly within Account Settings without re-authenticating.
 - **Seamless Remote Sync Reconnect & PIN Pairing**: Streamlined PC connection recovery with dedicated pairing PIN modal dialog and connection persistence.
 - **Customizable Home Layout & Drag-to-Reorder**: Customize Home feed section order and visibility with instant DataStore persistence.
 - **Tablet Navigation Rail & Settings Popover**: Tailored tablet interface with vertical navigation rail and compact popover card for quick settings access.
 
-### ✨ Improvements
+### Γ£¿ Improvements
 - **Monotonic Clock Synchronization**: Sub-second timestamp synchronization with Nocturne Desktop eliminating clock drift during remote control.
 - **Queue Drag Handles**: Responsive drag-to-reorder in the PC queue sheet with dedicated touch handles.
 - **Frosted Glass & Acrylic Visuals**: High-performance backdrop blur recapturing after screen rotation and lifecycle changes.
 - **Outfit Typeface Default**: Clean typography without rigid font variation constraints across all screens.
 
-### 🐛 Bug Fixes
+### ≡ƒÉ¢ Bug Fixes
 - Fixed Android CI build and quality gate failures by resolving vector drawable lint and Compose state collection warnings.
 - Fixed `StateFlow.value` invocation inside composition in `ActivePlaybackTarget`.
 - Fixed `LocalContext` resource lookups within click listener callbacks in `ArtistScreen` and `SongMenu`.
@@ -47,12 +27,12 @@ All notable changes to Nocturne Mobile are documented in this file.
 
 ## [v0.2.3-m] - 2026-09-10
 
-### 🚀 New Features
+### ≡ƒÜÇ New Features
 - **Desktop-Style Customizable Home Layout**: Added an interactive Home Layout customizer with drag-to-reorder support.
 - **Granular Home Visibility Controls**: Added individual visibility controls for Quick Picks, Forgotten Favorites, Albums, Artists, Similar to..., and Mixes.
 - **Edit Home Button**: Added an "Edit home" button directly to the Home screen for instant customization.
 - **DataStore Persistence**: Home layout order and section visibility preferences persist reliably across sessions using Jetpack DataStore.
-- **Tablet Navigation Rail**: Dedicated vertical navigation rail for tablets with screens ≥600dp wide.
+- **Tablet Navigation Rail**: Dedicated vertical navigation rail for tablets with screens ΓëÑ600dp wide.
 - **Docked & Floating Nav Modes**: Full support for both docked and floating navigation modes on tablet displays.
 - **Liquid-Glass Navigation Pill**: Translucent acrylic floating navigation pill with shader reflections when Floating Nav is enabled.
 - **Tablet Settings Popover**: Dedicated top-right settings popover appearing below the profile avatar in a compact 380dp popover card.
@@ -61,7 +41,7 @@ All notable changes to Nocturne Mobile are documented in this file.
 - **PC Queue Track Reordering**: Direct drag handles for smooth, responsive PC queue track reordering.
 - **Account Identity**: Storage of signed-in YouTube account's real email address and display name retrieved from YouTube account metadata.
 
-### ✨ Improvements
+### Γ£¿ Improvements
 - **Frosted Glass & Backdrop Blur**: Improved Convx-inspired frosted-glass rendering and backdrop blur reliability.
 - **Backdrop Lifecycle Reattachment**: Automatic backdrop recapture when the application resumes and correct coordinate reattachment after lifecycle transitions.
 - **Orientation & Restart Handling**: Improved backdrop handling during rotation and activity restarts; prevented stale captures from being reused.
@@ -70,7 +50,7 @@ All notable changes to Nocturne Mobile are documented in this file.
 - **Clean Typography**: Removed rigid `FontVariation.Settings` constraints; Nocturne Mobile now defaults cleanly to the **Outfit** typeface.
 - **Theme System Polish**: Purged legacy Monochrome theme preset; updated default theme to the **Rose** palette with dynamic tinting.
 
-### 🐛 Bug Fixes
+### ≡ƒÉ¢ Bug Fixes
 - Fixed backdrop blur disappearing or becoming detached after the app was paused, backgrounded, or resumed.
 - Fixed backdrop capture coordinates failing to reattach during lifecycle transitions.
 - Fixed blank/invalid backdrop captures being cached when coordinates were temporarily unavailable.
@@ -85,7 +65,7 @@ All notable changes to Nocturne Mobile are documented in this file.
 
 ## [v0.2.2-m] - 2026-09-09
 
-### ✨ New Features
+### Γ£¿ New Features
 - **NocturneUI Design System & Theme Engine**: Complete recreation of Nocturne Desktop's design language with 10 presets (Monochrome, Rose, Blue, Lime, Purple, Teal, Catppuccin, Caffeine, Neon, Breeze), dark background tokens (`#131314`), elevated surface cards, and translucent accent borders.
 - **Theme Category Separation**: Clean top-level category tabs separating Nocturne UI from Material 3 Expressive.
 - **Dual-Queue Swapping & Device Indicator**: Added interactive queue tab switcher inside player queue sheets (`Queue` & `Queue_v2`) to seamlessly toggle between Mobile Queue and PC Queue with active playing indicators and device badges.
@@ -94,7 +74,7 @@ All notable changes to Nocturne Mobile are documented in this file.
 - **Liquid Glass & Lighting Customizer**: Comprehensive customizer with live interactive preview and sliders for blur radius (10-120dp), color vibrancy, specular rim highlight, surface opacity, lens refraction depth, 3D specular lighting, and chromatic aberration dispersion.
 - **Appearance Settings Visual Previews**: Interactive mockup preview cards for Player Designs, Miniplayer Designs, Button Styles, and Background Styles.
 
-### ⚡ Improvements
+### ΓÜí Improvements
 - **Docked Navigation Bar Glass Clarity**: Removed M3 surface `tonalElevation` overlay and windowInsets wash, allowing pure acrylic backdrop blur sampling on docked bars and navigation rails.
 - **Tablet Navigation**: Fixed landscape tablets forcing docked rail when Floating Navbar is selected.
 - **Audio Device Picker Harmony**: Unified Nocturne PC output device button corner radius to 24dp to match surrounding buttons.
@@ -103,7 +83,7 @@ All notable changes to Nocturne Mobile are documented in this file.
 - **Auto-Sync on Fresh Launch**: Cold starts automatically detect active PC playback and retain collapsed player state rather than dismissing.
 - **Optimized GitHub Actions CI**: Separated fast quality gate checks (`checks.yml`) from heavy release builds (`build.yml`).
 
-### 🐛 Bug Fixes
+### ≡ƒÉ¢ Bug Fixes
 - **Onboarding Text Visibility**: Fixed invisible text and primary action button contents on Onboarding screens under NocturneUI Monochrome theme.
 - **Card Contrast**: Fixed card headline title contrast on Onboarding permission and feature cards.
 - **Cold-Start Player Dismissal**: Fixed bottom sheet player prematurely collapsing on fresh launch when connected to remote desktop.
@@ -114,7 +94,7 @@ All notable changes to Nocturne Mobile are documented in this file.
 ## [v0.2.1-m] - 2026-09-06
 
 
-### ✨ New Features
+### Γ£¿ New Features
 - **Queue Reordering & Disk Persistence**: Interactive drag handles are now unlocked and visible by default. Reordered queue sequences automatically persist to disk across timeline changes, app swipes, and task termination.
 - **Dynamic Album Art Warping Background Theme**: Added a dynamic blurred liquid-mesh background theme with pulsing breath scale, swaying rotation, wave distortion, and boosted saturation adapting to the currently playing song's artwork.
 - **Convx-Style Player Theme Customizer**: Added a granular theme customizer with real-time interactive preview and sliders for blur radius, overlay dim opacity, saturation, motion speed, and specular glass border toggles.
@@ -122,38 +102,38 @@ All notable changes to Nocturne Mobile are documented in this file.
 - **Dedicated Monochrome Theme**: Added a one-click minimal achromatic grayscale and AMOLED pure black theme option.
 - **Quick Access Nocturne Sync**: Added direct Nocturne Sync entry to the top popup menu for fast pairing with Nocturne Desktop.
 
-### ⚡ Improvements
+### ΓÜí Improvements
 - **Categorized Settings Screen**: Reorganized all settings into clean, structured sections (Appearance & Playback, Connectivity & Sync, Content & Features, Storage & Privacy, Updates & About).
 - **Robust Queue Deserialization**: Added MediaMetadata fallback so media items without full tags maintain metadata integrity when restoring playback from disk.
 - **Floating Navigation Styling**: Translucent acrylic styling with specular border highlights applied to floating navigation pills.
 - **Theme Color Schemes**: Fully integrated `NocturneTheme` composable with dynamic `materialKolor` monochrome palette generator.
 
-### 🐛 Bug Fixes
+### ≡ƒÉ¢ Bug Fixes
 - Fixed queue reordering lost when swiping away the app or closing playback.
 - Fixed restored media items occasionally dropping artist or album information on disk reload.
 - Cleaned up legacy Vivimusic email and external URL links across dialogs and menus.
 
-### ⚠️ Known Bugs
+### ΓÜá∩╕Å Known Bugs
 - Remote playback sync on Android is in beta and may experience latency when recovering from background suspension.
 
 ---
 
 ## [v0.2m] - 2026-09-03
 
-### ✨ New Features
+### Γ£¿ New Features
 - **The Nocturne Rebrand**: Complete transition to Nocturne Music with new brand identity, UI, and `com.nocturne.music` package namespace.
 - **Zero-PIN Remote Device Sync**: Automated UDP discovery and WebSocket pairing with Nocturne Desktop PC.
 - **Full Remote Controller Mode**: Route song clicks, queue dispatches, play/pause, seek, and volume directly to Desktop PC.
 - **Bidirectional Playback Handoff**: 1-tap seamless playback session transfer between Phone and Desktop with live seek position.
 - **Dynamic Ambient Themes**: Real-time dynamic Gradient, Blur, Apple Music fluid blur, and Live Mesh backgrounds.
 
-### ⚡ Improvements
+### ΓÜí Improvements
 - Live Now Playing & high-resolution album artwork synchronized across full player, mini player, and carousel.
 - Flexible release build configuration with automatic fallback to debug certificate for local builds.
 
-### 🐛 Bug Fixes
+### ≡ƒÉ¢ Bug Fixes
 - Settings branding cleanup and full removal of legacy identifiers.
 - Database migration schemas aligned with `com.nocturne.music.db.InternalDatabase`.
 
-### ⚠️ Known Bugs
+### ΓÜá∩╕Å Known Bugs
 - Remote playback sync on Android is in beta and may experience latency when recovering from background suspension.
