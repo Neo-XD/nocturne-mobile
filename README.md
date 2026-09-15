@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/docs/Nocturne-github-image.png" alt="Nocturne Mobile Banner" width="100%">
+<img src="./Nocturne-mobile-Social-preview.png" alt="Nocturne Mobile Banner" width="100%">
 
 # Nocturne Mobile
 
