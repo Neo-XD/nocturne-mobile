@@ -56,6 +56,10 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import java.time.LocalDateTime
 import java.util.concurrent.Executor
+import com.nocturne.music.lyrics.LyricsHelper
+import com.nocturne.music.db.entities.LyricsEntity
+import com.nocturne.music.models.toMediaMetadata
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -68,6 +72,7 @@ constructor(
     val databaseProvider: DatabaseProvider,
     @DownloadCache val downloadCache: SimpleCache,
     @PlayerCache val playerCache: SimpleCache,
+    val lyricsHelper: LyricsHelper,
 ) {
     private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
     private val audioQuality by enumPreference(context, AudioQualityKey, AudioQuality.AUTO)
@@ -272,7 +277,29 @@ constructor(
                         scope.launch {
                             when (download.state) {
                                 Download.STATE_COMPLETED -> {
-                                    database.updateDownloadedInfo(download.request.id, true, LocalDateTime.now())
+                                    val songId = download.request.id
+                                    database.updateDownloadedInfo(songId, true, LocalDateTime.now())
+                                    try {
+                                        val existingLyrics = database.lyrics(songId).firstOrNull()
+                                        if (existingLyrics == null || existingLyrics.lyrics == LyricsEntity.LYRICS_NOT_FOUND) {
+                                            val song = database.getSongByIdBlocking(songId)
+                                            if (song != null) {
+                                                val metadata = song.toMediaMetadata()
+                                                val result = lyricsHelper.getLyrics(metadata)
+                                                if (result.lyrics != LyricsEntity.LYRICS_NOT_FOUND) {
+                                                    database.upsert(
+                                                        LyricsEntity(
+                                                            id = songId,
+                                                            lyrics = result.lyrics,
+                                                            provider = result.provider
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        // Ignore lyrics background fetch failure
+                                    }
                                 }
                                 Download.STATE_FAILED,
                                 Download.STATE_STOPPED,

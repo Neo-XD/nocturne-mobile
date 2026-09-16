@@ -555,58 +555,16 @@ fun AudioDeviceBottomSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier)
                         Surface(
                             onClick = {
                                 if (isRemoteActive) {
-                                    // Hand off audio back to Phone!
-                                    val room = syncManager.remoteRoomState.value
-                                    syncManager.sendAction(com.nocturne.music.sync.RemotePlaybackActionPayload(kind = "transfer_to_phone"))
-                                    syncManager.setPlaybackTarget(com.nocturne.music.sync.PlaybackDeviceTarget.LOCAL)
-                                    
-                                    if (room?.current_track != null) {
-                                        val t = room.current_track!!
-                                        val elapsed = if (room.is_playing) System.currentTimeMillis() - room.last_update_ms else 0L
-                                        val pos = (room.position_ms + elapsed).coerceAtLeast(0L)
-                                        val meta = com.nocturne.music.models.MediaMetadata(
-                                            id = t.id,
-                                            title = t.title,
-                                            artists = listOf(com.nocturne.music.models.MediaMetadata.Artist(id = null, name = t.artist)),
-                                            duration = (t.duration_ms / 1000).toInt(),
-                                            thumbnailUrl = t.thumbnail
-                                        )
-                                        playerConnection?.playQueue(com.nocturne.music.playback.queues.YouTubeQueue.radio(meta))
-                                        playerConnection?.seekTo(pos)
-                                        if (room.is_playing) {
-                                            playerConnection?.play()
-                                        }
-                                    }
+                                    syncManager.handoffPlayback(com.nocturne.music.sync.PlaybackDeviceTarget.LOCAL, playerConnection)
                                 } else {
-                                    // Transfer current phone playback to Desktop PC!
-                                    if (discoveredDevices.isNotEmpty() && !isRemoteConnected) {
-                                        val firstPc = discoveredDevices.first()
-                                        syncManager.connect(firstPc.ip, firstPc.port, pairedPin)
-                                    }
-                                    val localMeta = playerConnection?.mediaMetadata?.value
-                                    val localPos = playerConnection?.player?.currentPosition ?: 0L
-                                    val isLocalPlaying = playerConnection?.isPlaying?.value == true
-                                    
-                                    playerConnection?.pause()
-                                    syncManager.setPlaybackTarget(com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP)
-                                    
-                                    if (localMeta != null) {
-                                        val track = com.nocturne.music.sync.RemoteTrack(
-                                            id = localMeta.id,
-                                            title = localMeta.title,
-                                            artist = localMeta.artists.joinToString { it.name },
-                                            thumbnail = localMeta.thumbnailUrl,
-                                            duration_ms = (localMeta.duration ?: 0) * 1000L
-                                        )
-                                        syncManager.sendAction(com.nocturne.music.sync.RemotePlaybackActionPayload(
-                                            kind = "transfer_to_desktop",
-                                            track = track,
-                                            position_ms = localPos
-                                        ))
-                                        if (isLocalPlaying) {
-                                            syncManager.sendPlay()
-                                        }
-                                    }
+                                    val firstPc = discoveredDevices.firstOrNull()
+                                    syncManager.handoffPlayback(
+                                        com.nocturne.music.sync.PlaybackDeviceTarget.REMOTE_DESKTOP,
+                                        playerConnection,
+                                        targetHost = firstPc?.ip,
+                                        targetPort = firstPc?.port ?: 8080,
+                                        targetPin = pairedPin
+                                    )
                                 }
                             },
                             shape = RoundedCornerShape(24.dp),

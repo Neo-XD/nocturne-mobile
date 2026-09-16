@@ -79,7 +79,7 @@ fun AppNavigationRail(
     floatingNav: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = false)
     val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
     val glassConfig = LocalGlassEffectConfig.current
     val containerColor = when {

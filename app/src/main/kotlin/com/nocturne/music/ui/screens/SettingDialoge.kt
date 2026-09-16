@@ -65,10 +65,11 @@ fun SettingDialoge(
     }
     val likedSongsCount by likedSongsFlow.collectAsState(initial = 0)
 
-    val playlistCountFlow = remember(homeViewModel.database) {
-        homeViewModel.database.playlistsByNameAsc().map { it.size }
+    val playlistsFlow = remember(homeViewModel.database) {
+        homeViewModel.database.playlistsByNameAsc()
     }
-    val playlistCount by playlistCountFlow.collectAsState(initial = 0)
+    val playlists by playlistsFlow.collectAsState(initial = emptyList())
+    val playlistCount = playlists.size
 
     val albumCountFlow = remember(homeViewModel.database) {
         homeViewModel.database.albumsByNameAsc().map { it.size }
@@ -266,20 +267,80 @@ fun SettingDialoge(
                         option = Option("Playlists", R.drawable.library_music_outlined),
                         tintColor = onPrimaryColor,
                         textColor = onSecondaryColor,
-                        trailingText = playlistCount.toString()
+                        trailingText = playlistCount.toString(),
+                        onClick = {
+                            onDismissRequest()
+                            if (isLoggedIn) onNavigate("account") else onNavigate("library")
+                        }
                     )
                     OptionItem(
                         option = Option("Albums", R.drawable.album),
                         tintColor = onPrimaryColor,
                         textColor = onSecondaryColor,
-                        trailingText = albumCount.toString()
+                        trailingText = albumCount.toString(),
+                        onClick = {
+                            onDismissRequest()
+                            if (isLoggedIn) onNavigate("account") else onNavigate("library")
+                        }
                     )
                     OptionItem(
                         option = Option("Liked Songs", R.drawable.favorite_border),
                         tintColor = onPrimaryColor,
                         textColor = onSecondaryColor,
-                        trailingText = likedSongsCount.toString()
+                        trailingText = likedSongsCount.toString(),
+                        onClick = {
+                            onDismissRequest()
+                            onNavigate("auto_playlist/liked")
+                        }
                     )
+
+                    if (playlists.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            playlists.take(3).forEach { pl ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            onDismissRequest()
+                                            onNavigate("local_playlist/${pl.playlist.id}")
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.queue_music),
+                                            contentDescription = null,
+                                            tint = onSecondaryColor.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = pl.playlist.name,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = onSecondaryColor,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    Text(
+                                        text = "${pl.songCount} songs",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = onSecondaryColor.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     if (isLoggedIn) {
                         SwitchOptionItem(

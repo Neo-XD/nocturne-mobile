@@ -766,70 +766,11 @@ fun PlayerThemeCustomizerScreen(
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
-            text = "Docked classic bar or modern floating pill navigation",
+            text = "Modern floating pill navigation options",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                modifier = Modifier.weight(1f),
-                selected = floatingNavBar,
-                onClick = { onFloatingNavBarChange(true) },
-                label = {
-                    Text(
-                        text = "Floating (Default)",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                leadingIcon = if (floatingNavBar) {
-                    {
-                        Icon(
-                            painter = painterResource(R.drawable.check),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                } else null,
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-
-            FilterChip(
-                modifier = Modifier.weight(1f),
-                selected = !floatingNavBar,
-                onClick = { onFloatingNavBarChange(false) },
-                label = {
-                    Text(
-                        text = "Docked",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                leadingIcon = if (!floatingNavBar) {
-                    {
-                        Icon(
-                            painter = painterResource(R.drawable.check),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                } else null,
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),

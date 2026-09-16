@@ -1530,7 +1530,7 @@ fun BottomSheetPlayer(
                                 mediaMetadata.artists.forEachIndexed { index, artist ->
                                     val tag = "artist_${artist.id.orEmpty()}"
                                     pushStringAnnotation(tag = tag, annotation = artist.id.orEmpty())
-                                    withStyle(SpanStyle(color = TextBackgroundColor, fontSize = 16.sp)) {
+                                    withStyle(SpanStyle(color = TextBackgroundColor.copy(alpha = 0.72f), fontSize = 16.sp)) {
                                         append(artist.name)
                                     }
                                     pop()
@@ -1548,7 +1548,7 @@ fun BottomSheetPlayer(
                                 var clickOffset by remember { mutableStateOf<Offset?>(null) }
                                 Text(
                                     text = annotatedString,
-                                    style = MaterialTheme.typography.titleMedium.copy(color = TextBackgroundColor),
+                                    style = MaterialTheme.typography.titleMedium.copy(color = TextBackgroundColor.copy(alpha = 0.72f)),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     onTextLayout = { layoutResult = it },

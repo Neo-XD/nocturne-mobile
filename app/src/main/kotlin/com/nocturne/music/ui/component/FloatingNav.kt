@@ -78,7 +78,7 @@ fun FloatingNavigationBar(
     val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
     val outlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     
-    val (frostedGlass) = rememberPreference(EnableFrostedGlassKey, true)
+    val (frostedGlass) = rememberPreference(EnableFrostedGlassKey, false)
     val glassConfig = LocalGlassEffectConfig.current
     val isGlassActive = frostedGlass && !pureBlack && isGlassAllowed()
 

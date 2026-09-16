@@ -8,6 +8,10 @@ package com.nocturne.music.listentogether
 import com.google.protobuf.MessageLite
 import com.nocturne.music.listentogether.proto.Listentogether
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -75,15 +79,23 @@ class MessageCodec(
     }
     
     /**
-     * Encode message as JSON (DEPRECATED - will be removed in future versions)
+     * Encode message as JSON compatible with both flat sync server and envelope clients
      */
     private fun encodeJson(msgType: String, payload: Any?): ByteArray {
-        val msg = Message(
-            type = msgType,
-            payload = if (payload != null) json.encodeToJsonElement(serializer(payload), payload) else null
-        )
+        val payloadObj = if (payload != null) {
+            val elem = json.encodeToJsonElement(serializer(payload), payload)
+            if (elem is JsonObject) {
+                val map = elem.toMutableMap()
+                map["type"] = JsonPrimitive(msgType)
+                JsonObject(map)
+            } else {
+                JsonObject(mapOf("type" to JsonPrimitive(msgType), "payload" to elem))
+            }
+        } else {
+            JsonObject(mapOf("type" to JsonPrimitive(msgType)))
+        }
         
-        var data = json.encodeToString(msg).toByteArray()
+        var data = json.encodeToString(JsonObject.serializer(), payloadObj).toByteArray()
         
         if (compressionEnabled && data.size > COMPRESSION_THRESHOLD) {
             val compressed = compressData(data)
@@ -96,7 +108,7 @@ class MessageCodec(
     }
     
     /**
-     * Decode JSON message (DEPRECATED - will be removed in future versions)
+     * Decode JSON message supporting both flat wire format and envelope
      */
     private fun decodeJson(data: ByteArray): Pair<String, ByteArray> {
         // Try to decompress if it looks compressed (gzip magic bytes)
@@ -107,10 +119,17 @@ class MessageCodec(
             data
         }
         
-        val msg = json.decodeFromString<Message>(actualData.decodeToString())
-        val payloadBytes = msg.payload?.toString()?.toByteArray() ?: byteArrayOf()
+        val raw = actualData.decodeToString()
+        val jsonElem = try { json.parseToJsonElement(raw) as? JsonObject } catch (e: Exception) { null }
+        val type = jsonElem?.get("type")?.jsonPrimitive?.content ?: ""
+        val payloadBytes = if (jsonElem != null && jsonElem.containsKey("payload") && jsonElem["payload"] !is JsonNull) {
+            jsonElem["payload"].toString().toByteArray()
+        } else {
+            // Flat json wire format
+            raw.toByteArray()
+        }
         
-        return Pair(msg.type, payloadBytes)
+        return Pair(type, payloadBytes)
     }
     
     /**

@@ -6,7 +6,9 @@
 package com.nocturne.music.ui.screens.playlist
 
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.CircularProgressIndicator
+import com.nocturne.music.ui.component.shimmer.ShimmerHost
+import com.nocturne.music.ui.component.shimmer.ListItemPlaceHolder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -227,13 +229,10 @@ fun OnlinePlaylistScreen(
             if (playlist == null || songs.isEmpty()) {
                 if (isLoading) {
                     item(key = "loading_placeholder") {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ContainedLoadingIndicator()
+                        ShimmerHost {
+                            repeat(8) {
+                                ListItemPlaceHolder()
+                            }
                         }
                     }
                 }
@@ -323,7 +322,11 @@ fun OnlinePlaylistScreen(
                                     .padding(16.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                ContainedLoadingIndicator()
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }

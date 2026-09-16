@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
@@ -99,7 +100,7 @@ fun <E> ChipsRow(
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ),
                 onClick = { onValueUpdate(value) },
-                shape = RoundedCornerShape(10.dp),
+                shape = CircleShape,
                 border = FilterChipDefaults.filterChipBorder(
                     enabled = true,
                     selected = isSelected,
@@ -108,7 +109,7 @@ fun <E> ChipsRow(
                     borderWidth = 1.dp,
                     selectedBorderWidth = 1.dp
                 ),
-                modifier = Modifier.height(34.dp)
+                modifier = Modifier.height(36.dp)
             )
 
             Spacer(Modifier.width(8.dp))

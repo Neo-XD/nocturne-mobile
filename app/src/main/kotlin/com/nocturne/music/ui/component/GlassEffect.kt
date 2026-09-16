@@ -155,7 +155,7 @@ val LocalBackdropLoopBucket = staticCompositionLocalOf<(() -> Int)?> { null }
 
 @Composable
 fun rememberGlassEffectConfig(): GlassEffectConfig {
-    val (enabled) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val (enabled) = rememberPreference(EnableFrostedGlassKey, defaultValue = false)
     val (blurRadius) = rememberPreference(GlassBlurRadiusKey, defaultValue = 50f)
     val (vibrancy) = rememberPreference(GlassVibrancyKey, defaultValue = 1.2f)
     val (highlightOpacity) = rememberPreference(GlassHighlightOpacityKey, defaultValue = EdgeHighlightAlpha)

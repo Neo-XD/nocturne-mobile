@@ -21,6 +21,9 @@ import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.nocturne.music.models.MediaMetadata
+import com.nocturne.music.playback.PlayerConnection
+import com.nocturne.music.playback.queues.YouTubeQueue
 import androidx.compose.runtime.staticCompositionLocalOf
 
 val LocalRemoteSyncManager = staticCompositionLocalOf<RemoteSyncManager> {
@@ -272,6 +275,70 @@ class RemoteSyncManager @Inject constructor(
         _playbackTarget.value = target
         scope.launch {
             context.dataStore.edit { it[RemotePlaybackTargetKey] = target.name }
+        }
+    }
+
+    fun handoffPlayback(
+        target: PlaybackDeviceTarget,
+        playerConnection: PlayerConnection?,
+        targetHost: String? = null,
+        targetPort: Int = 8080,
+        targetPin: String = ""
+    ) {
+        if (target == PlaybackDeviceTarget.REMOTE_DESKTOP) {
+            if (_connectionState.value != RemoteConnectionState.CONNECTED && !targetHost.isNullOrEmpty()) {
+                connect(targetHost, targetPort, targetPin)
+            }
+            val localMeta = playerConnection?.mediaMetadata?.value
+            val localPos = playerConnection?.player?.currentPosition ?: 0L
+            val isLocalPlaying = playerConnection?.isPlaying?.value == true
+
+            playerConnection?.pause()
+            setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
+
+            if (localMeta != null) {
+                val track = RemoteTrack(
+                    id = localMeta.id,
+                    title = localMeta.title,
+                    artist = localMeta.artists.joinToString { it.name },
+                    thumbnail = localMeta.thumbnailUrl,
+                    duration_ms = (localMeta.duration ?: 0) * 1000L
+                )
+                sendAction(
+                    RemotePlaybackActionPayload(
+                        kind = "transfer_to_desktop",
+                        track = track,
+                        position_ms = localPos
+                    )
+                )
+                if (isLocalPlaying) {
+                    sendPlay()
+                }
+            }
+        } else {
+            val room = _remoteRoomState.value
+            sendAction(RemotePlaybackActionPayload(kind = "transfer_to_phone"))
+            setPlaybackTarget(PlaybackDeviceTarget.LOCAL)
+
+            if (room?.current_track != null) {
+                val t = room.current_track
+                val elapsed = if (room.is_playing && room.last_update_ms > 0) {
+                    System.currentTimeMillis() - room.last_update_ms
+                } else 0L
+                val pos = (room.position_ms + elapsed).coerceAtLeast(0L)
+                val meta = MediaMetadata(
+                    id = t.id,
+                    title = t.title,
+                    artists = listOf(MediaMetadata.Artist(id = null, name = t.artist)),
+                    duration = (t.duration_ms / 1000).toInt(),
+                    thumbnailUrl = t.thumbnail
+                )
+                playerConnection?.playQueue(YouTubeQueue.radio(meta))
+                playerConnection?.seekTo(pos)
+                if (room.is_playing) {
+                    playerConnection?.play()
+                }
+            }
         }
     }
 

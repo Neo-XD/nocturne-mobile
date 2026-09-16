@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nocturne.music.LocalPlayerConnection
 import com.nocturne.music.sync.PlaybackDeviceTarget
 import com.nocturne.music.sync.RemoteConnectionState
 import com.nocturne.music.sync.RemoteSyncManager
@@ -29,6 +30,7 @@ fun DevicePickerBottomSheet(
     onDismiss: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    val playerConnection = LocalPlayerConnection.current
     val connectionState by syncManager.connectionState.collectAsState()
     val playbackTarget by syncManager.playbackTarget.collectAsState()
     val discoveredDevices by syncManager.discoveredDevices.collectAsState()
@@ -70,7 +72,7 @@ fun DevicePickerBottomSheet(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .clickable {
-                        syncManager.setPlaybackTarget(PlaybackDeviceTarget.LOCAL)
+                        syncManager.handoffPlayback(PlaybackDeviceTarget.LOCAL, playerConnection)
                         onDismiss()
                     },
                 color = if (isPhoneActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -171,10 +173,13 @@ fun DevicePickerBottomSheet(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
-                                    if (!isConnected) {
-                                        syncManager.connect(device.ip, device.port, pairedPin)
-                                    }
-                                    syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
+                                    syncManager.handoffPlayback(
+                                        PlaybackDeviceTarget.REMOTE_DESKTOP,
+                                        playerConnection,
+                                        targetHost = device.ip,
+                                        targetPort = device.port,
+                                        targetPin = pairedPin
+                                    )
                                     onDismiss()
                                 },
                             color = if (isThisPcActive) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -223,8 +228,13 @@ fun DevicePickerBottomSheet(
                                 } else {
                                     Button(
                                         onClick = {
-                                            syncManager.connect(device.ip, device.port, pairedPin)
-                                            syncManager.setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
+                                            syncManager.handoffPlayback(
+                                                PlaybackDeviceTarget.REMOTE_DESKTOP,
+                                                playerConnection,
+                                                targetHost = device.ip,
+                                                targetPort = device.port,
+                                                targetPin = pairedPin
+                                            )
                                             onDismiss()
                                         },
                                         shape = RoundedCornerShape(10.dp),

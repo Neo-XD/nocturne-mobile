@@ -36,7 +36,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ContainedLoadingIndicator
+import com.nocturne.music.ui.component.shimmer.ShimmerHost
+import com.nocturne.music.ui.component.shimmer.ListItemPlaceHolder
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -951,13 +952,10 @@ fun AlbumScreen(
             }
         } else {
             item(key = "loading") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ContainedLoadingIndicator()
+                ShimmerHost {
+                    repeat(8) {
+                        ListItemPlaceHolder()
+                    }
                 }
             }
         }

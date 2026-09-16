@@ -41,6 +41,7 @@ import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.nocturne.music.nocturne.AudioDeviceBottomSheet
 import com.nocturne.music.ui.component.DefaultDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -212,6 +213,7 @@ fun ListenTogetherScreen(
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    var showAudioDeviceBottomSheet by remember { mutableStateOf(false) }
     
     val backStackEntry by navController.currentBackStackEntryAsState()
     val scrollToTop = backStackEntry?.savedStateHandle?.getStateFlow("scrollToTop", false)?.collectAsState()
@@ -272,7 +274,8 @@ fun ListenTogetherScreen(
                         roomCode = room.roomCode,
                         isHost = isHost,
                         context = context,
-                        navController = navController
+                        navController = navController,
+                        onAudioOutputClick = { showAudioDeviceBottomSheet = true }
                     )
                 }
 
@@ -417,6 +420,10 @@ fun ListenTogetherScreen(
                 }
             }
         )
+    }
+
+    if (showAudioDeviceBottomSheet) {
+        AudioDeviceBottomSheet(onDismiss = { showAudioDeviceBottomSheet = false })
     }
 }
 
@@ -631,7 +638,8 @@ private fun RoomStatusCard(
     roomCode: String,
     isHost: Boolean,
     context: Context,
-    navController: NavController
+    navController: NavController,
+    onAudioOutputClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -674,25 +682,51 @@ private fun RoomStatusCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = { navController.navigate("listen_together/chat") },
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth(0.8f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.chat_msg),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.comments),
-                    fontWeight = FontWeight.Bold
-                )
+                Button(
+                    onClick = { navController.navigate("listen_together/chat") },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.chat_msg),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.comments),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Button(
+                    onClick = onAudioOutputClick,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.speaker_apple),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.audio_devices),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             if (isHost) {

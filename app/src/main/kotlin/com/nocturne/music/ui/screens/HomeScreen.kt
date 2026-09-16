@@ -52,6 +52,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -526,7 +527,7 @@ fun DailyDiscoverCard(
                             text = buildString {
                                 append((dailyDiscover.recommendation as? SongItem)?.artists?.joinToString(", ") { it.name } ?: "")
                                 if (playCount > 0) {
-                                    append(" � $playCount $playsString")
+                                    append(" • $playCount $playsString")
                                 }
                             },
                             style = MaterialTheme.typography.bodyMedium,
@@ -1041,19 +1042,31 @@ fun HomeScreen(
         indicator = {
             if (animatedFraction > 0.001f) {
                 val yOffset = lerp(-indicatorHeightPx, topInsetPx, animatedFraction)
-                if (isRefreshing) {
-                    ContainedLoadingIndicator(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .offset { IntOffset(0, yOffset.toInt()) }
-                    )
-                } else {
-                    ContainedLoadingIndicator(
-                        progress = { pullRefreshState.distanceFraction.coerceIn(0f, 1f) },
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .offset { IntOffset(0, yOffset.toInt()) }
-                    )
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset { IntOffset(0, yOffset.toInt()) }
+                        .size(40.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = 6.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        if (isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.5.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            CircularProgressIndicator(
+                                progress = { pullRefreshState.distanceFraction.coerceIn(0f, 1f) },
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.5.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1091,9 +1104,18 @@ fun HomeScreen(
                 }
             ) {
                 stickyHeader(key = "chips_header") {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                        modifier = Modifier.fillMaxWidth()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.50f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
                     ) {
                         ChipsRow(
                             chips = homePage?.chips
@@ -1103,7 +1125,7 @@ fun HomeScreen(
                             onValueUpdate = {
                                 viewModel.toggleChip(it)
                             },
-                            modifier = Modifier.padding(vertical = 4.dp)
+                            modifier = Modifier.padding(vertical = 6.dp)
                         )
                     }
                 }
@@ -1180,7 +1202,11 @@ fun HomeScreen(
                                             }
                                         }
                                     } else {
-                                        ContainedLoadingIndicator()
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(28.dp),
+                                            strokeWidth = 2.5.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 }
                             }
@@ -2257,9 +2283,6 @@ fun HomeScreen(
                             }
                         }
                     }
-                },
-                onRecognitionClick = {
-                    navController.navigate("recognition")
                 }
             )
         }

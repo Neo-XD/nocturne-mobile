@@ -204,7 +204,7 @@ fun AppearanceSettings(
     )
     val (enableFrostedGlass, onEnableFrostedGlassChange) = rememberPreference(
         EnableFrostedGlassKey,
-        defaultValue = true
+        defaultValue = false
     )
     val (glassBlurRadius, onGlassBlurRadiusChange) = rememberPreference(
         GlassBlurRadiusKey,

@@ -205,7 +205,7 @@ fun LibraryArtistsScreen(
                     artists.size
                 ),
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.secondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             FlowRow(

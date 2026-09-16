@@ -71,6 +71,8 @@ fun SpotifyScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var showSpotifyLogin by remember { mutableStateOf(false) }
+    var showSpDcDialog by remember { mutableStateOf(false) }
+    var spDcInput by remember { mutableStateOf("") }
     var showPlaylistsSheet by remember { mutableStateOf(false) }
     val importProgress by viewModel.importProgress.collectAsStateWithLifecycle()
 
@@ -116,8 +118,8 @@ fun SpotifyScreen(
         // Connection Card/Group
         Material3SettingsGroup(
             title = stringResource(R.string.spotify_account),
-            items = listOf(
-                if (state.isAuthenticated) {
+            items = if (state.isAuthenticated) {
+                listOf(
                     Material3SettingsItem(
                         isExpressive = true,
                         leadingContent = if (!state.accountAvatarUrl.isNullOrBlank()) {
@@ -154,7 +156,9 @@ fun SpotifyScreen(
                         },
                         onClick = {}
                     )
-                } else {
+                )
+            } else {
+                listOf(
                     Material3SettingsItem(
                         isExpressive = true,
                         descriptionBelow = true,
@@ -162,9 +166,17 @@ fun SpotifyScreen(
                         description = { Text(stringResource(R.string.spotify_not_connected)) },
                         icon = painterResource(R.drawable.spotify),
                         onClick = { showSpotifyLogin = true }
+                    ),
+                    Material3SettingsItem(
+                        isExpressive = true,
+                        descriptionBelow = true,
+                        title = { Text("Link via sp_dc cookie") },
+                        description = { Text("Direct authentication without browser login (psst method)") },
+                        icon = painterResource(R.drawable.key),
+                        onClick = { showSpDcDialog = true }
                     )
-                }
-            )
+                )
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -272,6 +284,55 @@ fun SpotifyScreen(
             onCookiesCaptured = { spDc, spKey ->
                 showSpotifyLogin = false
                 viewModel.connectWithCookies(spDc, spKey)
+            }
+        )
+    }
+
+    if (showSpDcDialog) {
+        DefaultDialog(
+            onDismiss = { showSpDcDialog = false },
+            title = { Text("Link via sp_dc cookie") },
+            content = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Paste your Spotify sp_dc cookie below. You can find this in browser Developer Tools (Storage > Cookies) on open.spotify.com.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = spDcInput,
+                        onValueChange = { spDcInput = it },
+                        label = { Text("sp_dc cookie") },
+                        placeholder = { Text("Paste cookie value") },
+                        singleLine = false,
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            buttons = {
+                TextButton(onClick = { showSpDcDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        val cookie = spDcInput.trim()
+                        if (cookie.isNotBlank()) {
+                            viewModel.connectWithCookies(cookie, "")
+                            showSpDcDialog = false
+                            spDcInput = ""
+                        }
+                    },
+                    enabled = spDcInput.isNotBlank()
+                ) {
+                    Text("Link")
+                }
             }
         )
     }

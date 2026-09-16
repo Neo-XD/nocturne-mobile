@@ -471,10 +471,11 @@ class MainActivity : ComponentActivity() {
                         Log.d("UpdateCheck", "Startup check success. Latest: $latestVersion, Current: $currentVersion, isAvailable: $isAvailable")
                         saveUpdateAvailableState(context, isAvailable)
 
-                        if (isAvailable && getUpdateNotificationsSetting(context)) {
-                            Log.d("UpdateCheck", "Posting update notification for $latestVersion")
-                            UpdateNotificationHelper.showUpdateNotification(context, latestVersion)
-                        }
+                        // Update notification suppressed until in-app APK download and install is supported
+                        // if (isAvailable && getUpdateNotificationsSetting(context)) {
+                        //     Log.d("UpdateCheck", "Posting update notification for $latestVersion")
+                        //     UpdateNotificationHelper.showUpdateNotification(context, latestVersion)
+                        // }
 
                         // Stamp today so no more nightly checks until tomorrow 9 PM
                         if (betaEnabled) markNightlyCheckDone(context)
@@ -619,7 +620,7 @@ class MainActivity : ComponentActivity() {
                 val (floatingNav) = rememberPreference(FloatingNavBarKey, defaultValue = true)
                 val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
                 val (useAppleMiniPlayer) = rememberPreference(UseAppleMiniPlayerKey, defaultValue = false)
-                val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+                val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = false)
                 val (dynamicAppBackground) = rememberPreference(DynamicAppBackgroundKey, defaultValue = false)
 
                 if (dynamicAppBackground) {
@@ -915,6 +916,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 
+                // Update snackbar suppressed until in-app APK download and install is supported
+                /*
                 LaunchedEffect(isUpdateAvailable.value) {
                     if (isUpdateAvailable.value && getUpdateNotificationsSetting(context)) {
                         delay(200) // Ensure Snackbar collector is ready before emitting
@@ -937,6 +940,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                */
 
                 val coroutineScope = rememberCoroutineScope()
                 var sharedSong: SongItem? by remember {
@@ -1189,34 +1193,8 @@ class MainActivity : ComponentActivity() {
 
                                             Box(
                                                 modifier = Modifier
-                                                    .padding(horizontal = 2.dp)
-                                                    .width(1.dp)
-                                                    .height(16.dp)
-                                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                                            )
-
-                                            IconButton(
-                                                onClick = {
-                                                    if (enableSettingsPopup) {
-                                                        showSettingDialoge = true
-                                                    } else {
-                                                        navController.navigate("settings")
-                                                    }
-                                                },
-                                                modifier = Modifier.size(36.dp)
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.settings),
-                                                    contentDescription = stringResource(R.string.settings),
-                                                    modifier = Modifier.size(19.dp),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-
-                                            Box(
-                                                modifier = Modifier
-                                                    .padding(start = 2.dp)
-                                                    .size(30.dp)
+                                                    .padding(horizontal = 4.dp)
+                                                    .size(32.dp)
                                                     .clip(CircleShape)
                                                     .then(
                                                         if (accountImageUrl != null) {
@@ -1236,7 +1214,7 @@ class MainActivity : ComponentActivity() {
                                                         }
                                                     )
                                                     .clickable {
-                                                        navController.navigate("account")
+                                                        showSettingDialoge = true
                                                     },
                                                 contentAlignment = Alignment.Center
                                             ) {

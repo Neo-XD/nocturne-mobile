@@ -313,7 +313,7 @@ private fun NewMiniPlayer(
     )
     
     // Frosted glass
-    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = false)
     val isDynamicBackground = miniPlayerBackground != PlayerBackgroundStyle.DEFAULT
     val isGlassActive = enableFrostedGlass && !isDynamicBackground && !pureBlack && isGlassAllowed()
     val glassConfig = LocalGlassEffectConfig.current
@@ -467,6 +467,25 @@ private fun NewMiniPlayer(
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
+
+                // Shuffle Button
+                val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsState()
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable { playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled }
+                ) {
+                    Icon(
+                        painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
+                        contentDescription = stringResource(R.string.action_shuffle_on),
+                        tint = if (shuffleModeEnabled) primaryColor else onSurfaceColor.copy(alpha = 0.7f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
 
                 // Favorite button - isolated composable
                 effectiveMediaMetadata?.let { 
@@ -672,7 +691,7 @@ private fun HybridMiniPlayer(
     val useDarkTheme = remember(darkTheme, isSystemInDarkTheme) {
         if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
     }
-    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = false)
     val miniPlayerBackground by rememberEnumPreference(MiniPlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.DEFAULT)
 
     val playbackState by playerConnection.playbackState.collectAsState()
@@ -853,6 +872,25 @@ private fun HybridMiniPlayer(
                 }
 
                 Spacer(modifier = Modifier.width(2.dp))
+
+                // Shuffle button
+                val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsState()
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable { playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled }
+                ) {
+                    Icon(
+                        painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
+                        contentDescription = stringResource(R.string.action_shuffle_on),
+                        tint = if (shuffleModeEnabled) primaryColor else onSurfaceColor.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(2.dp))
                 // ── Like button ──────────────────────────────────────────
                 mediaMetadata?.let {
                     FavoriteButton(
@@ -929,7 +967,7 @@ private fun LegacyMiniPlayer(
     val primaryColor = MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
 
-    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = false)
     val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
     val glassConfig = LocalGlassEffectConfig.current
 
@@ -1185,7 +1223,7 @@ private fun LegacyMiniMediaInfo(
             if (mediaMetadata.artists.any { it.name.isNotBlank() }) {
                 Text(
                     text = mediaMetadata.artists.joinToString { it.name },
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

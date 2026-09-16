@@ -911,6 +911,8 @@ private fun PresetSection(
                     Text(
                         text = name,
                         style = MaterialTheme.typography.labelSmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
                         maxLines = 1
                     )
                 }
