@@ -155,11 +155,11 @@ class NewReleaseCheckWorker(
                     val trackingSince = prefs.getLong(trackingSinceKey, -1L)
 
                     if (trackingSince == -1L) {
-                        // Very first time seeing this artist � record when we started tracking.
+                        // Very first time seeing this artist - record when we started tracking.
                         // Don't notify yet: we don't know if these releases are actually "new"
                         // or have been out for months.
                         Timber.tag(TAG).d(
-                            "First time tracking %s � recording %d releases as baseline",
+                            "First time tracking %s - recording %d releases as baseline",
                             artistName, currentIds.size
                         )
                         prefs.edit()
@@ -168,7 +168,7 @@ class NewReleaseCheckWorker(
                             .apply()
                     } else {
                         // We were already tracking this artist. Any IDs not in our saved set
-                        // are genuinely new since last check � notify the user.
+                        // are genuinely new since last check - notify the user.
                         Timber.tag(TAG).d(
                             "Found %d new releases for %s",
                             unseenReleases.size, artistName
@@ -239,7 +239,7 @@ class NewReleaseCheckWorker(
         fun clearSeenReleases(context: Context) {
             context.getSharedPreferences("new_release_prefs", Context.MODE_PRIVATE)
                 .edit().clear().apply()
-            Timber.tag(TAG).d("Cleared all seen release data � will re-snapshot on next run")
+            Timber.tag(TAG).d("Cleared all seen release data - will re-snapshot on next run")
         }
     }
 }

@@ -62,7 +62,7 @@ CRITICAL RULES:
 
 CRITICAL REQUIREMENTS:
 - Use ONLY simple ASCII characters (a-z, A-Z, 0-9, basic punctuation)
-- NO special characters like a, i, u, �, �, etc.
+- NO special characters like accented vowels
 - NO diacritics or accent marks
 - If text is already in Latin script, return it UNCHANGED
 - For non-Latin scripts (Hindi, Chinese, Japanese, Korean, Cyrillic, etc.), provide simple romanization

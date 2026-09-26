@@ -431,7 +431,7 @@ fun SpotifyScreen(
 @android.annotation.SuppressLint("ClickableViewAccessibility")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SpotifyLoginSheet(
+internal fun SpotifyLoginSheet(
     onDismiss: () -> Unit,
     onCookiesCaptured: (spDc: String, spKey: String) -> Unit,
 ) {
@@ -508,17 +508,31 @@ private fun SpotifyLoginSheet(
                             private fun captureCookies(url: String?): Boolean {
                                 if (captured) return true
                                 cookieManager.flush()
-                                val cookiesStr = cookieManager.getCookie("https://open.spotify.com") ?: ""
-                                val cookies = cookiesStr.split(";").associate {
-                                    val parts = it.split("=")
-                                    val key = parts.firstOrNull()?.trim().orEmpty()
-                                    val valStr = parts.drop(1).joinToString("=").trim()
-                                    key to valStr
+                                val candidateUrls = listOfNotNull(
+                                    url,
+                                    "https://open.spotify.com",
+                                    "https://open.spotify.com/",
+                                    "https://accounts.spotify.com",
+                                    "https://accounts.spotify.com/",
+                                    "https://spotify.com",
+                                    "https://.spotify.com"
+                                )
+                                val allCookies = mutableMapOf<String, String>()
+                                for (candidate in candidateUrls) {
+                                    val cookiesStr = cookieManager.getCookie(candidate) ?: continue
+                                    cookiesStr.split(";").forEach { pair ->
+                                        val parts = pair.split("=")
+                                        val key = parts.firstOrNull()?.trim().orEmpty()
+                                        val valStr = parts.drop(1).joinToString("=").trim()
+                                        if (key.isNotEmpty() && valStr.isNotEmpty()) {
+                                            allCookies[key] = valStr
+                                        }
+                                    }
                                 }
-                                val spDc = cookies["sp_dc"].orEmpty()
+                                val spDc = allCookies["sp_dc"].orEmpty()
                                 if (spDc.isBlank()) return false
                                 captured = true
-                                onCookiesCaptured(spDc, cookies["sp_key"].orEmpty())
+                                onCookiesCaptured(spDc, allCookies["sp_key"].orEmpty())
                                 return true
                             }
 

@@ -232,7 +232,7 @@ fun AutoBackupSettings(
                     val (dateStr, typeStr) = parseBackupFilename(backupFile, context)
                     Material3SettingsItem(
                         title = { Text(dateStr) },
-                        description = { Text("$typeStr � ${formatFileSize(backupFile.length())}") },
+                        description = { Text("$typeStr | ${formatFileSize(backupFile.length())}") },
                         onClick = {
                             backupToRestore = backupFile
                         },

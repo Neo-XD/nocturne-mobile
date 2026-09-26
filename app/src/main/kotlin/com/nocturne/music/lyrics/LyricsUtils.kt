@@ -147,12 +147,12 @@ object LyricsUtils {
 
     private val GENERAL_CYRILLIC_ROMAJI_MAP: Map<String, String> = mapOf(
         "?" to "A", "?" to "B", "?" to "V", "?" to "G", "?" to "G", "?" to "D",
-        "?" to "G�", "?" to "�", "?" to "E", "?" to "Yo", "?" to "Ye", "?" to "Zh",
+        "?" to "G", "?" to "", "?" to "E", "?" to "Yo", "?" to "Ye", "?" to "Zh",
         "?" to "Z", "?" to "Dz", "?" to "I", "?" to "I", "?" to "Yi", "?" to "Y",
         "?" to "Y", "?" to "K", "?" to "L", "?" to "Ly", "?" to "M", "?" to "N",
         "?" to "Ny", "?" to "O", "?" to "P", "?" to "R", "?" to "S", "?" to "T",
         "?" to "C", "?" to "U", "?" to "U", "?" to "F", "?" to "Kh", "?" to "Ts",
-        "?" to "Ch", "?" to "D�", "?" to "Sh", "?" to "Shch", "?" to """, "?" to "Y",
+        "?" to "Ch", "?" to "D", "?" to "Sh", "?" to "Shch", "?" to """, "?" to "Y",
         "?" to "'", "?" to "E", "?" to "Yu", "?" to "Ya",
         "?" to "O", "?" to "Ya", "?" to "Ye", "?" to "Ya", "?" to "Ya",
         "?" to "U", "?" to "Yu", "?" to "Ks", "?" to "Ps", "?" to "F",
@@ -161,15 +161,15 @@ object LyricsUtils {
         "?" to "Ng", "?" to "Ng", "?" to "P", "?" to "O", "?" to "S",
         "?" to "T", "?" to "U", "?" to "U", "?" to "Kh", "?" to "Ts",
         "?" to "Ch", "?" to "Ch", "?" to "H", "?" to "Ch", "?" to "Ch",
-        "?" to "K�", "?" to "�",
+        "?" to "K", "?" to "",
 
         "?" to "a", "?" to "b", "?" to "v", "?" to "g", "?" to "g", "?" to "d",
-        "?" to "g�", "?" to "d", "?" to "e", "?" to "yo", "?" to "ye", "?" to "zh",
+        "?" to "g", "?" to "d", "?" to "e", "?" to "yo", "?" to "ye", "?" to "zh",
         "?" to "z", "?" to "dz", "?" to "i", "?" to "i", "?" to "yi", "?" to "y",
         "?" to "y", "?" to "k", "?" to "l", "?" to "ly", "?" to "m", "?" to "n",
         "?" to "ny", "?" to "o", "?" to "p", "?" to "r", "?" to "s", "?" to "t",
         "?" to "c", "?" to "u", "?" to "u", "?" to "f", "?" to "kh", "?" to "ts",
-        "?" to "ch", "?" to "d�", "?" to "sh", "?" to "shch", "?" to """, "?" to "y",
+        "?" to "ch", "?" to "d", "?" to "sh", "?" to "shch", "?" to """, "?" to "y",
         "?" to "'", "?" to "e", "?" to "yu", "?" to "ya",
         "?" to "o", "?" to "ya", "?" to "ye", "?" to "ya", "?" to "ya",
         "?" to "u", "?" to "yu", "?" to "ks", "?" to "ps", "?" to "f",
@@ -178,7 +178,7 @@ object LyricsUtils {
         "?" to "ng", "?" to "ng", "?" to "p", "?" to "o", "?" to "s",
         "?" to "t", "?" to "u", "?" to "u", "?" to "kh", "?" to "ts",
         "?" to "ch", "?" to "ch", "h" to "h", "?" to "ch", "?" to "ch",
-        "?" to "?", "?" to "�"
+        "?" to "?", "?" to ""
     )
 
     private val RUSSIAN_ROMAJI_MAP: Map<String, String> = mapOf(
@@ -194,11 +194,11 @@ object LyricsUtils {
     )
 
     private val SERBIAN_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "�", "?" to "Lj", "?" to "Nj", "?" to "C", "?" to "C",
-        "?" to "D�", "?" to "�", "?" to "H",
+        "?" to "", "?" to "Lj", "?" to "Nj", "?" to "C", "?" to "C",
+        "?" to "D", "?" to "", "?" to "H",
 
-        "?" to "�", "?" to "lj", "?" to "nj", "?" to "c", "?" to "c",
-        "?" to "d�", "?" to "�", "?" to "h"
+        "?" to "", "?" to "lj", "?" to "nj", "?" to "c", "?" to "c",
+        "?" to "d", "?" to "", "?" to "h"
     )
 
     private val BULGARIAN_ROMAJI_MAP: Map<String, String> = mapOf(
@@ -214,16 +214,16 @@ object LyricsUtils {
     )
 
     private val KYRGYZ_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "�", "?" to "�", "?" to "Y", "?" to "y"
+        "?" to "", "?" to "", "?" to "Y", "?" to "y"
     )
 
     private val MACEDONIAN_ROMAJI_MAP: Map<String, String> = mapOf(
         "?" to "Gj", "?" to "Dz", "?" to "I", "?" to "J", "?" to "Lj",
-        "?" to "Nj", "?" to "Kj", "?" to "D�", "?" to "C", "?" to "Sh",
+        "?" to "Nj", "?" to "Kj", "?" to "D", "?" to "C", "?" to "Sh",
         "?" to "Zh", "?" to "C", "?" to "H",
 
         "?" to "gj", "?" to "dz", "?" to "i", "?" to "j", "?" to "lj",
-        "?" to "nj", "?" to "kj", "?" to "d�", "?" to "c", "?" to "sh",
+        "?" to "nj", "?" to "kj", "?" to "d", "?" to "c", "?" to "sh",
         "?" to "zh", "?" to "c", "?" to "h"
     )
 
@@ -783,7 +783,7 @@ object LyricsUtils {
         // Remove whitespaces before ASCII and CJK punctuations
         builder.toString()
             .replace(Regex("\\s+([,.!?;:])"), "$1")
-            .replace(Regex("\\s+([,?!?;:?()��<>??????])"), "$1")
+            .replace(Regex("\\s+([,?!?;:?()<>??????])"), "$1")
             .trim()
     }
 

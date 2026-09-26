@@ -679,11 +679,11 @@ const val KEY_LAST_NIGHTLY_CHECK_DAY = "last_nightly_check_day"
 fun shouldRunNightlyCheck(context: Context): Boolean {
     val now = java.time.LocalTime.now()
     val ninepm = java.time.LocalTime.of(21, 0)
-    if (now.isBefore(ninepm)) return false          // before 9 PM � skip
+    if (now.isBefore(ninepm)) return false          // before 9 PM - skip
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val todayEpochDay = java.time.LocalDate.now().toEpochDay()
     val lastCheckedDay = prefs.getLong(KEY_LAST_NIGHTLY_CHECK_DAY, -1L)
-    return lastCheckedDay != todayEpochDay           // already ran today � skip
+    return lastCheckedDay != todayEpochDay           // already ran today - skip
 }
 
 /**

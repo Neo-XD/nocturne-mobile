@@ -151,7 +151,7 @@ object YTPlayerUtils {
         if (context != null) {
             val saavnEnabled = context.dataStore.get(EnableSaavnStreamingKey, false)
             if (saavnEnabled) {
-                Timber.tag(TAG).d("JioSaavn streaming enabled � trying Saavn for videoId=$videoId")
+                Timber.tag(TAG).d("JioSaavn streaming enabled - trying Saavn for videoId=$videoId")
                 val saavnResult = runCatching {
                     // Step 1: fetch YouTube Music next items and player metadata concurrently
                     val (currentSong, meta) = coroutineScope {
@@ -259,7 +259,7 @@ object YTPlayerUtils {
                     }
 
                     if (bestSong == null) {
-                        Timber.tag(TAG).d("Saavn: no matching candidate found � falling back to YT")
+                        Timber.tag(TAG).d("Saavn: no matching candidate found - falling back to YT")
                         return@runCatching null
                     }
 
@@ -281,7 +281,7 @@ object YTPlayerUtils {
                     }
 
                     if (streamUrl.isNullOrBlank()) {
-                        Timber.tag(TAG).d("Saavn: no stream URL for songId=${bestSong.id} � falling back to YT")
+                        Timber.tag(TAG).d("Saavn: no stream URL for songId=${bestSong.id} - falling back to YT")
                         return@runCatching null
                     }
 
@@ -290,7 +290,7 @@ object YTPlayerUtils {
 
                     Timber.tag(TAG).i("Saavn: streaming from JioSaavn (quality=${quality.toApiValue()}) resolved contentLength=$contentLength for videoId=$videoId")
                     // Return a minimal PlaybackData using the Saavn URL.
-                    // Reuse the YouTube metadata already fetched in Step 1 � no second
+                    // Reuse the YouTube metadata already fetched in Step 1 - no second
                     // network call needed. This keeps audioConfig/videoDetails/playbackTracking
                     // intact so history and normalization still work properly.
                     PlaybackData(
@@ -339,7 +339,7 @@ object YTPlayerUtils {
                     return Result.success(saavnResult)
                 }
                 // Any exception or null ? fall through to YouTube below
-                Timber.tag(TAG).d("Saavn intercept failed or returned null � falling back to YouTube")
+                Timber.tag(TAG).d("Saavn intercept failed or returned null - falling back to YouTube")
             }
         }
         // -- End JioSaavn intercept -------------------------------------------
@@ -456,7 +456,7 @@ object YTPlayerUtils {
         val wasOriginallyAgeRestricted: Boolean
 
         // Check if MAIN_CLIENT response indicates age-restricted.
-        // NOTE: Do NOT include LOGIN_REQUIRED here � ANDROID_VR returns LOGIN_REQUIRED as a
+        // NOTE: Do NOT include LOGIN_REQUIRED here - ANDROID_VR returns LOGIN_REQUIRED as a
         // bot-detection / client-not-supported signal, NOT a content age gate. Treating it as
         // age-restricted incorrectly reroutes every bot-flagged request through WEB_CREATOR
         // and causes streaming failures for logged-in users.

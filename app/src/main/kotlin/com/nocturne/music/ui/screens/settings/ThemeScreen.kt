@@ -971,14 +971,14 @@ fun ThemePreviewCard(
                     )
                 }
 
-                // Color swatch row � primary, secondary, tertiary, primaryContainer
+                // Color swatch row - primary, secondary, tertiary, primaryContainer
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Primary � largest swatch
+                    // Primary - largest swatch
                     Box(
                         modifier = Modifier
                             .weight(2f)

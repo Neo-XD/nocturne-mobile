@@ -85,7 +85,7 @@ import com.nocturne.music.playback.queues.YouTubeQueue
 import com.nocturne.music.ui.component.NavigationTitle
 import com.nocturne.music.utils.rememberEnumPreference
 import com.nocturne.music.utils.rememberPreference
-import com.nocturne.music.ui.screens.search.suggestions.SuggestionsTabContent
+import com.nocturne.music.ui.screens.search.VibeCategoryPicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -313,7 +313,11 @@ fun SearchScreen(
                 .fillMaxSize()
         ) {
             val tabPadding = PaddingValues(bottom = bottomPadding)
-            SuggestionsTabContent(navController = navController, contentPadding = tabPadding)
+            VibeCategoryPicker(
+                navController = navController,
+                onVibeSelect = { onSearchFromSuggestion(it) },
+                contentPadding = tabPadding
+            )
         }
     }
 

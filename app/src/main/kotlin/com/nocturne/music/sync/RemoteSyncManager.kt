@@ -21,6 +21,7 @@ import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.nocturne.music.extensions.metadata
 import com.nocturne.music.models.MediaMetadata
 import com.nocturne.music.playback.PlayerConnection
 import com.nocturne.music.playback.queues.YouTubeQueue
@@ -72,7 +73,8 @@ data class RemotePlaybackActionPayload(
     val playing: Boolean = false,
     val volume: Double = 1.0,
     val from_index: Int = 0,
-    val to_index: Int = 0
+    val to_index: Int = 0,
+    val queue: List<RemoteTrack>? = null
 )
 
 @Serializable
@@ -143,6 +145,10 @@ class RemoteSyncManager @Inject constructor(
         target == PlaybackDeviceTarget.REMOTE_DESKTOP && conn == RemoteConnectionState.CONNECTED
     }.stateIn(scope, SharingStarted.Eagerly, false)
 
+    var playerConnection: PlayerConnection? = null
+    @Volatile
+    private var hasSyncedInitialQueue: Boolean = false
+
     private val _remoteRoomState = MutableStateFlow<RemoteRoomState?>(null)
     val remoteRoomState: StateFlow<RemoteRoomState?> = _remoteRoomState.asStateFlow()
 
@@ -177,8 +183,10 @@ class RemoteSyncManager @Inject constructor(
                 _playbackTarget.value = runCatching { PlaybackDeviceTarget.valueOf(targetStr) }
                     .getOrDefault(PlaybackDeviceTarget.LOCAL)
 
-                val autoConnect = prefs[RemoteSyncAutoConnectKey] ?: false
-                if (autoConnect && _connectionState.value == RemoteConnectionState.DISCONNECTED) {
+                val hasToken = !prefs[RemoteSyncSessionTokenKey].isNullOrEmpty()
+                val hasPin = !prefs[RemoteSyncPinKey].isNullOrEmpty()
+                val autoConnect = prefs[RemoteSyncAutoConnectKey] ?: true
+                if ((autoConnect || hasToken || hasPin) && _connectionState.value == RemoteConnectionState.DISCONNECTED) {
                     val host = prefs[RemoteSyncHostKey] ?: "192.168.1.10"
                     val port = prefs[RemoteSyncPortKey] ?: 8080
 
@@ -251,6 +259,19 @@ class RemoteSyncManager @Inject constructor(
                                         it.ip != senderIp && (System.currentTimeMillis() - it.lastSeenMs < 15000)
                                     }
                                     _discoveredDevices.value = current + newDevice
+
+                                    // If currently disconnected, auto-connect to discovered paired PC
+                                    if (_connectionState.value == RemoteConnectionState.DISCONNECTED) {
+                                        scope.launch {
+                                            val prefs = context.dataStore.data.first()
+                                            val hasToken = !prefs[RemoteSyncSessionTokenKey].isNullOrEmpty()
+                                            val hasPin = !prefs[RemoteSyncPinKey].isNullOrEmpty()
+                                            val autoConnect = prefs[RemoteSyncAutoConnectKey] ?: true
+                                            if (hasToken || hasPin || autoConnect) {
+                                                connect(senderIp, port, prefs[RemoteSyncPinKey].orEmpty())
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         } catch (_: Exception) {
@@ -296,6 +317,17 @@ class RemoteSyncManager @Inject constructor(
             playerConnection?.pause()
             setPlaybackTarget(PlaybackDeviceTarget.REMOTE_DESKTOP)
 
+            val fullQueue = playerConnection?.queueWindows?.value?.mapNotNull { window ->
+                val itemMeta = window.mediaItem.metadata ?: return@mapNotNull null
+                RemoteTrack(
+                    id = itemMeta.id,
+                    title = itemMeta.title,
+                    artist = itemMeta.artists.joinToString { it.name },
+                    thumbnail = itemMeta.thumbnailUrl,
+                    duration_ms = (itemMeta.duration ?: 0) * 1000L
+                )
+            }.orEmpty()
+
             if (localMeta != null) {
                 val track = RemoteTrack(
                     id = localMeta.id,
@@ -308,7 +340,9 @@ class RemoteSyncManager @Inject constructor(
                     RemotePlaybackActionPayload(
                         kind = "transfer_to_desktop",
                         track = track,
-                        position_ms = localPos
+                        position_ms = localPos,
+                        playing = isLocalPlaying,
+                        queue = fullQueue.ifEmpty { listOf(track) }
                     )
                 )
                 if (isLocalPlaying) {
@@ -340,6 +374,42 @@ class RemoteSyncManager @Inject constructor(
                 }
             }
         }
+    }
+
+    fun syncMobileQueueAndStateToDesktop() {
+        val conn = playerConnection ?: return
+        val currentMeta = conn.mediaMetadata.value ?: return
+        val currentPos = conn.player.currentPosition
+        val isPlaying = conn.isPlaying.value
+
+        val fullQueue = conn.queueWindows.value.mapNotNull { window ->
+            val m = window.mediaItem.metadata ?: return@mapNotNull null
+            RemoteTrack(
+                id = m.id,
+                title = m.title,
+                artist = m.artists.joinToString { it.name },
+                thumbnail = m.thumbnailUrl,
+                duration_ms = (m.duration ?: 0) * 1000L
+            )
+        }
+
+        val currentTrack = RemoteTrack(
+            id = currentMeta.id,
+            title = currentMeta.title,
+            artist = currentMeta.artists.joinToString { it.name },
+            thumbnail = currentMeta.thumbnailUrl,
+            duration_ms = (currentMeta.duration ?: 0) * 1000L
+        )
+
+        sendAction(
+            RemotePlaybackActionPayload(
+                kind = "sync_queue_from_mobile",
+                track = currentTrack,
+                position_ms = currentPos,
+                playing = isPlaying,
+                queue = fullQueue.ifEmpty { listOf(currentTrack) }
+            )
+        )
     }
 
     fun connect(host: String, port: Int = 8080, pin: String = "") {
@@ -432,6 +502,15 @@ class RemoteSyncManager @Inject constructor(
                             msg.state?.let { newState ->
                                 lastReceivedRealtimeMs = android.os.SystemClock.elapsedRealtime()
                                 _remoteRoomState.value = newState
+
+                                // If desktop started clean (empty track & queue) and mobile was already playing or has an active track,
+                                // sync mobile's current track and full queue over to desktop!
+                                val desktopClean = newState.current_track == null && newState.queue.isEmpty()
+                                val mobileHasMusic = playerConnection?.mediaMetadata?.value != null
+                                if (desktopClean && mobileHasMusic && !hasSyncedInitialQueue) {
+                                    hasSyncedInitialQueue = true
+                                    syncMobileQueueAndStateToDesktop()
+                                }
                             }
                         }
                     }
@@ -473,6 +552,7 @@ class RemoteSyncManager @Inject constructor(
     private fun disconnectInternal(clearAutoConnect: Boolean) {
         webSocket?.close(1000, "User disconnected")
         webSocket = null
+        hasSyncedInitialQueue = false
         _connectionState.value = RemoteConnectionState.DISCONNECTED
         _statusMessage.value = "Disconnected"
         if (clearAutoConnect) {

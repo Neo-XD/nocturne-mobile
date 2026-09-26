@@ -314,7 +314,7 @@ internal object ShazamSignatureGenerator {
      * Cooley-Tukey radix-2 DIT algorithm.
      *
      * Returns FFT_OUTPUT_SIZE (1025) magnitude values:
-     *   magnitude[k] = max((re[k]� + im[k]�) / 2^17, 1e-10)
+     *   magnitude[k] = max((re[k]^2 + im[k]^2) / 2^17, 1e-10)
      *
      * This matches the FFTW3 r2c output format used in the C++ vibra library.
      */

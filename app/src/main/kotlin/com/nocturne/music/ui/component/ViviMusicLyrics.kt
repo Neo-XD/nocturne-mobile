@@ -46,7 +46,7 @@ import com.nocturne.music.utils.rememberPreference
 import kotlinx.coroutines.delay
 
 /**
- * Apple Music style lyrics animation � ViviMusic_1
+ * Apple Music style lyrics animation - ViviMusic_1
  * Features:
  * - Word-by-word fill with spring easing (FastOutSlowInEasing)
  * - Spring-based scale with gentle bounce on activation
@@ -111,7 +111,7 @@ fun ViviMusicLyricsLine(
 
     val animatedBlur by animateFloatAsState(
         targetValue = targetBlur,
-        // Faster, more reactive blur � 600 ms instead of 1000 ms
+        // Faster, more reactive blur - 600 ms instead of 1000 ms
         animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
         label = "blur"
     )
@@ -137,12 +137,12 @@ fun ViviMusicLyricsLine(
                 Triple(word.text, wordStart, wordEnd)
             }
         } else {
-            // No word timestamps � null signals sentence-level fallback below
+            // No word timestamps - null signals sentence-level fallback below
             null
         }
     }
 
-    // -- Alpha falloff � soft curve --------------------------------------------
+    // -- Alpha falloff - soft curve --------------------------------------------
     val targetAlpha = when {
         !isSynced || (isSelectionModeActive && isSelected) -> 1f
         lingeredIsActive.value -> 1f
@@ -160,7 +160,7 @@ fun ViviMusicLyricsLine(
     )
 
     // -- Scale --------------------------------------------------------------
-    // Smooth tween � no bounce. Active line gently grows.
+    // Smooth tween - no bounce. Active line gently grows.
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.05f else 1f,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
@@ -219,7 +219,7 @@ fun ViviMusicLyricsLine(
         horizontalAlignment = agentAlignment
     ) {
         if (wordData != null) {
-            // -- WORD-BY-WORD mode � Ocean Wave --------------------------------
+            // -- WORD-BY-WORD mode - Ocean Wave --------------------------------
             // ONE global wave progress (0?1) sweeps continuously from the first
             // word to the last. Each word just reads where the wave front sits
             // within its own bounds, creating a single fluid motion across the
@@ -232,7 +232,7 @@ fun ViviMusicLyricsLine(
 
             val rawGlobalWave = (lineRelTime.toFloat() / globalEnd.toFloat()).coerceIn(0f, 1f)
 
-            // Animate as one smooth value � tight follow (80ms) so the wave
+            // Animate as one smooth value - tight follow (80ms) so the wave
             // tracks time accurately while staying fluid.
             val globalWave by animateFloatAsState(
                 targetValue = rawGlobalWave,
@@ -274,11 +274,11 @@ fun ViviMusicLyricsLine(
 
                     val finalFontWeight = if (isActive) FontWeight.ExtraBold else FontWeight.Bold
 
-                    // -- Wave brush � trailing feather only -------------------
+                    // -- Wave brush - trailing feather only -------------------
                     // Apple Music: content BEFORE the wave = fully bright.
                     // Content AFTER the wave = fully dim.
                     // Only the wave FRONT itself has a soft feather edge.
-                    // No leading feather � that's what was causing the first-letter
+                    // No leading feather - that's what was causing the first-letter
                     // highlight bug (fillEdgeStart clamped to 0 when wave barely entered).
                     val waveFront = wordLocalProgress
                     val waveTail = (wordLocalProgress + waveFeather).coerceAtMost(1f)
@@ -321,7 +321,7 @@ fun ViviMusicLyricsLine(
                     )
 
                     if (index != wordData.lastIndex) {
-                        // Space glyph follows the wave front � fully bright once the
+                        // Space glyph follows the wave front - fully bright once the
                         // wave has passed this word, dim while it's still ahead.
                         val spaceAlpha = (0.45f + 0.55f * wordLocalProgress).coerceIn(0.45f, 1f)
                         Text(

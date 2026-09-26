@@ -123,7 +123,7 @@ fun PlayerV2(
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
 
-    // Cast state � mirrors Player.kt lines 366-378
+    // Cast state - mirrors Player.kt lines 366-378
     val castHandler = remember(playerConnection) {
         try { playerConnection.service.castConnectionHandler } catch (e: Exception) { null }
     }
@@ -775,7 +775,7 @@ fun PlayerV2(
                             .padding(horizontal = 24.dp)
                     ) {
                         // Apple Music Timeline Slider
-                    val currentPos = sliderPosition ?: position
+                    val currentPos = sliderPosition ?: if (isRemoteDesktop) remoteSyncManager.calculateCurrentPositionMs() else position
                     
                     val trackInteractionSource = remember { MutableInteractionSource() }
                     val isTrackDragged by trackInteractionSource.collectIsDraggedAsState()
@@ -799,9 +799,13 @@ fun PlayerV2(
                         onValueChangeFinished = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition?.let { pos ->
-                                    playerConnection.seekTo(pos)
-                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
-                                    position = pos
+                                    if (isRemoteDesktop) {
+                                        remoteSyncManager.sendSeek(pos)
+                                    } else {
+                                        playerConnection.seekTo(pos)
+                                        if (isCasting) lastManualSeekTime = System.currentTimeMillis()
+                                        position = pos
+                                    }
                                     sliderPosition = null
                                 }
                             }

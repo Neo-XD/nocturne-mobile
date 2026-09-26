@@ -117,6 +117,7 @@ import com.nocturne.music.constants.GridThumbnailHeight
 import com.nocturne.music.constants.InnerTubeCookieKey
 import com.nocturne.music.constants.ListItemHeight
 import com.nocturne.music.constants.ListThumbnailSize
+import com.nocturne.music.constants.PureBlackKey
 import com.nocturne.music.constants.RandomizeHomeOrderKey
 import com.nocturne.music.constants.SmallGridThumbnailHeight
 import com.nocturne.music.constants.ThumbnailCornerRadius
@@ -547,7 +548,7 @@ fun DailyDiscoverCard(
                     }
 
                     Text(
-                        text = stringResource(messageRes, "${dailyDiscover.seed.title} � ${dailyDiscover.seed.artists.joinToString(", ") { it.name }}"),
+                        text = stringResource(messageRes, "${dailyDiscover.seed.title} | ${dailyDiscover.seed.artists.joinToString(", ") { it.name }}"),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                         color = Color.White.copy(alpha = 0.6f),
@@ -1096,61 +1097,22 @@ fun HomeScreen(
                 )
             }
 
+            val playerAwarePadding = LocalPlayerAwareWindowInsets.current.asPaddingValues()
+            val topPadding = playerAwarePadding.calculateTopPadding()
+            val bottomPadding = playerAwarePadding.calculateBottomPadding()
+            val (pureBlack) = rememberPreference(PureBlackKey, false)
+            val chipsHeight = 44.dp
+
             LazyColumn(
                 state = lazylistState,
-                contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+                contentPadding = PaddingValues(
+                    top = topPadding + chipsHeight,
+                    bottom = bottomPadding
+                ),
                 modifier = Modifier.offset {
                     IntOffset(0, (animatedFraction * maxOffsetPx).toInt())
                 }
             ) {
-                stickyHeader(key = "chips_header") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.50f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                    ) {
-                        ChipsRow(
-                            chips = homePage?.chips
-                                ?.filter { !it.title.equals("Podcasts", ignoreCase = true) }
-                                ?.map { it to it.title } ?: emptyList(),
-                            currentValue = selectedChip,
-                            onValueUpdate = {
-                                viewModel.toggleChip(it)
-                            },
-                            modifier = Modifier.padding(vertical = 6.dp)
-                        )
-                    }
-                }
-
-                if (isLoading && homePage?.chips.isNullOrEmpty()) {
-                    item(key = "chips_shimmer") {
-                        ShimmerHost {
-                            LazyRow(
-                                contentPadding = WindowInsets.systemBars
-                                    .only(WindowInsetsSides.Horizontal)
-                                    .asPaddingValues(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                items(5) {
-                                    TextPlaceholder(
-                                        height = 30.dp,
-                                        shape = RoundedCornerShape(16.dp),
-                                        modifier = Modifier.width(72.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
 
                 if (selectedChip == null) {
 
@@ -2285,6 +2247,48 @@ fun HomeScreen(
                     }
                 }
             )
+
+            // Pinned Homepage Tabs / Chips Row - lower than top bar on the same layer
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = topPadding)
+                    .background(
+                        if (pureBlack) Color.Black
+                        else MaterialTheme.colorScheme.surface
+                    )
+            ) {
+                if (homePage?.chips?.isNotEmpty() == true) {
+                    ChipsRow(
+                        chips = homePage?.chips
+                            ?.filter { !it.title.equals("Podcasts", ignoreCase = true) }
+                            ?.map { it to it.title } ?: emptyList(),
+                        currentValue = selectedChip,
+                        onValueUpdate = {
+                            viewModel.toggleChip(it)
+                        },
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                } else if (isLoading && homePage?.chips.isNullOrEmpty()) {
+                    ShimmerHost {
+                        LazyRow(
+                            contentPadding = WindowInsets.systemBars
+                                .only(WindowInsetsSides.Horizontal)
+                                .asPaddingValues(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        ) {
+                            items(5) {
+                                TextPlaceholder(
+                                    height = 32.dp,
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.width(72.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if (showHomeLayoutDialog) {

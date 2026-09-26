@@ -190,7 +190,7 @@ object CipherDeobfuscator {
         // Extract n-transform function info (for throttle avoidance / 403 fix)
         val nFuncInfo = FunctionNameExtractor.extractNFunctionInfo(playerJs, knownHash = hash)
 
-        // Create WebView � n-function is exported to window if found
+        // Create WebView - n-function is exported to window if found
         val webView = CipherWebView.create(
             context = appContext,
             playerJs = playerJs,

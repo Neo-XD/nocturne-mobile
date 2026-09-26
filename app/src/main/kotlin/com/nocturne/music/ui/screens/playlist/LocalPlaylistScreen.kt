@@ -1198,7 +1198,7 @@ fun LocalPlaylistHeader(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Metadata - Song Count � Duration
+        // Metadata - Song Count | Duration
         val songCount = if (playlist.songCount == 0 && playlist.playlist.remoteSongCount != null) {
             playlist.playlist.remoteSongCount
         } else {
@@ -1208,7 +1208,7 @@ fun LocalPlaylistHeader(
             text = buildString {
                 append(pluralStringResource(R.plurals.n_song, songCount, songCount))
                 if (playlistLength > 0) {
-                    append(" � ")
+                    append(" | ")
                     append(makeTimeString(playlistLength * 1000L))
                 }
             },

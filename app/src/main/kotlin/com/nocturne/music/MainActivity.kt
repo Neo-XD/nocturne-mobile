@@ -299,6 +299,7 @@ class MainActivity : ComponentActivity() {
                 try {
                     val conn = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
                     conn.remoteSyncManager = remoteSyncManager
+                    remoteSyncManager.playerConnection = conn
                     playerConnection = conn
                     Timber.tag("MainActivity").d("PlayerConnection created successfully")
                     // Connect Listen Together manager to player
@@ -311,6 +312,7 @@ class MainActivity : ComponentActivity() {
                         try {
                             val conn = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
                             conn.remoteSyncManager = remoteSyncManager
+                            remoteSyncManager.playerConnection = conn
                             playerConnection = conn
                             listenTogetherManager.setPlayerConnection(playerConnection)
                         } catch (e2: Exception) {

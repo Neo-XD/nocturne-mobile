@@ -38,6 +38,14 @@ object SpotifyAuth {
     @Serializable
     private data class ServerTimeResponse(val serverTime: Long)
 
+    private const val RAW_NUANCE_URL =
+        "https://gist.githubusercontent.com/sonic-liberation/22ed9c6ba463899e933427f7de1f0eef/raw/nuances.json"
+
+    private val FALLBACK_NUANCE = Nuance(
+        s = "GM3TMMJTGYZTQNZVGM4DINJZHA4TGOBYGMZTCMRTGEYDSMJRHE4TEOBUG4YTCMRUGQ4DQOJUGQYTAMRRGA2TCMJSHE3TCMBY",
+        v = 61
+    )
+
     suspend fun fetchAccessToken(
         spDc: String,
         spKey: String = "",
@@ -63,7 +71,14 @@ object SpotifyAuth {
         }
 
         val body = withContext(Dispatchers.IO) {
-            httpGet(tokenUrl, mapOf("Cookie" to cookieHeader))
+            httpGet(
+                tokenUrl,
+                mapOf(
+                    "Cookie" to cookieHeader,
+                    "Referer" to "https://open.spotify.com/",
+                    "Origin" to "https://open.spotify.com"
+                )
+            )
         }
 
         val token = json.decodeFromString<SpotifyInternalToken>(body)
@@ -79,33 +94,38 @@ object SpotifyAuth {
     }
 
     private suspend fun fetchNuance(): Nuance = withContext(Dispatchers.IO) {
-        val body = try {
-            httpGet(NUANCE_GIST_URL, emptyMap())
-        } catch (e: Exception) {
-            throw Spotify.SpotifyException(
-                503,
-                "Failed to fetch TOTP secret from gist: ${e.message}",
-            )
+        // Try direct raw gist first (bypasses GitHub API rate limits)
+        try {
+            val rawBody = httpGet(RAW_NUANCE_URL, emptyMap())
+            val nuances = json.decodeFromString<List<Nuance>>(rawBody)
+            nuances.maxByOrNull { it.v }?.let { return@withContext it }
+        } catch (_: Exception) {
+            // Fall through to GitHub API gist endpoint
         }
-        val gist = json.decodeFromString<GistFiles>(body)
-        val nuancesJson = gist.files.values.firstOrNull()?.content
-            ?: throw Spotify.SpotifyException(500, "Gist has no files")
-        val nuances = json.decodeFromString<List<Nuance>>(nuancesJson)
-        nuances.maxByOrNull { it.v }
-            ?: throw Spotify.SpotifyException(500, "No nuance data found in gist")
+
+        try {
+            val body = httpGet(NUANCE_GIST_URL, emptyMap())
+            val gist = json.decodeFromString<GistFiles>(body)
+            val nuancesJson = gist.files.values.firstOrNull()?.content
+            if (nuancesJson != null) {
+                val nuances = json.decodeFromString<List<Nuance>>(nuancesJson)
+                nuances.maxByOrNull { it.v }?.let { return@withContext it }
+            }
+        } catch (_: Exception) {
+            // Fall through to hardcoded fallback
+        }
+
+        FALLBACK_NUANCE
     }
 
     private suspend fun fetchServerTime(): Long = withContext(Dispatchers.IO) {
-        val body = try {
-            httpGet(SERVER_TIME_URL, emptyMap())
-        } catch (e: Exception) {
-            throw Spotify.SpotifyException(
-                503,
-                "Failed to fetch Spotify server time: ${e.message}",
-            )
+        try {
+            val body = httpGet(SERVER_TIME_URL, emptyMap())
+            val response = json.decodeFromString<ServerTimeResponse>(body)
+            response.serverTime
+        } catch (_: Exception) {
+            System.currentTimeMillis() / 1000L
         }
-        val response = json.decodeFromString<ServerTimeResponse>(body)
-        response.serverTime
     }
 
     private fun generateTotp(secret: String, serverTimeSec: Long): String {

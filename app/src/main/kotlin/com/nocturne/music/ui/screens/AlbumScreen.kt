@@ -330,16 +330,16 @@ fun AlbumScreen(
                         val albumInfoText = buildString {
                             append(stringResource(R.string.album_text))
                             if (albumWithSongs.album.year != null) {
-                                append(" � ${albumWithSongs.album.year}")
+                                append(" | ${albumWithSongs.album.year}")
                             }
-                            append(" � ${albumWithSongs.songs.size} Tracks")
+                            append(" | ${albumWithSongs.songs.size} Tracks")
                             val totalDuration = albumWithSongs.songs.sumOf { it.song.duration }
                             val hours = totalDuration / 3600
                             val minutes = (totalDuration % 3600) / 60
                             if (hours > 0) {
-                                append(" � ${hours}h ${minutes}m")
+                                append(" | ${hours}h ${minutes}m")
                             } else {
-                                append(" � ${minutes}m")
+                                append(" | ${minutes}m")
                             }
                         }
 
@@ -401,7 +401,7 @@ fun AlbumScreen(
                                     )
                                     if (hasExplicitContent) {
                                         Text(
-                                            text = " � ",
+                                            text = " | ",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -462,7 +462,7 @@ fun AlbumScreen(
                                     )
                                     if (hasExplicitContent) {
                                         Text(
-                                            text = " � ",
+                                            text = " | ",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )

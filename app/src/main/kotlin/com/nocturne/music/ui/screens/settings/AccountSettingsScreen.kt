@@ -85,12 +85,15 @@ fun AccountSettingsScreen(
 
     val homeViewModel: HomeViewModel = hiltViewModel()
     val accountSettingsViewModel: AccountSettingsViewModel = hiltViewModel()
+    val spotifyViewModel: com.nocturne.music.viewmodels.SpotifyImportViewModel = hiltViewModel()
     val accountName by homeViewModel.accountName.collectAsState()
     val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
+    val spotifyState by spotifyViewModel.uiState.collectAsState()
 
     var showToken by remember { mutableStateOf(false) }
     var showTokenEditor by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showSpotifyLoginSheet by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(AccountTab.RECOMMENDED) }
 
     val (storedAccountsRaw) = rememberPreference(StoredGoogleAccountsKey, "")
@@ -348,6 +351,113 @@ fun AccountSettingsScreen(
                 }
             }
 
+            // Spotify Account Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (!spotifyState.accountAvatarUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = spotifyState.accountAvatarUrl,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(R.drawable.spotify),
+                                    contentDescription = null,
+                                    tint = Color(0xFF1DB954),
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = if (spotifyState.isAuthenticated) {
+                                        spotifyState.accountName.ifBlank { "Spotify" }
+                                    } else {
+                                        "Spotify"
+                                    },
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = if (spotifyState.isAuthenticated) {
+                                        "Connected | Tap to import playlists"
+                                    } else {
+                                        "Connect to import playlists"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        if (spotifyState.isAuthenticated) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(
+                                    onClick = { navController.navigate("settings/spotify") }
+                                ) {
+                                    Text(
+                                        text = "Import",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { spotifyViewModel.logout() }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.logout),
+                                        contentDescription = "Disconnect Spotify",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = { showSpotifyLoginSheet = true },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF1DB954),
+                                    contentColor = Color.White
+                                ),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "Connect",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Switcher Buttons Row
@@ -566,6 +676,15 @@ fun AccountSettingsScreen(
                             isExpressive = true
                         ),
                         Material3SettingsItem(
+                            icon = painterResource(R.drawable.spotify),
+                            title = { Text("Spotify") },
+                            description = {
+                                Text(if (spotifyState.isAuthenticated) "Connected (${spotifyState.accountName.ifBlank { "Active" }})" else "Connect Spotify account")
+                            },
+                            onClick = { navController.navigate("settings/spotify") },
+                            isExpressive = true
+                        ),
+                        Material3SettingsItem(
                             icon = painterResource(R.drawable.integration),
                             title = { Text(stringResource(R.string.integrations)) },
                             onClick = { navController.navigate("settings/integrations") },
@@ -689,6 +808,15 @@ fun AccountSettingsScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
+        }
+        if (showSpotifyLoginSheet) {
+            SpotifyLoginSheet(
+                onDismiss = { showSpotifyLoginSheet = false },
+                onCookiesCaptured = { spDc, spKey ->
+                    spotifyViewModel.connectWithCookies(spDc, spKey)
+                    showSpotifyLoginSheet = false
+                }
+            )
         }
     }
 }

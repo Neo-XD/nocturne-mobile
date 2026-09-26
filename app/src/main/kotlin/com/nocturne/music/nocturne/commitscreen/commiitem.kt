@@ -87,7 +87,7 @@ import com.nocturne.music.R
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "�",
+                    text = "|",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

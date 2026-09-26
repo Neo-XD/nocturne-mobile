@@ -435,7 +435,7 @@ fun AiSettings(
                             description = { 
                                 Text(
                                     if (deeplApiKey.isNotEmpty()) 
-                                        "�".repeat(minOf(deeplApiKey.length, 8))
+                                        "•".repeat(minOf(deeplApiKey.length, 8))
                                     else 
                                         stringResource(R.string.not_set)
                                 )
@@ -470,7 +470,7 @@ fun AiSettings(
                             description = { 
                                 Text(
                                     if (openRouterApiKey.isNotEmpty()) 
-                                        "�".repeat(minOf(openRouterApiKey.length, 8))
+                                        "•".repeat(minOf(openRouterApiKey.length, 8))
                                     else 
                                         stringResource(R.string.not_set)
                                 )

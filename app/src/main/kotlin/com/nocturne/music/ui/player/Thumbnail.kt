@@ -1043,7 +1043,7 @@ internal fun validateCanvasMatch(
 internal fun splitAndNormalizeArtists(raw: String): List<String> {
     return raw.split(
         Regex(
-            "(?:\\s*,\\s*|\\s*&\\s*|\\s+�\\s+|\\s+x\\s+|\\bfeat\\.?\\b|\\bft\\.?\\b|\\bfeaturing\\b|\\bwith\\b)",
+            "(?:\\s*,\\s*|\\s*&\\s*|\\s+|\\s+|\\s+x\\s+|\\bfeat\\.?\\b|\\bft\\.?\\b|\\bfeaturing\\b|\\bwith\\b)",
             RegexOption.IGNORE_CASE,
         )
     ).map { it.normalizeForComparison() }

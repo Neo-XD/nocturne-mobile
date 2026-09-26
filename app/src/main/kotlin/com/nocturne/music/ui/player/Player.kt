@@ -420,7 +420,9 @@ fun BottomSheetPlayer(
     
     val effectivePosition by remember {
         derivedStateOf {
-            if (isCasting) {
+            if (isRemoteDesktop) {
+                remoteSyncManager.calculateCurrentPositionMs()
+            } else if (isCasting) {
                 castPosition
             } else {
                 position
@@ -1898,9 +1900,13 @@ fun BottomSheetPlayer(
                         onValueChangeFinished = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition?.let {
-                                    playerConnection.seekTo(it)
-                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
-                                    position = it
+                                    if (isRemoteDesktop) {
+                                        remoteSyncManager.sendSeek(it)
+                                    } else {
+                                        playerConnection.seekTo(it)
+                                        if (isCasting) lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
+                                    }
                                 }
                                 sliderPosition = null
                             }
@@ -1925,9 +1931,13 @@ fun BottomSheetPlayer(
                             },
                             onValueChangeFinished = {
                                 sliderPosition?.let {
-                                    playerConnection.seekTo(it)
-                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
-                                    position = it
+                                    if (isRemoteDesktop) {
+                                        remoteSyncManager.sendSeek(it)
+                                    } else {
+                                        playerConnection.seekTo(it)
+                                        if (isCasting) lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
+                                    }
                                 }
                                 sliderPosition = null
                             },
@@ -1948,9 +1958,13 @@ fun BottomSheetPlayer(
                             },
                             onValueChangeFinished = {
                                 sliderPosition?.let {
-                                    playerConnection.seekTo(it)
-                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
-                                    position = it
+                                    if (isRemoteDesktop) {
+                                        remoteSyncManager.sendSeek(it)
+                                    } else {
+                                        playerConnection.seekTo(it)
+                                        if (isCasting) lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
+                                    }
                                 }
                                 sliderPosition = null
                             },
@@ -1991,9 +2005,13 @@ fun BottomSheetPlayer(
                         onValueChangeFinished = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition?.let {
-                                    playerConnection.seekTo(it)
-                                    if (isCasting) lastManualSeekTime = System.currentTimeMillis()
-                                    position = it
+                                    if (isRemoteDesktop) {
+                                        remoteSyncManager.sendSeek(it)
+                                    } else {
+                                        playerConnection.seekTo(it)
+                                        if (isCasting) lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
+                                    }
                                 }
                                 sliderPosition = null
                             }
