@@ -56,10 +56,10 @@ The two applications share the same goal:
 
 > A fast, native, customizable YouTube Music experience without the bloat of **Electron**.
 
-| Platform | Project                                                    |
-| -------- | ---------------------------------------------------------- |
-| Desktop  | [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music) |
-| Android  | Nocturne Mobile                                            |
+| Platform | Project                                                    | Rough Description|
+| -------- | ---------------------------------------------------------- |------------------|
+| Desktop  | [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music) | The Original Client. Built for Windows, MacOS, and Linux. |
+| Android  | Nocturne Mobile                                            | The Mobile Client. Built for Android and as a companion app to the original. | 
 
 Nocturne Mobile can work independently, but is designed to feel like part of the same ecosystem.
 
