@@ -279,7 +279,8 @@ fun PlayerV2(
                 if (r != null) {
                     val elapsed = if (r.is_playing) System.currentTimeMillis() - r.last_update_ms else 0L
                     val d = r.current_track?.duration_ms ?: 0L
-                    if (sliderPosition == null) {
+                    val timeSinceManualSeek = System.currentTimeMillis() - lastManualSeekTime
+                    if (sliderPosition == null && timeSinceManualSeek > 1000) {
                         position = (r.position_ms + elapsed).coerceIn(0L, if (d > 0) d else Long.MAX_VALUE)
                         duration = d
                     }
@@ -801,6 +802,8 @@ fun PlayerV2(
                                 sliderPosition?.let { pos ->
                                     if (isRemoteDesktop) {
                                         remoteSyncManager.sendSeek(pos)
+                                        lastManualSeekTime = System.currentTimeMillis()
+                                        position = pos
                                     } else {
                                         playerConnection.seekTo(pos)
                                         if (isCasting) lastManualSeekTime = System.currentTimeMillis()

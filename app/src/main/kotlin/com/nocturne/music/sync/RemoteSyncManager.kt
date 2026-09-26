@@ -173,6 +173,32 @@ class RemoteSyncManager @Inject constructor(
     val portFlow = context.dataStore.data.map { it[RemoteSyncPortKey] ?: 8080 }
     val pinFlow = context.dataStore.data.map { it[RemoteSyncPinKey].orEmpty() }
 
+    private var reconnectJob: Job? = null
+    private var lastHost: String = ""
+    private var lastPort: Int = 8080
+    private var lastPin: String = ""
+
+    private fun scheduleAutoReconnect() {
+        reconnectJob?.cancel()
+        reconnectJob = scope.launch {
+            delay(3000)
+            if (_connectionState.value == RemoteConnectionState.CONNECTED) return@launch
+            val prefs = context.dataStore.data.first()
+            val autoConnect = prefs[RemoteSyncAutoConnectKey] ?: true
+            val hasToken = !prefs[RemoteSyncSessionTokenKey].isNullOrEmpty()
+            val hasPin = !prefs[RemoteSyncPinKey].isNullOrEmpty()
+            if (autoConnect || hasToken || hasPin) {
+                val host = lastHost.ifEmpty { prefs[RemoteSyncHostKey] ?: "" }
+                val port = if (lastPort > 0) lastPort else (prefs[RemoteSyncPortKey] ?: 8080)
+                val pin = lastPin.ifEmpty { prefs[RemoteSyncPinKey].orEmpty() }
+                if (host.isNotEmpty()) {
+                    Timber.d("RemoteSync: Auto-reconnecting to $host:$port...")
+                    connect(host, port, pin)
+                }
+            }
+        }
+    }
+
     init {
         startLanDiscovery()
 
@@ -260,8 +286,8 @@ class RemoteSyncManager @Inject constructor(
                                     }
                                     _discoveredDevices.value = current + newDevice
 
-                                    // If currently disconnected, auto-connect to discovered paired PC
-                                    if (_connectionState.value == RemoteConnectionState.DISCONNECTED) {
+                                    // If currently disconnected or errored, auto-connect to discovered paired PC
+                                    if (_connectionState.value == RemoteConnectionState.DISCONNECTED || _connectionState.value == RemoteConnectionState.ERROR) {
                                         scope.launch {
                                             val prefs = context.dataStore.data.first()
                                             val hasToken = !prefs[RemoteSyncSessionTokenKey].isNullOrEmpty()
@@ -428,6 +454,12 @@ class RemoteSyncManager @Inject constructor(
 
         var authRejected = false
         val cleanHost = host.trim()
+        lastHost = cleanHost
+        lastPort = port
+        if (hasValidPin) {
+            lastPin = trimmedPin
+        }
+        reconnectJob?.cancel()
         scope.launch {
             context.dataStore.edit {
                 it[RemoteSyncHostKey] = cleanHost
@@ -523,6 +555,7 @@ class RemoteSyncManager @Inject constructor(
                 Timber.e(t, "RemoteSync: Connection failure")
                 _connectionState.value = RemoteConnectionState.ERROR
                 _statusMessage.value = "Connection error: ${t.localizedMessage ?: "Unreachable"}"
+                scheduleAutoReconnect()
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -530,6 +563,7 @@ class RemoteSyncManager @Inject constructor(
                 if (authRejected) return
                 _connectionState.value = RemoteConnectionState.DISCONNECTED
                 _statusMessage.value = "Disconnected"
+                scheduleAutoReconnect()
             }
         })
     }
@@ -556,6 +590,7 @@ class RemoteSyncManager @Inject constructor(
         _connectionState.value = RemoteConnectionState.DISCONNECTED
         _statusMessage.value = "Disconnected"
         if (clearAutoConnect) {
+            reconnectJob?.cancel()
             scope.launch {
                 context.dataStore.edit { it[RemoteSyncAutoConnectKey] = false }
             }
@@ -570,7 +605,10 @@ class RemoteSyncManager @Inject constructor(
 
     fun sendSeek(positionMs: Long) {
         lastReceivedRealtimeMs = android.os.SystemClock.elapsedRealtime()
-        _remoteRoomState.value = _remoteRoomState.value?.copy(position_ms = positionMs)
+        _remoteRoomState.value = _remoteRoomState.value?.copy(
+            position_ms = positionMs,
+            last_update_ms = System.currentTimeMillis()
+        )
         sendAction(
             RemotePlaybackActionPayload(kind = "seek", position_ms = positionMs)
         )

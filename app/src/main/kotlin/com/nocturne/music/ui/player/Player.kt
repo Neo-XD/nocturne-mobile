@@ -70,6 +70,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ContainedLoadingIndicator
@@ -435,6 +436,7 @@ fun BottomSheetPlayer(
     }
     // Track when we last manually set position to avoid Cast overwriting it
     var lastManualSeekTime by remember { mutableLongStateOf(0L) }
+    var showAudioDeviceBottomSheet by remember { mutableStateOf(false) }
     
     var gradientColors by remember {
         mutableStateOf<List<Color>>(emptyList())
@@ -817,7 +819,8 @@ fun BottomSheetPlayer(
                 if (r != null) {
                     val elapsed = if (r.is_playing) System.currentTimeMillis() - r.last_update_ms else 0L
                     val d = r.current_track?.duration_ms ?: 0L
-                    if (sliderPosition == null) {
+                    val timeSinceManualSeek = System.currentTimeMillis() - lastManualSeekTime
+                    if (sliderPosition == null && timeSinceManualSeek > 1000) {
                         position = (r.position_ms + elapsed).coerceIn(0L, if (d > 0) d else Long.MAX_VALUE)
                         duration = d
                     }
@@ -1902,6 +1905,8 @@ fun BottomSheetPlayer(
                                 sliderPosition?.let {
                                     if (isRemoteDesktop) {
                                         remoteSyncManager.sendSeek(it)
+                                        lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
                                     } else {
                                         playerConnection.seekTo(it)
                                         if (isCasting) lastManualSeekTime = System.currentTimeMillis()
@@ -1933,6 +1938,8 @@ fun BottomSheetPlayer(
                                 sliderPosition?.let {
                                     if (isRemoteDesktop) {
                                         remoteSyncManager.sendSeek(it)
+                                        lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
                                     } else {
                                         playerConnection.seekTo(it)
                                         if (isCasting) lastManualSeekTime = System.currentTimeMillis()
@@ -1960,6 +1967,8 @@ fun BottomSheetPlayer(
                                 sliderPosition?.let {
                                     if (isRemoteDesktop) {
                                         remoteSyncManager.sendSeek(it)
+                                        lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
                                     } else {
                                         playerConnection.seekTo(it)
                                         if (isCasting) lastManualSeekTime = System.currentTimeMillis()
@@ -2007,6 +2016,8 @@ fun BottomSheetPlayer(
                                 sliderPosition?.let {
                                     if (isRemoteDesktop) {
                                         remoteSyncManager.sendSeek(it)
+                                        lastManualSeekTime = System.currentTimeMillis()
+                                        position = it
                                     } else {
                                         playerConnection.seekTo(it)
                                         if (isCasting) lastManualSeekTime = System.currentTimeMillis()
@@ -2541,43 +2552,57 @@ fun BottomSheetPlayer(
                             if (bluetoothDeviceName != null) lastNonNullName = bluetoothDeviceName
                         }
 
+                        val isAnyDeviceOrRemote = isRemoteDesktop || bluetoothDeviceName != null
                         AnimatedVisibility(
-                            visible = !useNewPlayerDesign && bluetoothDeviceName != null,
+                            visible = !useNewPlayerDesign && isAnyDeviceOrRemote,
                             enter = fadeIn(tween(400)) + expandVertically(tween(400)),
                             exit = fadeOut(tween(400)) + shrinkVertically(tween(400)),
                             label = "BluetoothInfoVisibility"
                         ) {
-                            val nameToShow = bluetoothDeviceName ?: lastNonNullName
+                            val nameToShow = if (isRemoteDesktop) "Nocturne Desktop PC" else (bluetoothDeviceName ?: lastNonNullName)
                             Column {
                                 Spacer(Modifier.height(8.dp))
                                 Row(
                                     horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { showAudioDeviceBottomSheet = true }
+                                        .padding(vertical = 4.dp)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(
-                                            when {
-                                                isSpeaker(nameToShow) -> R.drawable.speaker_applemusic
-                                                isBuds(nameToShow) -> R.drawable.apple_airpods
-                                                else -> R.drawable.apple_headset
-                                            }
-                                        ),
-                                        contentDescription = null,
-                                        tint = textButtonColor.copy(alpha = 0.7f),
-                                        modifier = Modifier.size(
-                                            when {
-                                                isSpeaker(nameToShow) -> 18.dp
-                                                isBuds(nameToShow) -> 20.dp
-                                                else -> 16.dp
-                                            }
+                                    if (isRemoteDesktop) {
+                                        Icon(
+                                            imageVector = androidx.compose.material.icons.Icons.Default.Computer,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
                                         )
-                                    )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(
+                                                when {
+                                                    isSpeaker(nameToShow) -> R.drawable.speaker_applemusic
+                                                    isBuds(nameToShow) -> R.drawable.apple_airpods
+                                                    else -> R.drawable.apple_headset
+                                                }
+                                            ),
+                                            contentDescription = null,
+                                            tint = textButtonColor.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(
+                                                when {
+                                                    isSpeaker(nameToShow) -> 18.dp
+                                                    isBuds(nameToShow) -> 20.dp
+                                                    else -> 16.dp
+                                                }
+                                            )
+                                        )
+                                    }
                                     Spacer(Modifier.width(6.dp))
                                     Text(
                                         text = nameToShow ?: "",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = textButtonColor.copy(alpha = 0.7f),
+                                        color = if (isRemoteDesktop) MaterialTheme.colorScheme.primary else textButtonColor.copy(alpha = 0.7f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -2739,6 +2764,10 @@ fun BottomSheetPlayer(
             )
         }
     }
+    }
+
+    if (showAudioDeviceBottomSheet) {
+        AudioDeviceBottomSheet(onDismiss = { showAudioDeviceBottomSheet = false })
     }
 }
 
