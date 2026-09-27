@@ -416,17 +416,36 @@ class ListenTogetherClient @Inject constructor(
         .pingInterval(30, TimeUnit.SECONDS)
         .build()
 
+    fun normalizeWsUrl(raw: String): String {
+        var url = raw.trim()
+        if (url.isEmpty()) return DEFAULT_SERVER_URL
+        if (!url.startsWith("ws://", ignoreCase = true) && !url.startsWith("wss://", ignoreCase = true)) {
+            url = if (url.startsWith("http://", ignoreCase = true)) {
+                "ws://" + url.substring(7)
+            } else if (url.startsWith("https://", ignoreCase = true)) {
+                "wss://" + url.substring(8)
+            } else {
+                "wss://$url"
+            }
+        }
+        val schemeEnd = url.indexOf("://")
+        if (schemeEnd != -1) {
+            val scheme = url.substring(0, schemeEnd + 3)
+            val rest = url.substring(schemeEnd + 3)
+            if (!rest.contains("/")) {
+                url = "$scheme$rest/ws"
+            }
+        }
+        return url
+    }
+
     fun getServerUrl(): String {
         val savedUrl = context.dataStore.get(ListenTogetherServerUrlKey, DEFAULT_SERVER_URL)
-        return if (savedUrl.startsWith("ws://") || savedUrl.startsWith("wss://")) {
-            savedUrl
-        } else {
-            DEFAULT_SERVER_URL
-        }
+        return normalizeWsUrl(savedUrl)
     }
 
     fun setServerUrl(url: String) {
-        val cleanUrl = url.trim()
+        val cleanUrl = normalizeWsUrl(url)
         if (cleanUrl.isNotEmpty()) {
             scope.launch {
                 context.dataStore.edit { prefs ->
@@ -471,7 +490,8 @@ class ListenTogetherClient @Inject constructor(
      * Connect to the Listen Together server
      */
     fun connect(customUrl: String? = null) {
-        val targetUrl = customUrl?.trim()?.takeIf { it.isNotEmpty() } ?: getServerUrl()
+        val rawTarget = customUrl?.trim()?.takeIf { it.isNotEmpty() } ?: getServerUrl()
+        val targetUrl = normalizeWsUrl(rawTarget)
         if (_connectionState.value == ConnectionState.CONNECTED || 
             _connectionState.value == ConnectionState.CONNECTING) {
             if (activeConnectedUrl == targetUrl) {
@@ -491,52 +511,58 @@ class ListenTogetherClient @Inject constructor(
         codec.format = MessageFormat.JSON
         codec.compressionEnabled = false
 
-        val request = Request.Builder()
-            .url(targetUrl)
-            .build()
+        try {
+            val request = Request.Builder()
+                .url(targetUrl)
+                .build()
 
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                log(LogLevel.INFO, "Connected to server")
-                _connectionState.value = ConnectionState.CONNECTED
-                reconnectAttempts = 0
-                startPingJob()
-                
-                // Try to reconnect to previous session if we have a valid token
-                if (sessionToken != null && storedRoomCode != null) {
-                    log(LogLevel.INFO, "Attempting to reconnect to previous session", "Room: $storedRoomCode")
-                    sendMessage(MessageTypes.RECONNECT, ReconnectPayload(sessionToken!!))
-                } else {
-                    // Execute any pending action
-                    executePendingAction()
+            webSocket = client.newWebSocket(request, object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    log(LogLevel.INFO, "Connected to server")
+                    _connectionState.value = ConnectionState.CONNECTED
+                    reconnectAttempts = 0
+                    startPingJob()
+                    
+                    // Try to reconnect to previous session if we have a valid token
+                    if (sessionToken != null && storedRoomCode != null) {
+                        log(LogLevel.INFO, "Attempting to reconnect to previous session", "Room: $storedRoomCode")
+                        sendMessage(MessageTypes.RECONNECT, ReconnectPayload(sessionToken!!))
+                    } else {
+                        // Execute any pending action
+                        executePendingAction()
+                    }
                 }
-            }
 
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                // Handle text messages (JSON - DEPRECATED)
-                handleMessage(text.toByteArray())
-            }
-            
-            override fun onMessage(webSocket: WebSocket, bytes: okio.ByteString) {
-                // Handle binary messages (Protobuf)
-                handleMessage(bytes.toByteArray())
-            }
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    // Handle text messages (JSON)
+                    handleMessage(text.toByteArray())
+                }
+                
+                override fun onMessage(webSocket: WebSocket, bytes: okio.ByteString) {
+                    // Handle binary messages (Protobuf)
+                    handleMessage(bytes.toByteArray())
+                }
 
-            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                log(LogLevel.INFO, "Server closing connection", "Code: $code, Reason: $reason")
-                webSocket.close(1000, null)
-            }
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    log(LogLevel.INFO, "Server closing connection", "Code: $code, Reason: $reason")
+                    webSocket.close(1000, null)
+                }
 
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                log(LogLevel.INFO, "Connection closed", "Code: $code, Reason: $reason")
-                handleDisconnect()
-            }
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    log(LogLevel.INFO, "Connection closed", "Code: $code, Reason: $reason")
+                    handleDisconnect()
+                }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                log(LogLevel.ERROR, "Connection failure", t.message)
-                handleConnectionFailure(t)
-            }
-        })
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    log(LogLevel.ERROR, "Connection failure", t.message)
+                    handleConnectionFailure(t)
+                }
+            })
+        } catch (e: Exception) {
+            log(LogLevel.ERROR, "Failed to connect to $targetUrl", e.message)
+            _connectionState.value = ConnectionState.ERROR
+            scope.launch { _events.emit(ListenTogetherEvent.ConnectionError(e.message ?: "Failed to connect to $targetUrl")) }
+        }
     }
     
     private fun executePendingAction() {
@@ -1206,7 +1232,12 @@ class ListenTogetherClient @Inject constructor(
             val data = codec.encode(type, payload)
             log(LogLevel.DEBUG, "Sending message", "$type (${codec.format.name})")
             
-            val success = webSocket?.send(okio.ByteString.of(*data)) ?: false
+            val success = if (codec.format == MessageFormat.PROTOBUF) {
+                webSocket?.send(okio.ByteString.of(*data)) ?: false
+            } else {
+                val text = String(data, Charsets.UTF_8)
+                webSocket?.send(text) ?: false
+            }
             if (!success) {
                 log(LogLevel.ERROR, "Failed to send message", type)
             }

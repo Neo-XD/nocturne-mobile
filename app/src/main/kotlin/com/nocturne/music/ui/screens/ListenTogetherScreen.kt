@@ -98,6 +98,7 @@ import com.nocturne.music.constants.ListenTogetherUsernameKey
 import com.nocturne.music.listentogether.ConnectionState
 import com.nocturne.music.listentogether.JoinRequestPayload
 import com.nocturne.music.listentogether.ListenTogetherEvent
+import com.nocturne.music.listentogether.RoomRole
 import com.nocturne.music.listentogether.SuggestionReceivedPayload
 import com.nocturne.music.listentogether.UserInfo
 import com.nocturne.music.ui.component.IconButton
@@ -159,6 +160,7 @@ fun ListenTogetherScreen(
 
     val connectionState by listenTogetherManager.connectionState.collectAsState()
     val roomState by listenTogetherManager.roomState.collectAsState()
+    val role by listenTogetherManager.role.collectAsState()
     val userId by listenTogetherManager.userId.collectAsState()
     val pendingJoinRequests by listenTogetherManager.pendingJoinRequests.collectAsState()
     val pendingSuggestions by listenTogetherManager.pendingSuggestions.collectAsState()
@@ -233,7 +235,7 @@ fun ListenTogetherScreen(
         }
     }
 
-    val isInRoom = listenTogetherManager.isInRoom
+    val isInRoom = roomState != null && role != RoomRole.NONE
     val isHost = roomState?.hostId == userId
 
     // User action menu dialog
@@ -428,8 +430,8 @@ fun ListenTogetherScreen(
                     }
                 }
             }
-        } else if (isJoiningRoom) {
-            // Waiting for approval (PC-aligned waiting screen)
+        } else if (isJoiningRoom || isCreatingRoom) {
+            // Waiting for approval or room creation (PC-aligned waiting screen)
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -451,7 +453,9 @@ fun ListenTogetherScreen(
                             strokeWidth = 3.dp
                         )
                         Text(
-                            text = if (connectionState == ConnectionState.CONNECTING) "Connecting…" else waitingForApprovalText,
+                            text = if (connectionState == ConnectionState.CONNECTING) "Connecting…"
+                                   else if (isCreatingRoom) "Starting session…"
+                                   else waitingForApprovalText,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -459,6 +463,7 @@ fun ListenTogetherScreen(
                         OutlinedButton(
                             onClick = {
                                 isJoiningRoom = false
+                                isCreatingRoom = false
                                 listenTogetherManager.disconnect()
                             },
                             shape = RoundedCornerShape(12.dp)
