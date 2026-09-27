@@ -21,15 +21,21 @@ object ListenTogetherServers {
         [
           {
             "name": "Nocturne Sync Server",
-            "url": "wss://vivimusic-listen-together.onrender.com",
+            "url": "wss://fedora-1.tail9c4985.ts.net/ws",
             "location": "Global",
             "operator": "Nocturne"
+          },
+          {
+            "name": "Render Relay",
+            "url": "wss://vivimusic-listen-together.onrender.com",
+            "location": "Global",
+            "operator": "Community"
           },
           {
             "name": "Hugging Face Sync",
             "url": "wss://devilmi-vivi-music-listen-together.hf.space",
             "location": "Global",
-            "operator": "Vividh"
+            "operator": "Community"
           }
         ]
     """

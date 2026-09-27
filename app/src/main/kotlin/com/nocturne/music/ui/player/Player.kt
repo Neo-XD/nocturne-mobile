@@ -419,17 +419,7 @@ fun BottomSheetPlayer(
     var position by positionState
     var duration by durationState
     
-    val effectivePosition by remember {
-        derivedStateOf {
-            if (isRemoteDesktop) {
-                remoteSyncManager.calculateCurrentPositionMs()
-            } else if (isCasting) {
-                castPosition
-            } else {
-                position
-            }
-        }
-    }
+    val effectivePosition = if (isCasting) castPosition else position
     
     var sliderPosition by remember {
         mutableStateOf<Long?>(null)
@@ -812,37 +802,52 @@ fun BottomSheetPlayer(
     }
 
     // Position update - for remote desktop, cast, or local playback
-    LaunchedEffect(isPlaying, isCasting, isRemoteDesktop, remoteRoomState) {
+    LaunchedEffect(effectiveIsPlaying, isCasting, isRemoteDesktop, remoteRoomState) {
         if (isRemoteDesktop) {
             while (isActive) {
                 val r = remoteRoomState
                 if (r != null) {
-                    val elapsed = if (r.is_playing) System.currentTimeMillis() - r.last_update_ms else 0L
                     val d = r.current_track?.duration_ms ?: 0L
                     val timeSinceManualSeek = System.currentTimeMillis() - lastManualSeekTime
                     if (sliderPosition == null && timeSinceManualSeek > 1000) {
-                        position = (r.position_ms + elapsed).coerceIn(0L, if (d > 0) d else Long.MAX_VALUE)
+                        position = remoteSyncManager.calculateCurrentPositionMs()
                         duration = d
                     }
                 }
                 delay(100)
             }
-        } else if (!isCasting && isPlaying) {
-            while (isActive) {
-                delay(100) // Update more frequently for smoother progress bar
-                if (sliderPosition == null) { // Only update if user isn't dragging
-                    position = playerConnection.player.currentPosition
-                    duration = playerConnection.player.duration
+        } else if (!isCasting) {
+            if (!effectiveIsPlaying) {
+                if (sliderPosition == null) {
+                    val rawDuration = playerConnection.player.duration
+                    position = playerConnection.player.currentPosition.coerceAtLeast(0L)
+                    duration = if (rawDuration == C.TIME_UNSET || rawDuration < 0) 0L else rawDuration
+                }
+            } else {
+                while (isActive) {
+                    delay(100) // Update more frequently for smoother progress bar
+                    if (sliderPosition == null) { // Only update if user isn't dragging
+                        val rawDuration = playerConnection.player.duration
+                        position = playerConnection.player.currentPosition.coerceAtLeast(0L)
+                        duration = if (rawDuration == C.TIME_UNSET || rawDuration < 0) 0L else rawDuration
+                    }
                 }
             }
         }
     }
     
     // Also update position when playback state changes (e.g., song change, seek)
-    LaunchedEffect(playbackState, effectiveMediaMetadata?.id, isRemoteDesktop) {
-        if (!isCasting && !isRemoteDesktop) {
-            position = playerConnection.player.currentPosition
-            duration = playerConnection.player.duration
+    LaunchedEffect(playbackState, effectiveMediaMetadata?.id, isRemoteDesktop, remoteRoomState?.current_track?.id) {
+        if (isRemoteDesktop) {
+            val r = remoteRoomState
+            if (r != null) {
+                position = remoteSyncManager.calculateCurrentPositionMs()
+                duration = r.current_track?.duration_ms ?: 0L
+            }
+        } else if (!isCasting) {
+            val rawDuration = playerConnection.player.duration
+            position = playerConnection.player.currentPosition.coerceAtLeast(0L)
+            duration = if (rawDuration == C.TIME_UNSET || rawDuration < 0) 0L else rawDuration
         }
     }
     
@@ -1890,11 +1895,14 @@ fun BottomSheetPlayer(
 
             Spacer(Modifier.height(if (useNewPlayerDesign) 24.dp else 8.dp))
 
+            val maxDuration = if (duration > 0) duration.toFloat() else 1f
+            val currentPositionVal = (sliderPosition ?: effectivePosition).toFloat().coerceIn(0f, maxDuration)
+
             when (sliderStyle) {
                 SliderStyle.DEFAULT -> {
                     Slider(
-                        value = (sliderPosition ?: effectivePosition).toFloat(),
-                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                        value = currentPositionVal,
+                        valueRange = 0f..maxDuration,
                         onValueChange = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition = it.toLong()
@@ -1929,8 +1937,8 @@ fun BottomSheetPlayer(
                 SliderStyle.WAVY -> {
                     if (squigglySlider) {
                         SquigglySlider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                            value = currentPositionVal,
+                            valueRange = 0f..maxDuration,
                             onValueChange = {
                                 sliderPosition = it.toLong()
                             },
@@ -1958,8 +1966,8 @@ fun BottomSheetPlayer(
                         )
                     } else {
                         WavySlider(
-                            value = (sliderPosition ?: effectivePosition).toFloat(),
-                            valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                            value = currentPositionVal,
+                            valueRange = 0f..maxDuration,
                             onValueChange = {
                                 sliderPosition = it.toLong()
                             },
@@ -2004,8 +2012,8 @@ fun BottomSheetPlayer(
                     )
 
                     Slider(
-                        value = (sliderPosition ?: effectivePosition).toFloat(),
-                        valueRange = 0f..(if (duration == C.TIME_UNSET) 0f else duration.toFloat()),
+                        value = currentPositionVal,
+                        valueRange = 0f..maxDuration,
                         onValueChange = {
                             if (!isListenTogetherGuest) {
                                 sliderPosition = it.toLong()

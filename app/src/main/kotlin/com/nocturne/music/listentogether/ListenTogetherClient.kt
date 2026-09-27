@@ -416,13 +416,23 @@ class ListenTogetherClient @Inject constructor(
         .pingInterval(30, TimeUnit.SECONDS)
         .build()
 
-    private fun getServerUrl(): String {
+    fun getServerUrl(): String {
         val savedUrl = context.dataStore.get(ListenTogetherServerUrlKey, DEFAULT_SERVER_URL)
-        // If the saved URL is no longer in our list (e.g. Meowery was removed), revert to ViviMusic default
-        return if (ListenTogetherServers.findByUrl(savedUrl) != null) {
+        return if (savedUrl.startsWith("ws://") || savedUrl.startsWith("wss://")) {
             savedUrl
         } else {
             DEFAULT_SERVER_URL
+        }
+    }
+
+    fun setServerUrl(url: String) {
+        val cleanUrl = url.trim()
+        if (cleanUrl.isNotEmpty()) {
+            scope.launch {
+                context.dataStore.edit { prefs ->
+                    prefs[ListenTogetherServerUrlKey] = cleanUrl
+                }
+            }
         }
     }
     
@@ -455,26 +465,34 @@ class ListenTogetherClient @Inject constructor(
         _logs.value = emptyList()
     }
 
+    private var activeConnectedUrl: String? = null
+
     /**
      * Connect to the Listen Together server
      */
-    fun connect() {
+    fun connect(customUrl: String? = null) {
+        val targetUrl = customUrl?.trim()?.takeIf { it.isNotEmpty() } ?: getServerUrl()
         if (_connectionState.value == ConnectionState.CONNECTED || 
             _connectionState.value == ConnectionState.CONNECTING) {
-            log(LogLevel.WARNING, "Already connected or connecting")
-            return
+            if (activeConnectedUrl == targetUrl) {
+                log(LogLevel.WARNING, "Already connected or connecting to $targetUrl")
+                return
+            }
+            // Switching servers
+            log(LogLevel.INFO, "Switching server to $targetUrl, disconnecting previous session")
+            disconnect()
         }
 
+        activeConnectedUrl = targetUrl
         _connectionState.value = ConnectionState.CONNECTING
-        val serverUrl = getServerUrl()
-        log(LogLevel.INFO, "Connecting to server", serverUrl)
+        log(LogLevel.INFO, "Connecting to server", targetUrl)
 
-        // Custom Node.js servers expect JSON without compression
+        // Custom Node.js/Rust servers expect JSON without compression
         codec.format = MessageFormat.JSON
         codec.compressionEnabled = false
 
         val request = Request.Builder()
-            .url(serverUrl)
+            .url(targetUrl)
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {

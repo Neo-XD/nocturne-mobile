@@ -1421,9 +1421,15 @@ class ListenTogetherManager @Inject constructor(
     /**
      * Connect to the Listen Together server
      */
-    fun connect() {
-        Timber.tag(TAG).d("Connecting to server")
-        client.connect()
+    fun connect(customUrl: String? = null) {
+        Timber.tag(TAG).d("Connecting to server: ${customUrl ?: "default"}")
+        client.connect(customUrl)
+    }
+
+    fun getServerUrl(): String = client.getServerUrl()
+
+    fun setServerUrl(url: String) {
+        client.setServerUrl(url)
     }
 
     /**

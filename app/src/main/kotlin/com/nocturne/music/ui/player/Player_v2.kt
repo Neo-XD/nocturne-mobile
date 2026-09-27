@@ -272,36 +272,49 @@ fun PlayerV2(
     }
     
     // Position update - for remote desktop, cast, or local playback
-    LaunchedEffect(isPlaying, isCasting, isRemoteDesktop, remoteRoomState) {
+    LaunchedEffect(effectiveIsPlaying, isCasting, isRemoteDesktop, remoteRoomState) {
         if (isRemoteDesktop) {
             while (isActive) {
                 val r = remoteRoomState
                 if (r != null) {
-                    val elapsed = if (r.is_playing) System.currentTimeMillis() - r.last_update_ms else 0L
                     val d = r.current_track?.duration_ms ?: 0L
                     val timeSinceManualSeek = System.currentTimeMillis() - lastManualSeekTime
                     if (sliderPosition == null && timeSinceManualSeek > 1000) {
-                        position = (r.position_ms + elapsed).coerceIn(0L, if (d > 0) d else Long.MAX_VALUE)
+                        position = remoteSyncManager.calculateCurrentPositionMs()
                         duration = d
                     }
                 }
                 delay(100)
             }
-        } else if (!isCasting && isPlaying) {
-            while (isActive) {
-                delay(100)
+        } else if (!isCasting) {
+            if (!effectiveIsPlaying) {
                 if (sliderPosition == null) {
                     val rawDuration = playerConnection.player.duration
                     position = playerConnection.player.currentPosition.coerceAtLeast(0L)
                     duration = if (rawDuration == C.TIME_UNSET || rawDuration < 0) 0L else rawDuration
+                }
+            } else {
+                while (isActive) {
+                    delay(100)
+                    if (sliderPosition == null) {
+                        val rawDuration = playerConnection.player.duration
+                        position = playerConnection.player.currentPosition.coerceAtLeast(0L)
+                        duration = if (rawDuration == C.TIME_UNSET || rawDuration < 0) 0L else rawDuration
+                    }
                 }
             }
         }
     }
 
     // Also update once on song change
-    LaunchedEffect(effectiveMediaMetadata?.id, isRemoteDesktop) {
-        if (!isCasting && !isRemoteDesktop) {
+    LaunchedEffect(effectiveMediaMetadata?.id, isRemoteDesktop, remoteRoomState?.current_track?.id) {
+        if (isRemoteDesktop) {
+            val r = remoteRoomState
+            if (r != null) {
+                position = remoteSyncManager.calculateCurrentPositionMs()
+                duration = r.current_track?.duration_ms ?: 0L
+            }
+        } else if (!isCasting) {
             val rawDuration = playerConnection.player.duration
             position = playerConnection.player.currentPosition.coerceAtLeast(0L)
             duration = if (rawDuration == C.TIME_UNSET || rawDuration < 0) 0L else rawDuration
@@ -776,7 +789,9 @@ fun PlayerV2(
                             .padding(horizontal = 24.dp)
                     ) {
                         // Apple Music Timeline Slider
-                    val currentPos = sliderPosition ?: if (isRemoteDesktop) remoteSyncManager.calculateCurrentPositionMs() else position
+                    val currentPosLong = sliderPosition ?: (if (isRemoteDesktop) position else if (isCasting) castPosition else position)
+                    val maxDur = if (duration > 0) duration.toFloat() else 1f
+                    val currentPos = currentPosLong.toFloat().coerceIn(0f, maxDur)
                     
                     val trackInteractionSource = remember { MutableInteractionSource() }
                     val isTrackDragged by trackInteractionSource.collectIsDraggedAsState()
@@ -790,8 +805,8 @@ fun PlayerV2(
                     )
                     
                     Slider(
-                        value = currentPos.toFloat(),
-                        valueRange = 0f..(if (duration == androidx.media3.common.C.TIME_UNSET) 0f else duration.toFloat()),
+                        value = currentPos,
+                        valueRange = 0f..maxDur,
                         onValueChange = { value ->
                             if (!isListenTogetherGuest) {
                                 sliderPosition = value.toLong()
@@ -835,8 +850,8 @@ fun PlayerV2(
                             .padding(horizontal = 4.dp), // Align with internal slider padding
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(makeTimeString(currentPos), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        Text("-" + makeTimeString(maxOf(0L, duration - currentPos)), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text(makeTimeString(currentPosLong), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("-" + makeTimeString(maxOf(0L, duration - currentPosLong)), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 
                     Spacer(modifier = Modifier.height(16.dp))

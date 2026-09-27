@@ -2253,10 +2253,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = topPadding)
-                    .background(
-                        if (pureBlack) Color.Black
-                        else MaterialTheme.colorScheme.surface
-                    )
+                    .background(Color.Transparent)
             ) {
                 if (homePage?.chips?.isNotEmpty() == true) {
                     ChipsRow(
