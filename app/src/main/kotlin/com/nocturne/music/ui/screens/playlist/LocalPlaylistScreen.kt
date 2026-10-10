@@ -41,9 +41,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -202,6 +205,17 @@ fun LocalPlaylistScreen(
         true
     )
     var locked by rememberPreference(PlaylistEditLockKey, defaultValue = true)
+
+    // Arrangement Presets & Active Profile
+    var activePresetName by remember(viewModel.playlistId) {
+        mutableStateOf(PlaylistOrderCache.getActivePresetName(context, viewModel.playlistId))
+    }
+    var arrangementPresets by remember(viewModel.playlistId) {
+        mutableStateOf(PlaylistOrderCache.getArrangementPresets(context, viewModel.playlistId))
+    }
+    var showSavePresetDialog by remember { mutableStateOf(false) }
+    var presetNameInput by remember { mutableStateOf("") }
+    var showPresetMenu by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -418,6 +432,34 @@ fun LocalPlaylistScreen(
         )
     }
 
+    if (showSavePresetDialog) {
+        TextFieldDialog(
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.bookmark),
+                    contentDescription = null
+                )
+            },
+            title = { Text(text = "Save Arrangement Preset") },
+            onDismiss = {
+                showSavePresetDialog = false
+                presetNameInput = ""
+            },
+            initialTextFieldValue = TextFieldValue(presetNameInput),
+            onDone = { name ->
+                val trimmedName = name.trim()
+                if (trimmedName.isNotBlank()) {
+                    val songIds = mutableSongs.map { it.song.id }
+                    PlaylistOrderCache.saveArrangementPreset(context, viewModel.playlistId, trimmedName, songIds)
+                    activePresetName = trimmedName
+                    arrangementPresets = PlaylistOrderCache.getArrangementPresets(context, viewModel.playlistId)
+                    showSavePresetDialog = false
+                    presetNameInput = ""
+                }
+            }
+        )
+    }
+
     val headerItems = 2
     val lazyListState = rememberLazyListState()
     var dragInfo by remember {
@@ -451,13 +493,19 @@ fun LocalPlaylistScreen(
                     val successorIndex = if (from > to) to else to + 1
                     val successorSetVideoId = songs.getOrNull(successorIndex)?.map?.setVideoId
 
+                    // If we were in another sort mode, switch to CUSTOM to honor the manual order
+                    if (sortType != PlaylistSongSortType.CUSTOM) {
+                        onSortTypeChange(PlaylistSongSortType.CUSTOM)
+                    }
+
                     database.transaction {
                         move(viewModel.playlistId, from, to)
                     }
 
-                    // Cache updated order to disk immediately
+                    // Cache updated order to disk immediately under Custom (unsaved) profile
                     val newOrder = mutableSongs.map { it.song.id }
                     PlaylistOrderCache.saveCustomOrder(context, viewModel.playlistId, newOrder)
+                    activePresetName = PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE
 
                     // Sync order with YT Music in background
                     if (browseId != null && movingSetVideoId != null) {
@@ -537,6 +585,122 @@ fun LocalPlaylistScreen(
                                 },
                                 modifier = Modifier.weight(1f),
                             )
+
+                            // Arrangement Preset Selector & Save Action
+                            Box {
+                                IconButton(
+                                    onClick = { showPresetMenu = true }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.bookmark),
+                                        contentDescription = "Arrangement Presets",
+                                        tint = if (activePresetName == PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE)
+                                            MaterialTheme.colorScheme.tertiary
+                                        else
+                                            MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = showPresetMenu,
+                                    onDismissRequest = { showPresetMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(
+                                                    text = "Profile: $activePresetName",
+                                                    fontWeight = FontWeight.Bold,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                                if (activePresetName == PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE) {
+                                                    Text(
+                                                        text = "Unsaved reorder changes",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        onClick = { },
+                                        enabled = false
+                                    )
+
+                                    HorizontalDivider()
+
+                                    DropdownMenuItem(
+                                        text = { Text("Save Current Order as Preset...") },
+                                        leadingIcon = {
+                                            Icon(
+                                                painter = painterResource(R.drawable.add),
+                                                contentDescription = null
+                                            )
+                                        },
+                                        onClick = {
+                                            showPresetMenu = false
+                                            showSavePresetDialog = true
+                                        }
+                                    )
+
+                                    if (arrangementPresets.isNotEmpty()) {
+                                        HorizontalDivider()
+                                        arrangementPresets.forEach { (presetName, presetSongIds) ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            text = presetName,
+                                                            fontWeight = if (activePresetName == presetName) FontWeight.Bold else FontWeight.Normal
+                                                        )
+                                                        if (activePresetName == presetName) {
+                                                            Icon(
+                                                                painter = painterResource(R.drawable.check),
+                                                                contentDescription = null,
+                                                                modifier = Modifier.size(16.dp),
+                                                                tint = MaterialTheme.colorScheme.primary
+                                                            )
+                                                        }
+                                                    }
+                                                },
+                                                onClick = {
+                                                    showPresetMenu = false
+                                                    // Apply preset order
+                                                    val songMapBySongId = songs.associateBy { it.song.id }
+                                                    val reordered = mutableListOf<PlaylistSong>()
+                                                    presetSongIds.forEach { id ->
+                                                        songMapBySongId[id]?.let { reordered.add(it) }
+                                                    }
+                                                    // Add any songs not in the preset at the end
+                                                    val presetSet = presetSongIds.toSet()
+                                                    songs.filter { it.song.id !in presetSet }.forEach { reordered.add(it) }
+
+                                                    database.transaction {
+                                                        reordered.forEachIndexed { idx, ps ->
+                                                            if (ps.map.position != idx) {
+                                                                update(ps.map.copy(position = idx))
+                                                            }
+                                                        }
+                                                    }
+
+                                                    mutableSongs.clear()
+                                                    mutableSongs.addAll(reordered)
+                                                    if (sortType != PlaylistSongSortType.CUSTOM) {
+                                                        onSortTypeChange(PlaylistSongSortType.CUSTOM)
+                                                    }
+
+                                                    PlaylistOrderCache.setActivePresetName(context, viewModel.playlistId, presetName)
+                                                    PlaylistOrderCache.saveCustomOrder(context, viewModel.playlistId, reordered.map { it.song.id })
+                                                    activePresetName = presetName
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
                             if (editable) {
                                 val description = if (locked) "Unlock playlist" else "Lock playlist"
                                 TooltipBox(
@@ -666,7 +830,7 @@ fun LocalPlaylistScreen(
                                         )
                                     }
 
-                                    if (sortType == PlaylistSongSortType.CUSTOM && !locked && !inSelectMode && !isSearching && editable) {
+                                    if (!locked && !inSelectMode && !isSearching && editable) {
                                         IconButton(
                                             onClick = { },
                                             modifier = Modifier.draggableHandle(),

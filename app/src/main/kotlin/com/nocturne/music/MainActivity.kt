@@ -174,6 +174,8 @@ import com.nocturne.music.nocturne.updater.checkForUpdate
 import com.nocturne.music.nocturne.updater.getAutoUpdateCheckSetting
 import com.nocturne.music.nocturne.updater.isNewerVersion
 import com.nocturne.music.nocturne.updater.saveUpdateAvailableState
+import com.nocturne.music.nocturne.updater.saveLatestVersionName
+import com.nocturne.music.nocturne.updater.getLatestVersionName
 import com.nocturne.music.nocturne.updater.getUpdateNotificationsSetting
 import com.nocturne.music.nocturne.updater.getBetaUpdatesSetting
 import com.nocturne.music.nocturne.updater.getUpdateAvailableState
@@ -434,6 +436,8 @@ class MainActivity : ComponentActivity() {
         val enableHighRefreshRate by rememberPreference(EnableHighRefreshRateKey, defaultValue = true)
         val context = LocalContext.current
         val snackbarHostState = remember { SnackbarHostState() }
+        var showUpdateDialog by rememberSaveable { mutableStateOf(false) }
+        var updateVersionName by rememberSaveable { mutableStateOf("") }
 
         LaunchedEffect(Unit) {
             SnackbarManager.events.collectLatest { event ->
@@ -472,12 +476,12 @@ class MainActivity : ComponentActivity() {
                         val currentVersion = BuildConfig.VERSION_NAME
                         Log.d("UpdateCheck", "Startup check success. Latest: $latestVersion, Current: $currentVersion, isAvailable: $isAvailable")
                         saveUpdateAvailableState(context, isAvailable)
+                        saveLatestVersionName(context, latestVersion)
 
-                        // Update notification suppressed until in-app APK download and install is supported
-                        // if (isAvailable && getUpdateNotificationsSetting(context)) {
-                        //     Log.d("UpdateCheck", "Posting update notification for $latestVersion")
-                        //     UpdateNotificationHelper.showUpdateNotification(context, latestVersion)
-                        // }
+                        if (isAvailable && (isNewerVersion(latestVersion, currentVersion) || latestVersion.startsWith("nightly-"))) {
+                            updateVersionName = latestVersion
+                            showUpdateDialog = true
+                        }
 
                         // Stamp today so no more nightly checks until tomorrow 9 PM
                         if (betaEnabled) markNightlyCheckDone(context)
@@ -687,6 +691,60 @@ class MainActivity : ComponentActivity() {
                                 }
                             ) {
                                 Text("Continue as Guest")
+                            }
+                        },
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                }
+
+                if (showUpdateDialog) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            showUpdateDialog = false
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.apk_install),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        },
+                        title = {
+                            Text(
+                                text = stringResource(R.string.new_update),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = if (updateVersionName.isNotBlank()) {
+                                    stringResource(R.string.update_to_v, updateVersionName)
+                                } else {
+                                    stringResource(R.string.new_update)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showUpdateDialog = false
+                                    navController.navigate("update")
+                                }
+                            ) {
+                                Text(stringResource(R.string.update_available))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = {
+                                    showUpdateDialog = false
+                                }
+                            ) {
+                                Text(stringResource(R.string.later))
                             }
                         },
                         shape = RoundedCornerShape(24.dp)

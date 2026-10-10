@@ -205,6 +205,7 @@ fun UpdateScreen(navController: NavHostController) {
                 onSuccess = { tag, isAvailable, changelog, size, date, description, imageUrl, apkUrl ->
                     saveLastCheckedTime(context, LocalDateTime.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy, h:mm a")))
                     saveUpdateAvailableState(context, isAvailable)
+                    saveLatestVersionName(context, tag)
                     status = if (isAvailable) {
                         ViviUpdateStatus.Available(
                             version = tag,
@@ -597,6 +598,7 @@ const val KEY_AUTO_UPDATE_CHECK = "auto_update_check"
 const val KEY_LAST_CHECKED_TIME = "last_checked_time"
 const val KEY_BETA_UPDATES = "beta_updates"
 const val KEY_UPDATE_AVAILABLE = "update_available"
+const val KEY_LATEST_VERSION = "latest_version_name"
 
 fun getUpdateAvailableState(context: Context): Boolean {
     val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -606,6 +608,16 @@ fun getUpdateAvailableState(context: Context): Boolean {
 fun saveUpdateAvailableState(context: Context, available: Boolean) {
     val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     sharedPrefs.edit().putBoolean(KEY_UPDATE_AVAILABLE, available).apply()
+}
+
+fun getLatestVersionName(context: Context): String {
+    val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    return sharedPrefs.getString(KEY_LATEST_VERSION, "") ?: ""
+}
+
+fun saveLatestVersionName(context: Context, version: String) {
+    val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    sharedPrefs.edit().putString(KEY_LATEST_VERSION, version).apply()
 }
 
 fun getAutoUpdateCheckSetting(context: Context): Boolean {
@@ -864,31 +876,7 @@ suspend fun checkForUpdate(
             if (targetRelease != null) {
                 val targetTagName = targetRelease.getString("tag_name")
                 val isNewer = isNewerVersion(targetTagName, currentVersion)
-                
-                // Track Switch Logic:
-                // If the user has disabled beta updates, we should offer the latest stable release
-                // even if it's technically a lower version number than their current beta/custom build.
-                // This allows users to correctly "roll back" to the stable track.
-                val currentIsBeta = currentVersion.startsWith("b")
-                val targetIsStable = targetTagName.startsWith("v")
-                
-                // Compare version numbers ignoring prefixes
-                val currentClean = currentVersion.removePrefix("b").removePrefix("v")
-                val targetClean = targetTagName.removePrefix("b").removePrefix("v")
-                val isDifferentVersion = currentClean != targetClean
-                
-                var shouldShow = isNewer
-                if (!shouldShow && !betaEnabled) {
-                    // Logic: If I'm on a Beta (b5.0.7) and latest stable is v5.0.6, 
-                    // and I just turned OFF beta, I want to see v5.0.6.
-                    if (currentIsBeta && targetIsStable) {
-                        shouldShow = true
-                    } else if (isDifferentVersion && targetIsStable) {
-                        // Also show if current is a newer unofficial stable (e.g. built locally as 5.0.7)
-                        // but user wants the official stable 5.0.6.
-                        shouldShow = true
-                    }
-                }
+                val shouldShow = isNewer
 
                 if (shouldShow) {
                     val tagWithPrefix = targetRelease.getString("tag_name")

@@ -407,12 +407,12 @@ object YTPlayerUtils {
 
         // Try MAIN_CLIENT (ANDROID_VR) for fast stream resolution and METADATA_CLIENT (WEB_REMIX) for history tracking in parallel
         var metadataResponse: PlayerResponse? = null
-        var mainPlayerResponse = coroutineScope {
+        var mainPlayerResponse: PlayerResponse? = coroutineScope {
             val mainDeferred = async {
                 Timber.tag(logTag).d("Attempting to get player response using MAIN_CLIENT: ${MAIN_CLIENT.clientName}")
                 PlaybackLogManager.log(PlaybackLogLevel.DEBUG, "Trying ${MAIN_CLIENT.clientName} (Main)")
                 val sigTimestamp = if (MAIN_CLIENT.useSignatureTimestamp) getSigTimestampLazy() else null
-                YouTube.player(videoId, playlistId, MAIN_CLIENT, sigTimestamp, poToken?.playerRequestPoToken).getOrThrow()
+                YouTube.player(videoId, playlistId, MAIN_CLIENT, sigTimestamp, poToken?.playerRequestPoToken).getOrNull()
             }
             if (isLoggedIn) {
                 launch {
@@ -445,24 +445,19 @@ object YTPlayerUtils {
 
         // Debug uploaded track response
         if (isUploadedTrack || playlistId?.contains("MLPT") == true) {
-            println("[PLAYBACK_DEBUG] Main player response status: ${mainPlayerResponse.playabilityStatus.status}")
-            println("[PLAYBACK_DEBUG] Playability reason: ${mainPlayerResponse.playabilityStatus.reason}")
-            println("[PLAYBACK_DEBUG] Video details: title=${mainPlayerResponse.videoDetails?.title}, videoId=${mainPlayerResponse.videoDetails?.videoId}")
-            println("[PLAYBACK_DEBUG] Streaming data null? ${mainPlayerResponse.streamingData == null}")
-            println("[PLAYBACK_DEBUG] Adaptive formats count: ${mainPlayerResponse.streamingData?.adaptiveFormats?.size ?: 0}")
+            println("[PLAYBACK_DEBUG] Main player response status: ${mainPlayerResponse?.playabilityStatus?.status}")
+            println("[PLAYBACK_DEBUG] Playability reason: ${mainPlayerResponse?.playabilityStatus?.reason}")
+            println("[PLAYBACK_DEBUG] Video details: title=${mainPlayerResponse?.videoDetails?.title}, videoId=${mainPlayerResponse?.videoDetails?.videoId}")
+            println("[PLAYBACK_DEBUG] Streaming data null? ${mainPlayerResponse?.streamingData == null}")
+            println("[PLAYBACK_DEBUG] Adaptive formats count: ${mainPlayerResponse?.streamingData?.adaptiveFormats?.size ?: 0}")
         }
 
         var usedAgeRestrictedClient: YouTubeClient? = null
         val wasOriginallyAgeRestricted: Boolean
 
-        // Check if MAIN_CLIENT response indicates age-restricted.
-        // NOTE: Do NOT include LOGIN_REQUIRED here - ANDROID_VR returns LOGIN_REQUIRED as a
-        // bot-detection / client-not-supported signal, NOT a content age gate. Treating it as
-        // age-restricted incorrectly reroutes every bot-flagged request through WEB_CREATOR
-        // and causes streaming failures for logged-in users.
-        val mainStatus = mainPlayerResponse.playabilityStatus.status
-        val mainReason = mainPlayerResponse.playabilityStatus.reason.orEmpty()
-        val isAgeRestrictedFromResponse = mainStatus in listOf(
+        val mainStatus = mainPlayerResponse?.playabilityStatus?.status
+        val mainReason = mainPlayerResponse?.playabilityStatus?.reason.orEmpty()
+        val isAgeRestrictedFromResponse = mainPlayerResponse == null || mainStatus in listOf(
             "AGE_CHECK_REQUIRED",
             "AGE_VERIFICATION_REQUIRED",
             "CONTENT_CHECK_REQUIRED"
@@ -474,13 +469,14 @@ object YTPlayerUtils {
 
         if (isAgeRestrictedFromResponse || contentHints.isExplicit == true) {
             val candidateClients = if (isLoggedIn) {
-                listOf(WEB_CREATOR, ANDROID_CREATOR, TVHTML5_SIMPLY_EMBEDDED_PLAYER)
+                listOf(WEB_CREATOR, ANDROID_CREATOR, TVHTML5_SIMPLY_EMBEDDED_PLAYER, TVHTML5_SIMPLY, WEB_REMIX)
             } else {
-                listOf(TVHTML5_SIMPLY_EMBEDDED_PLAYER, ANDROID_CREATOR)
+                listOf(TVHTML5_SIMPLY_EMBEDDED_PLAYER, ANDROID_CREATOR, TVHTML5_SIMPLY, WEB_CREATOR)
             }
             for (candidateClient in candidateClients) {
                 Timber.tag(logTag).d("Age-restricted/explicit detected, trying bypass candidate: ${candidateClient.clientName}")
-                val bpResponse = YouTube.player(videoId, playlistId, candidateClient, null, null).getOrNull()
+                val sigTimestamp = if (candidateClient.useSignatureTimestamp) getSigTimestampLazy() else null
+                val bpResponse = YouTube.player(videoId, playlistId, candidateClient, sigTimestamp, null).getOrNull()
                 if (bpResponse?.playabilityStatus?.status == "OK") {
                     Timber.tag(logTag).d("${candidateClient.clientName} works for age-restricted/explicit content")
                     mainPlayerResponse = bpResponse
