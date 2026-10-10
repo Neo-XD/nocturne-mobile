@@ -20,6 +20,7 @@ import com.music.innertube.models.YouTubeClient.Companion.IOS
 import com.music.innertube.models.YouTubeClient.Companion.IPADOS
 import com.music.innertube.models.YouTubeClient.Companion.MOBILE
 import com.music.innertube.models.YouTubeClient.Companion.TVHTML5
+import com.music.innertube.models.YouTubeClient.Companion.TVHTML5_SIMPLY
 import com.music.innertube.models.YouTubeClient.Companion.TVHTML5_SIMPLY_EMBEDDED_PLAYER
 import com.music.innertube.models.YouTubeClient.Companion.WEB
 import com.music.innertube.models.YouTubeClient.Companion.WEB_CREATOR

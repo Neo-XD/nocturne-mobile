@@ -436,7 +436,7 @@ fun LocalPlaylistScreen(
         TextFieldDialog(
             icon = {
                 Icon(
-                    painter = painterResource(R.drawable.bookmark),
+                    painter = painterResource(R.drawable.bookmark_star_library),
                     contentDescription = null
                 )
             },
@@ -592,7 +592,7 @@ fun LocalPlaylistScreen(
                                     onClick = { showPresetMenu = true }
                                 ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.bookmark),
+                                        painter = painterResource(R.drawable.bookmark_star_library),
                                         contentDescription = "Arrangement Presets",
                                         tint = if (activePresetName == PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE)
                                             MaterialTheme.colorScheme.tertiary
