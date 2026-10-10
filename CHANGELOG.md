@@ -1,6 +1,28 @@
-﻿# Changelog
+# Changelog
  
 All notable changes to Nocturne Mobile are documented in this file.
+
+## [v0.3-m] - 2026-10-10
+
+### 🚀 New Features
+- **Playlist Reordering in Any Sort Mode**: Drag-and-drop reordering is now unlocked across all playlist sorting modes without forcing or resetting your sort mode to "Custom".
+- **Arrangement Presets & Unsaved Profile Tracking**: Live in-progress drag arrangements are retained in memory and labeled as `Custom (unsaved)` or `<Preset> (unsaved)`. Added an arrangement menu to save the current order, save as a named preset, or discard unsaved changes.
+- **Smart In-App Update Checker & Popup**: Automatically alerts users with an update popup on launch if a newer release exists on GitHub (`currentVersion < latestVersion`) with direct in-app downloading and install. If already on the latest version, suppresses all startup popups and displays status solely on the Updater screen.
+- **Vibe Category Picker**: Integrated mood and genre vibe chips into the Search screen for effortless musical exploration.
+- **Listen Together Overhaul**: Redesigned Listen Together interface aligned with Nocturne Desktop UX, with in-room chat, active member controls, synchronized queue, real-time playback synchronization, and reactive room state tracking.
+
+### ✨ Improvements
+- **Age-Restricted & Explicit Playback Bypass**: Overhauled YouTube Music player client fallbacks in `YTPlayerUtils` with soft error recovery and candidate fallback chains (`TVHTML5_SIMPLY_EMBEDDED_PLAYER`, `ANDROID_CREATOR`, `TVHTML5_SIMPLY`, `WEB_CREATOR`) with lazy signature timestamp resolution.
+- **Remote Desktop Sync & Controller Mode**: Accurate seekbar timeline synchronization, persistent auto-reconnect loop with exponential backoff across network drops, and a remote PC Audio Output Device switcher bottom sheet.
+- **Spotify Integration**: Restored and improved Spotify OAuth linking, token refreshing, and playlist import stability.
+- **Visual Polish**: Transparent Home tab styling with fluid backdrops, real-time player theme customization options, and pre-warmed ViewModels for zero-latency screen transitions.
+
+### 🐛 Bug Fixes
+- **Listen Together Stability**: Switched WebSocket frames to text frames for JSON payloads, eliminating binary decoding crashes, and added defensive URL validation.
+- **Playlist Order Persistence**: Fixed reordering bugs where dragging a song would prematurely overwrite custom orders on disk before the user chose to save.
+- **Build & CI Compatibility**: Resolved compile issues in `YTPlayerUtils` and `LocalPlaylistScreen`, increased Gradle wrapper network timeout, and stabilized release pipelines.
+
+---
 
 ## [v0.2.4-m] - 2026-09-11
 
