@@ -210,6 +210,7 @@ fun LocalPlaylistScreen(
     var activePresetName by remember(viewModel.playlistId) {
         mutableStateOf(PlaylistOrderCache.getActivePresetName(context, viewModel.playlistId))
     }
+    var hasUnsavedOrder by rememberSaveable(viewModel.playlistId) { mutableStateOf(false) }
     var arrangementPresets by remember(viewModel.playlistId) {
         mutableStateOf(PlaylistOrderCache.getArrangementPresets(context, viewModel.playlistId))
     }
@@ -284,9 +285,11 @@ fun LocalPlaylistScreen(
     }
 
     LaunchedEffect(songs) {
-        mutableSongs.apply {
-            clear()
-            addAll(songs)
+        if (!hasUnsavedOrder) {
+            mutableSongs.apply {
+                clear()
+                addAll(songs)
+            }
         }
         if (songs.isEmpty()) return@LaunchedEffect
         downloadUtil.downloads.collect { downloads ->
@@ -452,6 +455,7 @@ fun LocalPlaylistScreen(
                     val songIds = mutableSongs.map { it.song.id }
                     PlaylistOrderCache.saveArrangementPreset(context, viewModel.playlistId, trimmedName, songIds)
                     activePresetName = trimmedName
+                    hasUnsavedOrder = false
                     arrangementPresets = PlaylistOrderCache.getArrangementPresets(context, viewModel.playlistId)
                     showSavePresetDialog = false
                     presetNameInput = ""
@@ -485,40 +489,14 @@ fun LocalPlaylistScreen(
         if (!reorderableState.isAnyItemDragging) {
             dragInfo?.let { (from, to) ->
                 if (from != to) {
-                    val browseId = viewModel.playlist.value?.playlist?.browseId
-
-                    // Capture setVideoIds BEFORE modifying database
-                    val fromSong = songs.getOrNull(from)
-                    val movingSetVideoId = fromSong?.map?.setVideoId
-                    val successorIndex = if (from > to) to else to + 1
-                    val successorSetVideoId = songs.getOrNull(successorIndex)?.map?.setVideoId
-
-                    // If we were in another sort mode, switch to CUSTOM to honor the manual order
-                    if (sortType != PlaylistSongSortType.CUSTOM) {
-                        onSortTypeChange(PlaylistSongSortType.CUSTOM)
-                    }
-
-                    database.transaction {
-                        move(viewModel.playlistId, from, to)
-                    }
-
-                    // Cache updated order to disk immediately under Custom (unsaved) profile
-                    val newOrder = mutableSongs.map { it.song.id }
-                    PlaylistOrderCache.saveCustomOrder(context, viewModel.playlistId, newOrder)
-                    activePresetName = PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE
-
-                    // Sync order with YT Music in background
-                    if (browseId != null && movingSetVideoId != null) {
-                        viewModel.viewModelScope.launch(Dispatchers.IO) {
-                            YouTube.moveSongPlaylist(
-                                browseId,
-                                movingSetVideoId,
-                                successorSetVideoId
-                            )
-                        }
+                    hasUnsavedOrder = true
+                    val currentBase = activePresetName.replace(" (unsaved)", "").trim()
+                    activePresetName = if (currentBase.isNotBlank() && currentBase != "Custom" && currentBase != PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE) {
+                        "$currentBase (unsaved)"
+                    } else {
+                        PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE
                     }
                 }
-
                 dragInfo = null
             }
         }
@@ -551,7 +529,7 @@ fun LocalPlaylistScreen(
                         item(key = "playlist_header") {
                             LocalPlaylistHeader(
                                 playlist = playlist,
-                                songs = songs,
+                                songs = if (hasUnsavedOrder) mutableSongs.toList() else songs,
                                 onShowEditDialog = { showEditDialog = true },
                                 onShowRemoveDownloadDialog = { showRemoveDownloadDialog = true },
                                 onshowDeletePlaylistDialog = { showDeletePlaylistDialog = true },
@@ -572,8 +550,18 @@ fun LocalPlaylistScreen(
                             SortHeader(
                                 sortType = sortType,
                                 sortDescending = sortDescending,
-                                onSortTypeChange = onSortTypeChange,
-                                onSortDescendingChange = onSortDescendingChange,
+                                onSortTypeChange = { newType ->
+                                    hasUnsavedOrder = false
+                                    val cleanName = activePresetName.replace(" (unsaved)", "").trim()
+                                    activePresetName = if (cleanName.isBlank()) "Custom" else cleanName
+                                    onSortTypeChange(newType)
+                                },
+                                onSortDescendingChange = { newDesc ->
+                                    hasUnsavedOrder = false
+                                    val cleanName = activePresetName.replace(" (unsaved)", "").trim()
+                                    activePresetName = if (cleanName.isBlank()) "Custom" else cleanName
+                                    onSortDescendingChange(newDesc)
+                                },
                                 sortTypeText = { sortType ->
                                     when (sortType) {
                                         PlaylistSongSortType.CUSTOM -> R.string.sort_by_custom
@@ -594,7 +582,7 @@ fun LocalPlaylistScreen(
                                     Icon(
                                         painter = painterResource(R.drawable.bookmark_star_library),
                                         contentDescription = "Arrangement Presets",
-                                        tint = if (activePresetName == PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE)
+                                        tint = if (hasUnsavedOrder || activePresetName.contains("(unsaved)"))
                                             MaterialTheme.colorScheme.tertiary
                                         else
                                             MaterialTheme.colorScheme.primary
@@ -612,11 +600,11 @@ fun LocalPlaylistScreen(
                                                     fontWeight = FontWeight.Bold,
                                                     style = MaterialTheme.typography.bodyMedium
                                                 )
-                                                if (activePresetName == PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE) {
+                                                if (hasUnsavedOrder || activePresetName.contains("(unsaved)")) {
                                                     Text(
-                                                        text = "Unsaved reorder changes",
+                                                        text = "Unsaved order changes",
                                                         style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        color = MaterialTheme.colorScheme.tertiary
                                                     )
                                                 }
                                             }
@@ -626,6 +614,55 @@ fun LocalPlaylistScreen(
                                     )
 
                                     HorizontalDivider()
+
+                                    if (hasUnsavedOrder) {
+                                        DropdownMenuItem(
+                                            text = { Text("Save Order") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.check),
+                                                    contentDescription = null
+                                                )
+                                            },
+                                            onClick = {
+                                                showPresetMenu = false
+                                                val currentOrder = mutableSongs.map { it.song.id }
+                                                database.transaction {
+                                                    mutableSongs.forEachIndexed { idx, ps ->
+                                                        if (ps.map.position != idx) {
+                                                            update(ps.map.copy(position = idx))
+                                                        }
+                                                    }
+                                                }
+                                                PlaylistOrderCache.saveCustomOrder(context, viewModel.playlistId, currentOrder)
+                                                val cleanName = activePresetName.replace(" (unsaved)", "").trim()
+                                                activePresetName = if (cleanName.isBlank() || cleanName == PlaylistOrderCache.UNSAVED_CUSTOM_PROFILE) "Custom" else cleanName
+                                                PlaylistOrderCache.setActivePresetName(context, viewModel.playlistId, activePresetName)
+                                                hasUnsavedOrder = false
+                                            }
+                                        )
+
+                                        DropdownMenuItem(
+                                            text = { Text("Discard Unsaved Changes") },
+                                            leadingIcon = {
+                                                Icon(
+                                                    painter = painterResource(R.drawable.refresh),
+                                                    contentDescription = null
+                                                )
+                                            },
+                                            onClick = {
+                                                showPresetMenu = false
+                                                mutableSongs.clear()
+                                                mutableSongs.addAll(songs)
+                                                val cleanName = activePresetName.replace(" (unsaved)", "").trim()
+                                                activePresetName = if (cleanName.isBlank()) "Custom" else cleanName
+                                                PlaylistOrderCache.setActivePresetName(context, viewModel.playlistId, activePresetName)
+                                                hasUnsavedOrder = false
+                                            }
+                                        )
+
+                                        HorizontalDivider()
+                                    }
 
                                     DropdownMenuItem(
                                         text = { Text("Save Current Order as Preset...") },
@@ -667,32 +704,18 @@ fun LocalPlaylistScreen(
                                                 },
                                                 onClick = {
                                                     showPresetMenu = false
-                                                    // Apply preset order
                                                     val songMapBySongId = songs.associateBy { it.song.id }
                                                     val reordered = mutableListOf<PlaylistSong>()
                                                     presetSongIds.forEach { id ->
                                                         songMapBySongId[id]?.let { reordered.add(it) }
                                                     }
-                                                    // Add any songs not in the preset at the end
                                                     val presetSet = presetSongIds.toSet()
                                                     songs.filter { it.song.id !in presetSet }.forEach { reordered.add(it) }
 
-                                                    database.transaction {
-                                                        reordered.forEachIndexed { idx, ps ->
-                                                            if (ps.map.position != idx) {
-                                                                update(ps.map.copy(position = idx))
-                                                            }
-                                                        }
-                                                    }
-
                                                     mutableSongs.clear()
                                                     mutableSongs.addAll(reordered)
-                                                    if (sortType != PlaylistSongSortType.CUSTOM) {
-                                                        onSortTypeChange(PlaylistSongSortType.CUSTOM)
-                                                    }
-
+                                                    hasUnsavedOrder = false
                                                     PlaylistOrderCache.setActivePresetName(context, viewModel.playlistId, presetName)
-                                                    PlaylistOrderCache.saveCustomOrder(context, viewModel.playlistId, reordered.map { it.song.id })
                                                     activePresetName = presetName
                                                 }
                                             )
