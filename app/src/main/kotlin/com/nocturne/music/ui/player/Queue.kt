@@ -353,17 +353,17 @@ fun Queue(
                 ) {
                     val buttonSize = 42.dp
                     val iconSize = 24.dp
-                    val queueShape = RoundedCornerShape(
+                    val queueShape = CircleShape; val oldQueueShape = RoundedCornerShape(
                         topStart = 50.dp, bottomStart = 50.dp,
                         topEnd = 3.dp, bottomEnd = 3.dp
                     )
-                    val middleShape = RoundedCornerShape(3.dp)
-                    val repeatShape = RoundedCornerShape(
+                    val middleShape = CircleShape
+                    val repeatShape = CircleShape; val oldRepeatShape = RoundedCornerShape(
                         topStart = 3.dp, bottomStart = 3.dp,
                         topEnd = 50.dp, bottomEnd = 50.dp
                     )
 
-//                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(1f))
 
                     PlayerQueueButton(
                         icon = R.drawable.queue_music,
@@ -379,7 +379,7 @@ fun Queue(
                     )
 
                     PlayerQueueButton(
-                        icon = R.drawable.bedtime,
+                        icon = R.drawable.sleep_timer,
                         onClick = {
                             if (sleepTimerEnabled) {
                                 playerConnection.service.sleepTimer.clear()
@@ -400,6 +400,7 @@ fun Queue(
                     )
 
                     PlayerQueueButton(
+
                         icon = R.drawable.lyrics,
                         onClick = { onToggleLyrics() },
                         isActive = showInlineLyrics,
@@ -512,131 +513,46 @@ fun Queue(
                                 .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
                         ),
                 ) {
-                    TextButton(
+                    IconButton(
                         onClick = { state.expandSoft() },
-                        modifier = Modifier.wrapContentWidth()
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.apple_queue),
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = TextBackgroundColor
-                            )
-//                            Spacer(modifier = Modifier.width(6.dp))
-//                            Text(
-//                                text = stringResource(id = R.string.queue),
-//                                color = TextBackgroundColor,
-//                                maxLines = 1,
-//                                overflow = TextOverflow.Ellipsis,
-//                                textAlign = TextAlign.Center,
-//                                modifier = Modifier.basicMarquee()
-//                            )
-                        }
+                        Icon(
+                            painter = painterResource(id = R.drawable.apple_queue),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = TextBackgroundColor
+                        )
                     }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-                        modifier = Modifier.width(120.dp)
+                    IconButton(
+                        onClick = {
+                            showAudioDeviceBottomSheet = true
+                        },
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        ToggleButton(
-                            checked = false,
-                            onCheckedChange = {
-                                showAudioDeviceBottomSheet = true
-                            },
-                            shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
-                            modifier = Modifier
-                                .height(56.dp)
-                                .weight(1f),
-                            colors = ToggleButtonDefaults.toggleButtonColors(
-                                containerColor = TextBackgroundColor.copy(alpha = 0.2f),
-                                contentColor = TextBackgroundColor,
-                                checkedContainerColor = TextBackgroundColor.copy(alpha = 0.4f),
-                                checkedContentColor = TextBackgroundColor
-                            )
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    if (isBluetoothConnected) R.drawable.headset_applemusic else R.drawable.speaker_apple
-                                ),
-                                contentDescription = null,
-                                modifier = Modifier.size(30.dp)
-                            )
-                        }
-
-                        ToggleButton(
-                            checked = sleepTimerEnabled,
-                            onCheckedChange = {
-                                if (!isListenTogetherGuest) {
-                                    if (sleepTimerEnabled) {
-                                        playerConnection.service.sleepTimer.clear()
-                                    } else {
-                                        showSleepTimerDialog = true
-                                    }
-                                }
-                            },
-                            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
-                            modifier = Modifier
-                                .height(56.dp)
-                                .weight(1f),
-                            colors = ToggleButtonDefaults.toggleButtonColors(
-                                containerColor = TextBackgroundColor.copy(alpha = 0.2f),
-                                contentColor = TextBackgroundColor,
-                                checkedContainerColor = TextBackgroundColor.copy(alpha = 0.4f),
-                                checkedContentColor = TextBackgroundColor
-                            )
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.sleep_timer),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                                if (sleepTimerEnabled) {
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = makeTimeString(sleepTimerTimeLeft),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextBackgroundColor,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
+                        Icon(
+                            painter = painterResource(
+                                if (isBluetoothConnected) R.drawable.headset_applemusic else R.drawable.speaker_apple
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = TextBackgroundColor
+                        )
                     }
 
-                    TextButton(
+                    IconButton(
                         onClick = {
                             onToggleLyrics()
                         },
-                        modifier = Modifier.wrapContentWidth()
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.apple_music_me),
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = TextBackgroundColor
-                            )
-//                            Spacer(modifier = Modifier.width(6.dp))
-//                            Text(
-//                                text = stringResource(R.string.lyrics),
-//                                color = TextBackgroundColor,
-//                                maxLines = 1,
-//                                overflow = TextOverflow.Ellipsis,
-//                                textAlign = TextAlign.Center,
-//                                modifier = Modifier.basicMarquee()
-//                            )
-                        }
+                        Icon(
+                            painter = painterResource(id = R.drawable.apple_music_me),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = TextBackgroundColor
+                        )
                     }
                 }
             }
@@ -1047,11 +963,11 @@ fun Queue(
                             val isMobileTab = selectedQueueTab == "MOBILE"
                             Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(if (isMobileTab) MaterialTheme.colorScheme.primary else Color.Transparent)
-                                    .clickable { selectedQueueTab = "MOBILE" }
-                                    .padding(vertical = 8.dp),
+                                .weight(1f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isMobileTab) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                .clickable { selectedQueueTab = "MOBILE" }
+                                .padding(vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Row(
@@ -1394,7 +1310,7 @@ fun Queue(
                                             dv == SwipeToDismissBoxValue.StartToEnd ||
                                                     dv == SwipeToDismissBoxValue.EndToStart
                                             )
-                                ) {
+                                        ) {
                                     processedDismiss = true
                                     playerConnection.player.removeMediaItem(currentItem.firstPeriodIndex)
                                     dismissJob?.cancel()
@@ -1681,7 +1597,10 @@ private fun PlayerQueueButton(
 
     val alphaFactor = if (enabled) 1f else 0.35f
 
-    val appliedModifier = if (isActive) {
+    val isDeviceButton = icon == R.drawable.speaker_apple || icon == R.drawable.headset_applemusic
+    val appliedModifier = if (isDeviceButton) {
+        modifier.then(buttonModifier).alpha(alphaFactor)
+    } else if (isActive) {
         modifier.then(buttonModifier.background(textButtonColor)).alpha(alphaFactor)
     } else {
         modifier.then(
@@ -1744,5 +1663,3 @@ private fun PlayerQueueButton(
         }
     }
 }
-
-

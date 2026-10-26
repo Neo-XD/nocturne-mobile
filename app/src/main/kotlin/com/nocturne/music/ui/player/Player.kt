@@ -18,6 +18,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import com.nocturne.music.ui.component.BlurredBackdropImage
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -69,6 +70,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material3.AlertDialog
@@ -273,16 +275,16 @@ fun BottomSheetPlayer(
         defaultValue = false
     )
     val (showAudioQualityBadge) = rememberPreference(
-        ShowAudioQualityBadgeKey,
+        ShowAudioQualityBadgeKey, defaultValue = true) /*
         defaultValue = false
     )
-    val (hidePlayerThumbnail, onHidePlayerThumbnailChange) = rememberPreference(HidePlayerThumbnailKey, false)
+    */; val (hidePlayerThumbnail, onHidePlayerThumbnailChange) = rememberPreference(HidePlayerThumbnailKey, false)
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
     val playerBackground by rememberEnumPreference(
-        key = PlayerBackgroundStyleKey,
+        key = PlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.BLUR) /*
         defaultValue = PlayerBackgroundStyle.GRADIENT
     )
-    val playerButtonsStyle by rememberEnumPreference(
+    */; val playerButtonsStyle by rememberEnumPreference(
         key = PlayerButtonsStyleKey,
         defaultValue = PlayerButtonsStyle.DEFAULT
     )
@@ -363,6 +365,7 @@ fun BottomSheetPlayer(
         defaultValue = AudioQuality.AUTO
     )
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SLIM)
+    val playingAudioFormatLabel = rememberPlayingAudioFormatLabel(playerConnection)
     val squigglySlider by rememberPreference(SquigglySliderKey, defaultValue = false)
     
     // Listen Together state (reactive)
@@ -909,7 +912,19 @@ fun BottomSheetPlayer(
                                         .fillMaxSize()
                                         .alpha(backgroundAlpha)
                                 ) {
-                                    // 1. The source component displaying the unblurred image
+                                    // 1. Pre-blurred CPU StackBlur + LRU cache (zero per-frame GPU overhead)
+                                    BlurredBackdropImage(
+                                        model = thumbnailUrl,
+                                        screenBlurRadiusDp = 65f,
+                                        decodeSize = 64,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .graphicsLayer {
+                                                scaleX = 1.25f
+                                                scaleY = 1.25f
+                                            }
+                                    )
+                                    if (false)
                                     AsyncImage(
                                         model = ImageRequest.Builder(context)
                                             .data(thumbnailUrl)
@@ -920,19 +935,31 @@ fun BottomSheetPlayer(
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .hazeSource(state = playerHazeState) // Mark as blur source
+                                            .graphicsLayer {
+                                                scaleX = 1.25f
+                                                scaleY = 1.25f
+                                            }
+                                            .blur(65.dp)
                                     )
 
                                     // 2. The overlay component rendering the Haze blur effect
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .hazeEffect(
-                                                state = playerHazeState,
-                                                style = HazeStyle(
-                                                    blurRadius = 80.dp,
-                                                    tint = HazeTint(Color.Black.copy(alpha = 0.30f)),
-                                                    noiseFactor = 0.15f
+                                            .background(
+                                                Brush.verticalGradient(
+                                                    listOf(
+                                                        Color.Black.copy(alpha = 0.25f),
+                                                        Color.Black.copy(alpha = 0.55f)
+                                                    )
+                                                )
+                                            )
+                                            .then(if (true) Modifier else (
+// state = playerHazeState,
+// style = HazeStyle(
+// blurRadius = 80.dp,
+// tint = HazeTint
+                                                    Modifier
                                                 )
                                             )
                                     )
@@ -1142,7 +1169,14 @@ fun BottomSheetPlayer(
                                         .fillMaxSize()
                                         .alpha(backgroundAlpha)
                                 ) {
-                                    // Layer 1: Full-Screen Blurred Background
+                                    // Layer 1: Full-Screen Blurred Background (Pre-blurred CPU StackBlur + LRU Cache)
+                                     BlurredBackdropImage(
+                                         model = thumbnailUrl,
+                                         screenBlurRadiusDp = 150f,
+                                         decodeSize = 48,
+                                         modifier = Modifier.fillMaxSize()
+                                     )
+                                     if (false)
                                     AsyncImage(
                                         model = ImageRequest.Builder(context)
                                             .data(thumbnailUrl)
@@ -1620,17 +1654,17 @@ fun BottomSheetPlayer(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 if (useNewPlayerDesign) {
-                    val shareShape = RoundedCornerShape(
+                    val shareShape = CircleShape; val oldShareShape = RoundedCornerShape(
                         topStart = 50.dp, bottomStart = 50.dp,
                         topEnd = 3.dp, bottomEnd = 3.dp
                     )
 
-                    val favShape = RoundedCornerShape(
+                    val favShape = CircleShape; val oldFavShape = RoundedCornerShape(
                         topStart = 3.dp, bottomStart = 3.dp,
                         topEnd = 50.dp, bottomEnd = 50.dp
                     )
 
-                    val middleShape = RoundedCornerShape(3.dp)
+                    val middleShape = CircleShape
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -2072,7 +2106,7 @@ fun BottomSheetPlayer(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                if (!useNewPlayerDesign && (showAudioQualityBadge || sleepTimerEnabled)) {
+                if (showAudioQualityBadge || sleepTimerEnabled) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -2112,8 +2146,8 @@ fun BottomSheetPlayer(
                                         modifier = Modifier.size(12.dp)
                                     )
                                     Text(
-                                        text = makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0)),
-                                        style = MaterialTheme.typography.labelSmall.copy(
+                                        text = makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0)), /*
+                                        */ style = MaterialTheme.typography.labelSmall.copy(
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
                                             letterSpacing = 1.5.sp
@@ -2163,12 +2197,12 @@ fun BottomSheetPlayer(
                                             }
                                     )
                                     Text(
-                                        text = when (audioQuality) {
+                                        text = playingAudioFormatLabel, /*
                                             AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
                                             AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
                                             AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
                                         }.uppercase(),
-                                        style = MaterialTheme.typography.labelSmall.copy(
+                                        */ style = MaterialTheme.typography.labelSmall.copy(
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
                                             letterSpacing = 1.5.sp
@@ -2660,7 +2694,7 @@ fun BottomSheetPlayer(
                                 InlineLyricsView(
                                     mediaMetadata = effectiveMediaMetadata,
                                     showLyrics = showLyrics,
-                                    positionProvider = { effectivePosition }
+                                    positionProvider = sliderPositionProvider
                                 )
                             } else {
                                 Thumbnail(
@@ -2722,7 +2756,7 @@ fun BottomSheetPlayer(
                                 InlineLyricsView(
                                     mediaMetadata = effectiveMediaMetadata,
                                     showLyrics = showLyrics,
-                                    positionProvider = { effectivePosition }
+                                    positionProvider = sliderPositionProvider
                                 )
                             } else {
                                 Thumbnail(
@@ -2784,7 +2818,7 @@ fun BottomSheetPlayer(
 fun InlineLyricsView(
     mediaMetadata: MediaMetadata?,
     showLyrics: Boolean,
-    positionProvider: () -> Long
+    positionProvider: () -> Long?
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val currentLyrics by playerConnection.currentLyrics.collectAsState(initial = null)
@@ -3050,6 +3084,194 @@ private fun BackgroundVideoView(
             }
         },
         modifier = modifier.alpha(alpha)
+    )
+}
+
+@Composable
+fun rememberPlayingAudioFormatLabel(
+    playerConnection: com.nocturne.music.playback.PlayerConnection,
+): String {
+    val context = LocalContext.current
+    val currentFormat by playerConnection.currentFormat.collectAsState(initial = null)
+    val currentSong by playerConnection.currentSong.collectAsState(initial = null)
+    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsState()
+
+    var exoAudioFormat by remember { mutableStateOf<androidx.media3.common.Format?>(null) }
+    var currentUriString by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(playerConnection) {
+        val updateFromPlayer = {
+            runCatching {
+                exoAudioFormat = playerConnection.player.audioFormat
+                currentUriString = playerConnection.player.currentMediaItem?.localConfiguration?.uri?.toString()
+            }
+        }
+        updateFromPlayer()
+        val listener = object : Player.Listener {
+            override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                updateFromPlayer()
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                updateFromPlayer()
+            }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                updateFromPlayer()
+            }
+        }
+        runCatching { playerConnection.player.addListener(listener) }
+        onDispose {
+            runCatching { playerConnection.player.removeListener(listener) }
+        }
+    }
+
+    LaunchedEffect(mediaMetadata?.id, playbackState, currentFormat) {
+        runCatching {
+            exoAudioFormat = playerConnection.player.audioFormat
+            currentUriString = playerConnection.player.currentMediaItem?.localConfiguration?.uri?.toString()
+        }
+    }
+
+    data class LocalAudioProbe(
+        val mime: String,
+        val sampleRate: Int,
+        val bitDepth: Int,
+        val bitrate: Int,
+    )
+
+    val localProbe by produceState<LocalAudioProbe?>(
+        initialValue = null,
+        key1 = mediaMetadata?.id,
+        key2 = currentUriString,
+        key3 = currentSong?.song?.isLocal,
+    ) {
+        value = null
+        val uriStr = currentUriString ?: mediaMetadata?.id ?: return@produceState
+        val isLocalCandidate = currentSong?.song?.isLocal == true ||
+            uriStr.startsWith("content://") ||
+            uriStr.startsWith("file://") ||
+            uriStr.startsWith("/") ||
+            uriStr.endsWith(".flac", ignoreCase = true) ||
+            uriStr.endsWith(".wav", ignoreCase = true) ||
+            uriStr.endsWith(".alac", ignoreCase = true) ||
+            uriStr.endsWith(".m4a", ignoreCase = true)
+        if (!isLocalCandidate) return@produceState
+
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val extractor = android.media.MediaExtractor()
+                try {
+                    val uri = uriStr.toUri()
+                    if (uri.scheme == "content" || uri.scheme == "file") {
+                        extractor.setDataSource(context, uri, null)
+                    } else {
+                        extractor.setDataSource(uriStr)
+                    }
+                    var probe: LocalAudioProbe? = null
+                    for (i in 0 until extractor.trackCount) {
+                        val format = extractor.getTrackFormat(i)
+                        val mime = format.getString(android.media.MediaFormat.KEY_MIME).orEmpty()
+                        if (mime.startsWith("audio/")) {
+                            val sr = runCatching { format.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE) }.getOrDefault(0)
+                            val br = runCatching { format.getInteger(android.media.MediaFormat.KEY_BIT_RATE) }.getOrDefault(0)
+                            val bits = runCatching {
+                                if (format.containsKey("bits-per-sample")) format.getInteger("bits-per-sample") else 0
+                            }.getOrDefault(0).let { b ->
+                                if (b > 0) b else runCatching {
+                                    when (format.getInteger(android.media.MediaFormat.KEY_PCM_ENCODING)) {
+                                        android.media.AudioFormat.ENCODING_PCM_24BIT_PACKED -> 24
+                                        android.media.AudioFormat.ENCODING_PCM_32BIT,
+                                        android.media.AudioFormat.ENCODING_PCM_FLOAT -> 32
+                                        android.media.AudioFormat.ENCODING_PCM_16BIT -> 16
+                                        else -> 0
+                                    }
+                                }.getOrDefault(0)
+                            }
+                            probe = LocalAudioProbe(mime = mime, sampleRate = sr, bitDepth = bits, bitrate = br)
+                            break
+                        }
+                    }
+                    probe
+                } finally {
+                    runCatching { extractor.release() }
+                }
+            }.getOrNull()
+        }
+    }
+
+    return remember(currentFormat, exoAudioFormat, localProbe, currentUriString, currentSong?.song?.isLocal) {
+        val rawMime = buildString {
+            append(localProbe?.mime.orEmpty())
+            append(" ")
+            append(currentFormat?.mimeType.orEmpty())
+            append(" ")
+            append(exoAudioFormat?.sampleMimeType.orEmpty())
+            append(" ")
+            append(exoAudioFormat?.containerMimeType.orEmpty())
+            append(" ")
+            append(currentUriString.orEmpty())
+        }.lowercase(Locale.ROOT)
+
+        val rawCodecs = buildString {
+            append(currentFormat?.codecs.orEmpty())
+            append(" ")
+            append(exoAudioFormat?.codecs.orEmpty())
+        }.lowercase(Locale.ROOT)
+
+        val combined = "$rawMime $rawCodecs"
+
+        val sampleRate = localProbe?.sampleRate?.takeIf { it > 0 }
+            ?: exoAudioFormat?.sampleRate?.takeIf { it > 0 }
+            ?: currentFormat?.sampleRate?.takeIf { it > 0 }
+            ?: 0
+
+        val exoBitDepth = when (exoAudioFormat?.pcmEncoding) {
+            C.ENCODING_PCM_24BIT, C.ENCODING_PCM_24BIT_BIG_ENDIAN -> 24
+            C.ENCODING_PCM_32BIT, C.ENCODING_PCM_32BIT_BIG_ENDIAN, C.ENCODING_PCM_FLOAT -> 32
+            C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> 16
+            else -> 0
+        }
+        val bitDepth = localProbe?.bitDepth?.takeIf { it > 0 } ?: exoBitDepth
+
+        val bitrate = localProbe?.bitrate?.takeIf { it > 0 }
+            ?: exoAudioFormat?.bitrate?.takeIf { it > 0 }
+            ?: currentFormat?.bitrate?.takeIf { it > 0 }
+            ?: 0
+
+        val isFlacOrLossless = combined.contains("flac") ||
+            combined.contains("alac") ||
+            combined.contains("wav") ||
+            combined.contains("audio/raw") ||
+            combined.contains("pcm")
+
+        when {
+            isFlacOrLossless -> {
+                val isHiRes = (bitDepth >= 24 && sampleRate >= 96_000) ||
+                    sampleRate >= 96_000 ||
+                    (bitDepth >= 24 && bitrate >= 1_800_000) ||
+                    bitrate >= 1_800_000
+                if (isHiRes) {
+                    "Hi-Res Lossless"
+                } else {
+                    "Lossless"
+                }
+            }
+            combined.contains("opus") || combined.contains("webm") -> "OPUS"
+            combined.contains("mp4a") || combined.contains("aac") || combined.contains("mp4") || combined.contains("m4a") -> "AAC"
+            combined.contains("mp3") || combined.contains("mpeg") -> "MP3"
+            combined.contains("vorbis") || combined.contains("ogg") -> "OGG"
+            else -> {
+                val fallback = currentFormat?.codecs?.takeIf { it.isNotBlank() }
+                    ?: exoAudioFormat?.sampleMimeType?.substringAfter("/")?.takeIf { it.isNotBlank() }
+                    ?: currentFormat?.mimeType?.substringAfter("/")?.substringBefore(";")?.takeIf { it.isNotBlank() }
+                fallback?.uppercase(Locale.ROOT) ?: "OPUS"
+            }
+        }
+    }
+}
+
+private fun BackgroundVideoViewTail() {
+    (1
     )
 }
 
