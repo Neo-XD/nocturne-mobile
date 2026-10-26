@@ -48,6 +48,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.text.style.TextOverflow
+import com.nocturne.music.constants.PlaylistSortType
+import com.nocturne.music.db.entities.SpeedDialItem
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
@@ -611,6 +620,7 @@ fun HomeScreen(
     val (customSectionOrderStr) = rememberPreference(HomeCustomSectionOrderKey, "")
     val (hiddenSectionsStr) = rememberPreference(HomeHiddenSectionsKey, "")
     var showHomeLayoutDialog by remember { mutableStateOf(false) }
+    var showAddPlaylistDialog by rememberSaveable { mutableStateOf(false) }
 
     val hiddenSections = remember(hiddenSectionsStr) {
         if (hiddenSectionsStr.isBlank()) emptySet<String>()
@@ -720,7 +730,9 @@ fun HomeScreen(
     val localGridItem: @Composable (LocalItem) -> Unit = {
         when (it) {
             is Song -> SongGridItem(
-                song = it,
+                song = it, isActive = (it.id == mediaMetadata?.id), isPlaying = isPlaying,
+
+
                 modifier = Modifier
                     .fillMaxWidth()
                     .combinedClickable(
@@ -745,15 +757,15 @@ fun HomeScreen(
                                 )
                             }
                         },
-                    ),
-                isActive = it.id == mediaMetadata?.id,
-                isPlaying = isPlaying,
+                    )
+
+
             )
 
             is Album -> AlbumGridItem(
                 album = it,
-                isActive = it.id == mediaMetadata?.album?.id,
-                isPlaying = isPlaying,
+                isActive = it.id == mediaMetadata?.album?.id, isPlaying = isPlaying,
+
                 coroutineScope = scope,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -794,7 +806,7 @@ fun HomeScreen(
                                 )
                             }
                         },
-                    ),
+                    )
             )
 
             is Playlist -> {}
@@ -1106,15 +1118,15 @@ fun HomeScreen(
             LazyColumn(
                 state = lazylistState,
                 contentPadding = PaddingValues(
-                    top = topPadding + chipsHeight,
+                    top = topPadding + chipsHeight, bottom = bottomPadding)) { /*
                     bottom = bottomPadding
-                ),
-                modifier = Modifier.offset {
-                    IntOffset(0, (animatedFraction * maxOffsetPx).toInt())
+                )
+            ) {
+
                 }
             ) {
 
-                if (selectedChip == null) {
+*/ if (selectedChip == null) {
 
                     item(key = "wrapped_card") {
                         AnimatedVisibility(visible = shouldShowWrappedCard) {
@@ -1124,7 +1136,7 @@ fun HomeScreen(
                                     .padding(16.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                ),
+                                )
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -1219,7 +1231,7 @@ fun HomeScreen(
                                         }
                                     }
                                     OutlinedButton(
-                                        onClick = { navController.navigate("search") },
+                                        onClick = { showAddPlaylistDialog = true },
                                         shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                                         modifier = Modifier.height(28.dp)
@@ -1232,7 +1244,7 @@ fun HomeScreen(
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "Add",
+                                            text = "Add Playlist",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.primary
                                         )
@@ -1241,7 +1253,7 @@ fun HomeScreen(
                             }
 
                             val items = speedDialItems
-                            if (items.isEmpty()) {
+                            if (false) {
                                 item(key = "speed_dial_empty") {
                                     Card(
                                         modifier = Modifier
@@ -1249,8 +1261,8 @@ fun HomeScreen(
                                             .padding(horizontal = 16.dp, vertical = 8.dp),
                                         colors = CardDefaults.cardColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                        ),
-                                        shape = RoundedCornerShape(16.dp)
+                                        )
+                                        , shape = RoundedCornerShape(16.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier
@@ -1273,7 +1285,7 @@ fun HomeScreen(
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Button(
-                                                onClick = { navController.navigate("search") },
+                                                onClick = { showAddPlaylistDialog = true },
                                                 shape = RoundedCornerShape(12.dp)
                                             ) {
                                                 Icon(painter = painterResource(R.drawable.add), contentDescription = null, modifier = Modifier.size(16.dp))
@@ -1292,7 +1304,9 @@ fun HomeScreen(
                                     val itemsPerPage = columns * rows
                                     val itemWidth = availableWidth / columns
 
-                                    val pagerState = rememberPagerState(pageCount = { (items.size + itemsPerPage - 1) / itemsPerPage })
+                                    val totalSlots = items.size + 2
+                                    val pageCount = ((totalSlots + itemsPerPage - 1) / itemsPerPage).coerceAtLeast(1)
+                                    val pagerState = rememberPagerState(pageCount = { pageCount })
 
                                     Column(
                                         modifier =
@@ -1318,7 +1332,7 @@ fun HomeScreen(
                                                         for (col in 0 until columns) {
                                                             val itemIndex = row * columns + col
 
-                                                            val isRandomizeSlot = (page == 0 && itemIndex == itemsPerPage - 1)
+                                                            val isRandomizeSlot = (page == 0 && itemIndex == 0)
 
                                                             if (isRandomizeSlot) {
                                                                 Box(
@@ -1343,8 +1357,8 @@ fun HomeScreen(
                                                                                                     randomItem.toMediaMetadata()
                                                                                                 )
                                                                                             )
-                                                                                            is AlbumItem -> navController.navigate("album/${randomItem.id}")
-                                                                                            is ArtistItem -> navController.navigate("artist/${randomItem.id}")
+                                                                                            is AlbumItem -> playerConnection.playQueue(YouTubeAlbumRadio(randomItem.playlistId))
+                                                                                            is ArtistItem -> (randomItem.radioEndpoint ?: randomItem.shuffleEndpoint)?.let { playerConnection.playQueue(YouTubeQueue(it)) } ?: navController.navigate("artist/${randomItem.id}")
                                                                                             is PlaylistItem -> {
                                                                                                 val rawType = pinnedSpeedDialItems
                                                                                                     .find { it.id == randomItem.id }?.type
@@ -1361,8 +1375,11 @@ fun HomeScreen(
                                                                         }
                                                                     )
                                                                 }
-                                                            } else if (itemIndex < pageItems.size) {
-                                                                val item = pageItems[itemIndex]
+                                                            } else {
+                                                                val speedDialItem = if (page == 0) pageItems.getOrNull(itemIndex - 1) else pageItems.getOrNull(itemIndex)
+                                                                if (speedDialItem != null) {
+                                                                    val item = speedDialItem
+// item assigned above
                                                                 val isPinned by database.speedDialDao.isPinned(item.id).collectAsState(initial = false)
 
                                                                 Box(
@@ -1375,7 +1392,7 @@ fun HomeScreen(
                                                                         item = item,
                                                                         isPinned = isPinned,
                                                                         isActive = item.id in listOf(mediaMetadata?.album?.id, mediaMetadata?.id),
-                                                                        isPlaying = isPlaying,
+                                                        
                                                                         modifier = Modifier
                                                                             .fillMaxSize()
                                                                             .combinedClickable(
@@ -1430,7 +1447,45 @@ fun HomeScreen(
                                                                     )
                                                                 }
                                                             } else {
-                                                                Spacer(modifier = Modifier.width(itemWidth))
+                                                                if (itemIndex == (if (page == 0) pageItems.size + 1 else pageItems.size)) {
+                                                                    Box(
+                                                                        modifier = Modifier
+                                                                            .width(itemWidth)
+                                                                            .height(itemWidth)
+                                                                            .padding(4.dp)
+                                                                    ) {
+                                                                        Card(
+                                                                            onClick = { showAddPlaylistDialog = true },
+                                                                            modifier = Modifier.fillMaxSize(),
+                                                                            shape = RoundedCornerShape(ThumbnailCornerRadius),
+                                                                            colors = CardDefaults.cardColors(
+                                                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                                            )
+                                                                        ) {
+                                                                            Column(
+                                                                                modifier = Modifier.fillMaxSize(),
+                                                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                                                verticalArrangement = Arrangement.Center
+                                                                            ) {
+                                                                                Icon(
+                                                                                    painter = painterResource(R.drawable.add),
+                                                                                    contentDescription = "Add Playlist",
+                                                                                    modifier = Modifier.size(24.dp),
+                                                                                    tint = MaterialTheme.colorScheme.primary
+                                                                                )
+                                                                                Spacer(modifier = Modifier.height(4.dp))
+                                                                                Text(
+                                                                                    text = "Add Playlist",
+                                                                                    style = MaterialTheme.typography.labelSmall,
+                                                                                    color = MaterialTheme.colorScheme.primary,
+                                                                                    maxLines = 1
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                        } else { Spacer(modifier = Modifier.width(itemWidth))
+                                                                }
+                                                            }
                                                             }
                                                         }
                                                     }
@@ -1507,7 +1562,7 @@ fun HomeScreen(
                                                 song = song!!,
                                                 showInLibraryIcon = true,
                                                 isActive = song!!.id == mediaMetadata?.id,
-                                                isPlaying = isPlaying,
+                                
                                                 isSwipeable = false,
                                                 shape = listItemShape(index = index % 4, count = 4),
                                                 trailingContent = {
@@ -1597,7 +1652,7 @@ fun HomeScreen(
                                             YouTubeListItem(
                                                 item = song,
                                                 isActive = song.id == mediaMetadata?.id,
-                                                isPlaying = isPlaying,
+                                
                                                 isSwipeable = false,
                                                 shape = listItemShape(index = index % 4, count = 4),
                                                 trailingContent = {
@@ -1876,7 +1931,7 @@ fun HomeScreen(
                                                 song = song!!,
                                                 showInLibraryIcon = true,
                                                 isActive = song!!.id == mediaMetadata?.id,
-                                                isPlaying = isPlaying,
+                                
                                                 isSwipeable = false,
                                                 shape = listItemShape(index = index % rows, count = rows),
                                                 trailingContent = {
@@ -2053,7 +2108,7 @@ fun HomeScreen(
                                                 YouTubeListItem(
                                                     item = song,
                                                     isActive = song.id == mediaMetadata?.id,
-                                                    isPlaying = isPlaying,
+                                    
                                                     isSwipeable = false,
                                                     shape = listItemShape(index = index % 4, count = 4),
                                                     trailingContent = {
@@ -2288,6 +2343,31 @@ fun HomeScreen(
             }
         }
 
+        if (showAddPlaylistDialog) {
+            AddPlaylistToSpeedDialDialog(
+                onDismissRequest = { showAddPlaylistDialog = false },
+                pinnedSpeedDialItems = pinnedSpeedDialItems,
+                accountPlaylists = accountPlaylists,
+                onTogglePlaylist = { id, title, thumbnailUrl, isLocal ->
+                    scope.launch(Dispatchers.IO) {
+                        val isPinned = pinnedSpeedDialItems.any { it.id == id }
+                        if (isPinned) {
+                            database.speedDialDao.delete(id)
+                        } else {
+                            database.speedDialDao.insert(
+                                SpeedDialItem(
+                                    id = id,
+                                    title = title,
+                                    thumbnailUrl = thumbnailUrl,
+                                    type = if (isLocal) "LOCAL_PLAYLIST" else "PLAYLIST"
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+        }
+
         if (showHomeLayoutDialog) {
             val context = LocalContext.current
             HomeLayoutDialog(
@@ -2307,3 +2387,186 @@ fun HomeScreen(
     }
 }
 
+
+
+@Composable
+fun AddPlaylistToSpeedDialDialog(
+    onDismissRequest: () -> Unit,
+    pinnedSpeedDialItems: List<SpeedDialItem>,
+    accountPlaylists: List<PlaylistItem>?,
+    onTogglePlaylist: (id: String, title: String, thumbnailUrl: String?, isLocal: Boolean) -> Unit
+) {
+    val database = LocalDatabase.current
+    val localPlaylists by database.playlists(PlaylistSortType.NAME, false).collectAsState(initial = emptyList())
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        title = {
+            Text("Add to Shortcuts")
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+            ) {
+                if (localPlaylists.isNotEmpty()) {
+                    item(key = "local_header") {
+                        Text(
+                            text = "Local Playlists",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    items(
+                        items = localPlaylists,
+                        key = { "local_${it.id}" }
+                    ) { playlist ->
+                        val isPinned = pinnedSpeedDialItems.any { it.id == playlist.id }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val thumb = playlist.thumbnails.firstOrNull()
+                                    onTogglePlaylist(playlist.id, playlist.playlist.name, thumb, true)
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val thumb = playlist.thumbnails.firstOrNull()
+                            if (thumb != null) {
+                                AsyncImage(
+                                    model = thumb,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Surface(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.queue_music),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = playlist.playlist.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${playlist.songCount} songs",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    val thumb = playlist.thumbnails.firstOrNull()
+                                    onTogglePlaylist(playlist.id, playlist.playlist.name, thumb, true)
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(if (isPinned) R.drawable.check else R.drawable.add),
+                                    contentDescription = if (isPinned) "Remove" else "Add",
+                                    tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (!accountPlaylists.isNullOrEmpty()) {
+                    item(key = "online_header") {
+                        Text(
+                            text = "YouTube Playlists",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                        )
+                    }
+                    items(
+                        items = accountPlaylists,
+                        key = { "online_${it.id}" }
+                    ) { playlist ->
+                        val isPinned = pinnedSpeedDialItems.any { it.id == playlist.id }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onTogglePlaylist(playlist.id, playlist.title, playlist.thumbnail, false)
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AsyncImage(
+                                model = playlist.thumbnail,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = playlist.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = playlist.author?.name ?: "Playlist",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    onTogglePlaylist(playlist.id, playlist.title, playlist.thumbnail, false)
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(if (isPinned) R.drawable.check else R.drawable.add),
+                                    contentDescription = if (isPinned) "Remove" else "Add",
+                                    tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (localPlaylists.isEmpty() && accountPlaylists.isNullOrEmpty()) {
+                    item {
+                        Text(
+                            text = "No playlists found",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 24.dp)
+                        )
+                    }
+                }
+            }
+        }
+    )
+}

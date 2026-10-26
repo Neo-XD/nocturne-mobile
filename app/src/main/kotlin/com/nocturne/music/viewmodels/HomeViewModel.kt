@@ -293,7 +293,7 @@ class HomeViewModel @Inject constructor(
         val likedSongs = database.likedSongsByCreateDateAsc().first()
         if (likedSongs.isEmpty()) return
 
-        val seeds = likedSongs.shuffled().distinctBy { it.id }.take(5)
+        val seeds = likedSongs.shuffled().distinctBy { it.id }.take(2)
 
         // Use a synchronized list to collect results safely from concurrent coroutines
         val items = java.util.Collections.synchronizedList(mutableListOf<DailyDiscoverItem>())
@@ -343,7 +343,7 @@ class HomeViewModel @Inject constructor(
                 val relatedSongs = database.quickPicks().first().filterVideoSongs(hideVideoSongs)
                 val forgotten = database.forgottenFavorites().first().filterVideoSongs(hideVideoSongs).take(8)
 
-                // Get similar songs from YouTube based on recent listening
+                /* Get similar songs from YouTube based on recent listening
                 val recentSong = database.events().first().firstOrNull()?.song
                 val ytSimilarSongs = mutableListOf<Song>()
 
@@ -364,7 +364,7 @@ class HomeViewModel @Inject constructor(
                 }
 
                 // Combine all sources and remove duplicates
-                val combined = (relatedSongs + forgotten + ytSimilarSongs)
+                */ val combined = (relatedSongs + forgotten)
                     .distinctBy { it.id }
                     .shuffled()
                     .take(20)
@@ -384,7 +384,7 @@ class HomeViewModel @Inject constructor(
         val fromTimeStamp = System.currentTimeMillis() - 86400000L * 7 * 4
         val artistSeeds = database.mostPlayedArtists(fromTimeStamp, limit = 10).first()
             .filter { it.artist.isYouTubeArtist }
-            .shuffled().take(3)
+            .shuffled().take(2)
         val songSeeds = database.mostPlayedSongs(fromTimeStamp, limit = 5).first()
             .shuffled().take(2)
 
@@ -492,7 +492,7 @@ class HomeViewModel @Inject constructor(
         coroutineScope {
             val artistDeferreds = database.mostPlayedArtists(fromTimeStamp, limit = 15).first()
                 .filter { it.artist.isYouTubeArtist }
-                .shuffled().take(4)
+                .shuffled().take(2)
                 .map { artist ->
                     async(Dispatchers.IO) {
                         val items = mutableListOf<YTItem>()
@@ -514,7 +514,7 @@ class HomeViewModel @Inject constructor(
 
             val songDeferreds = database.mostPlayedSongs(fromTimeStamp, limit = 15).first()
                 .filter { it.album != null }
-                .shuffled().take(3)
+                .shuffled().take(2)
                 .map { song ->
                     async(Dispatchers.IO) {
                         val endpoint = YouTube.next(WatchEndpoint(videoId = song.id)).getOrNull()?.relatedEndpoint
