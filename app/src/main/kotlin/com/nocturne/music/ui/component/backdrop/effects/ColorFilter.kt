@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
  *
@@ -19,6 +19,15 @@ import com.nocturne.music.ui.component.backdrop.isRenderEffectSupported
 
 fun BackdropEffectScope.colorFilter(colorFilter: ColorFilter) {
     if (!isRenderEffectSupported()) return
+
+    // First in the chain (the usual case: vibrancy before blur/lens) rides on the
+    // layer's composite instead of costing a render pass of its own — see
+    // [BackdropEffectScope.compositeColorFilter]. Anything after an effect still
+    // chains, so ordering against a non-linear effect is preserved.
+    if (renderEffect == null && compositeColorFilter == null) {
+        compositeColorFilter = colorFilter
+        return
+    }
 
     renderEffect = ColorFilterEffect(renderEffect, colorFilter)
 }

@@ -1,6 +1,11 @@
 /*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
+ *
+ * Vendored so the library ships as source with this app (binary AARs compiled
+ * against older Compose broke at runtime) and to add a backdrop resolution
+ * scale for cheaper effect rendering. KMP expect/actual declarations were
+ * merged into this single Android source set. Package renamed accordingly.
  */
 package com.nocturne.music.ui.component.backdrop.backdrops
 
@@ -15,6 +20,10 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.platform.InspectorInfo
 import com.nocturne.music.ui.component.backdrop.internal.recordLayer
 
+/**
+ * @param frozen no longer read by the source (see [LayerBackdropNode.draw]); kept so
+ *   callers need not change. Samplers still take their own `frozen`.
+ */
 fun Modifier.layerBackdrop(
     backdrop: LayerBackdrop,
     frozen: () -> Boolean = { false }
@@ -64,24 +73,22 @@ private class LayerBackdropNode(
 ) : DrawModifierNode, GlobalPositionAwareModifierNode, Modifier.Node() {
 
     override fun ContentDrawScope.draw() {
+        // Cleared every generation, before children (backdropStaticRegion among
+        // them) redraw and repopulate it below — see LayerBackdrop.staticRegions.
         backdrop.staticRegions.clear()
 
-        // Record the subtree ONCE into the hardware GraphicsLayer and composite
-        // that layer directly to the screen. Sampling glass surfaces replay this
-        // RenderNode at 0.33f scale on the GPU for live, zero-lag blur & refraction.
+        // Record once and composite to the screen; glass samplers reuse this layer.
         recordLayer(this@LayerBackdropNode, backdrop.graphicsLayer) { backdrop.onDraw(this@draw) }
         drawLayer(backdrop.graphicsLayer)
+        // Notify sampling glass surfaces that the source pixels changed, so they
+        // re-record their own layers. When the source is static they skip it.
         backdrop.contentRecorded()
     }
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
-        val wasAttached = backdrop.layerCoordinates != null
         if (coordinates.isAttached) {
+            if (backdrop.layerCoordinates !== coordinates) backdrop.geometryChanged()
             backdrop.layerCoordinates = coordinates
-            if (!wasAttached) {
-                backdrop.contentRecorded()
-                invalidateDraw()
-            }
         }
     }
 

@@ -196,6 +196,16 @@ import com.nocturne.music.constants.FloatingTopBarKey
 import com.nocturne.music.sync.RemoteConnectionState
 import com.nocturne.music.ui.component.GlassStyle
 import com.nocturne.music.ui.component.isGlassAllowed
+import com.nocturne.music.ui.component.LocalPooledGlass
+import com.nocturne.music.ui.component.LocalAppBackdropFrozen
+import com.nocturne.music.ui.component.PooledGlass
+import com.nocturne.music.ui.component.glassSaturation
+import com.nocturne.music.ui.component.backdrop.GlassPoolScale
+import com.nocturne.music.ui.component.backdrop.glassPool
+import com.nocturne.music.ui.component.backdrop.rememberGlassPool
+import com.nocturne.music.ui.component.backdrop.BackdropEffectScope
+import com.nocturne.music.ui.component.backdrop.effects.blur
+import com.nocturne.music.ui.component.backdrop.effects.colorControls
 import com.nocturne.music.ui.component.liquidGlass
 import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
 import com.nocturne.music.constants.StopMusicOnTaskClearKey
@@ -1065,6 +1075,69 @@ class MainActivity : ComponentActivity() {
                 }
                 val glassConfig = rememberGlassEffectConfig()
 
+                val glassPoolBackdrop = rememberGlassPool()
+                val poolSaturation = glassSaturation(glassConfig.vibrancy)
+                val poolBlurPx = with(LocalDensity.current) {
+                    glassConfig.blurRadius.dp.toPx()
+                } * GlassPoolScale
+                val poolEffects: BackdropEffectScope.() -> Unit =
+                    remember(poolSaturation, poolBlurPx) {
+                        {
+                            if (poolSaturation != 1f) colorControls(saturation = poolSaturation)
+                            if (poolBlurPx > 0f) blur(poolBlurPx)
+                        }
+                    }
+                val glassAllowed = isGlassAllowed()
+                val pooledGlass = remember(
+                    glassPoolBackdrop,
+                    glassConfig.blurRadius,
+                    glassConfig.vibrancy,
+                    enableFrostedGlass,
+                    glassConfig.anyComponentEnabled,
+                    glassAllowed,
+                ) {
+                    if (enableFrostedGlass && glassAllowed && glassConfig.anyComponentEnabled) {
+                        PooledGlass(
+                            backdrop = glassPoolBackdrop,
+                            blurRadiusDp = glassConfig.blurRadius,
+                            vibrancy = glassConfig.vibrancy,
+                        )
+                    } else {
+                        null
+                    }
+                }
+
+                val onNavItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
+                    { screen: Screens, isSelected: Boolean ->
+                        if (playerBottomSheetState.isExpanded) {
+                            playerBottomSheetState.collapseSoft()
+                        }
+                        if (isSelected) {
+                            navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
+                            coroutineScope.launch {
+                                topAppBarScrollBehavior.state.resetHeightOffset()
+                            }
+                        } else {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                }
+
+                val onSearchLongClick: () -> Unit = remember(navController) {
+                    {
+                        navController.navigate("recognition") {
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
+                val navBarTotalHeight = bottomInset + NavigationBarHeight
+
                 val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                 androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
                     val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -1095,8 +1168,11 @@ class MainActivity : ComponentActivity() {
                     LocalHazeState provides appHazeState,
                     LocalAppBackdrop provides appBackdrop,
                     LocalGlassEffectConfig provides glassConfig,
+                    LocalPooledGlass provides pooledGlass,
+                    LocalAppBackdropFrozen provides backdropFrozenProvider,
                 ) {
                     Scaffold(
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
                         containerColor = if (false) {
                             if (pureBlack) Color.Black.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
                         } else {
@@ -1383,187 +1459,20 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
-                        bottomBar = {
-                            val onNavItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
-                                { screen: Screens, isSelected: Boolean ->
-                                    if (playerBottomSheetState.isExpanded) {
-                                        playerBottomSheetState.collapseSoft()
-                                    }
-
-                                    if (isSelected) {
-                                        navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
-                                        coroutineScope.launch {
-                                            topAppBarScrollBehavior.state.resetHeightOffset()
-                                        }
-                                    } else {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            // No restoreState: a tab tap opens that tab's root, not wherever the user last was inside it. saveState stays so the stacks survive if that is ever wanted back.
-                                        }
-                                    }
-                                }
-                            }
-
-                            val onSearchLongClick: () -> Unit = remember(navController) {
-                                {
-                                    navController.navigate("recognition") {
-                                        launchSingleTop = true
-                                    }
-                                }
-                            }
-
-                            // Pre-calculate values for graphicsLayer to avoid reading state during composition
-                            val navBarTotalHeight = bottomInset + NavigationBarHeight
-
-                            if (!showRail && currentRoute != "wrapped" && currentRoute != "update" && currentRoute != "listen_together/chat") {
-                                Box {
-                                    BottomSheetPlayer(
-                                        state = playerBottomSheetState,
-                                        navController = navController,
-                                        pureBlack = pureBlack
-                                    )
-
-                                    val snackbarBottomPadding = remember(bottomInset, shouldShowNavigationBar, slimNav) {
-                                        var bottom = bottomInset
-                                        if (shouldShowNavigationBar) {
-                                            bottom += if (slimNav) SlimNavBarHeight else NavigationBarHeight
-                                        }
-                                        bottom
-                                    }
-
-                                    SnackbarHost(
-                                        hostState = snackbarHostState,
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .padding(bottom = snackbarBottomPadding)
-                                            .graphicsLayer {
-                                                alpha = (1f - playerBottomSheetState.progress).coerceIn(0f, 1f)
-                                            }
-                                    ) { data ->
-                                        Snackbar(
-                                            snackbarData = data,
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            actionColor = MaterialTheme.colorScheme.primary,
-                                            actionContentColor = MaterialTheme.colorScheme.primary,
-                                            dismissActionContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-
-                                    AppNavigationBar(
-                                        navigationItems = navigationItems,
-                                        currentRoute = currentRoute,
-                                        onItemClick = onNavItemClick,
-                                        pureBlack = pureBlack,
-                                        slimNav = slimNav,
-                                        onSearchLongClick = onSearchLongClick,
-                                        floatingNav = floatingNav,
-                                        bottomInset = bottomInset,
-                                        enableFrostedGlass = enableFrostedGlass,
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .height(bottomInset + navPadding)
-                                            // Use graphicsLayer instead of offset to avoid recomposition
-                                            // graphicsLayer runs during draw phase, not composition phase
-                                            .graphicsLayer {
-                                                val navBarHeightPx = navigationBarHeight.toPx()
-                                                val totalHeightPx = navBarTotalHeight.toPx()
-
-                                                translationY = if (navBarHeightPx == 0f) {
-                                                    totalHeightPx
-                                                } else {
-                                                    // Read progress only during draw phase
-                                                    val progress = playerBottomSheetState.progress.coerceIn(0f, 1f)
-                                                    val slideOffset = totalHeightPx * progress
-                                                    val hideOffset = totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
-                                                    slideOffset + hideOffset
-                                                }
-                                            }
-                                    )
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .align(Alignment.BottomCenter)
-                                            .height(bottomInsetDp)
-                                            // Use graphicsLayer for background color changes
-                                            .graphicsLayer {
-                                                val progress = playerBottomSheetState.progress
-                                                alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || floatingNav || enableFrostedGlass) 0f else 1f
-                                            }
-                                            .background(baseBg)
-                                    )
-                                }
-                            } else {
-                                if (currentRoute != "wrapped" && currentRoute != "update" && currentRoute != "listen_together/chat") {
-                                    BottomSheetPlayer(
-                                        state = playerBottomSheetState,
-                                        navController = navController,
-                                        pureBlack = pureBlack
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .align(Alignment.BottomCenter)
-                                        .height(bottomInsetDp)
-                                        // Use graphicsLayer for background color changes
-                                        .graphicsLayer {
-                                            val progress = playerBottomSheetState.progress
-                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || enableFrostedGlass) 0f else 1f
-                                        }
-                                        .background(baseBg)
-                                )
-                            }
-                        },
+                        bottomBar = {},
                         modifier = Modifier
                             .fillMaxSize()
                             .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                     ) {
                         Row(Modifier.fillMaxSize()) {
-                            val onRailItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
-                                { screen: Screens, isSelected: Boolean ->
-                                    if (playerBottomSheetState.isExpanded) {
-                                        playerBottomSheetState.collapseSoft()
-                                    }
-
-                                    if (isSelected) {
-                                        navController.currentBackStackEntry?.savedStateHandle?.set("scrollToTop", true)
-                                        coroutineScope.launch {
-                                            topAppBarScrollBehavior.state.resetHeightOffset()
-                                        }
-                                    } else {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            // No restoreState: a tab tap opens that tab's root, not wherever the user last was inside it. saveState stays so the stacks survive if that is ever wanted back.
-                                        }
-                                    }
-                                }
-                            }
-
-                            val onRailSearchLongClick: () -> Unit = remember(navController) {
-                                {
-                                    navController.navigate("recognition") {
-                                        launchSingleTop = true
-                                    }
-                                }
-                            }
-
                             if (showRail && currentRoute != "wrapped" && currentRoute != "update") {
                                 AppNavigationRail(
                                     navigationItems = navigationItems,
                                     currentRoute = currentRoute,
-                                    onItemClick = onRailItemClick,
+                                    onItemClick = onNavItemClick,
                                     pureBlack = pureBlack,
                                     floatingNav = floatingNav,
-                                    onSearchLongClick = onRailSearchLongClick
+                                    onSearchLongClick = onSearchLongClick
                                 )
                             }
                             Box(
@@ -1616,7 +1525,122 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+                        }
+                    // Single-pass Frosted Glass Pool + Floating Chrome Overlay
+                    Box(Modifier.fillMaxSize()) {
+                        if (pooledGlass != null) {
+                            // Draws nothing: it only keeps the shared blur current,
+                            // and must run after the content records and before the chrome samples it.
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .glassPool(
+                                        source = appBackdrop,
+                                        pooled = glassPoolBackdrop,
+                                        effects = poolEffects,
+                                        scale = GlassPoolScale,
+                                    )
+                            )
                         }
+
+                        if (!showRail && currentRoute != "wrapped" && currentRoute != "update" && currentRoute != "listen_together/chat") {
+                            Box(Modifier.fillMaxSize()) {
+                                BottomSheetPlayer(
+                                    state = playerBottomSheetState,
+                                    navController = navController,
+                                    pureBlack = pureBlack
+                                )
+
+                                val snackbarBottomPadding = remember(bottomInset, shouldShowNavigationBar, slimNav) {
+                                    var bottom = bottomInset
+                                    if (shouldShowNavigationBar) {
+                                        bottom += if (slimNav) SlimNavBarHeight else NavigationBarHeight
+                                    }
+                                    bottom
+                                }
+
+                                SnackbarHost(
+                                    hostState = snackbarHostState,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = snackbarBottomPadding)
+                                        .graphicsLayer {
+                                            alpha = (1f - playerBottomSheetState.progress).coerceIn(0f, 1f)
+                                        }
+                                ) { data ->
+                                    Snackbar(
+                                        snackbarData = data,
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        actionColor = MaterialTheme.colorScheme.primary,
+                                        actionContentColor = MaterialTheme.colorScheme.primary,
+                                        dismissActionContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+
+                                AppNavigationBar(
+                                    navigationItems = navigationItems,
+                                    currentRoute = currentRoute,
+                                    onItemClick = onNavItemClick,
+                                    pureBlack = pureBlack,
+                                    slimNav = slimNav,
+                                    onSearchLongClick = onSearchLongClick,
+                                    floatingNav = floatingNav,
+                                    bottomInset = bottomInset,
+                                    enableFrostedGlass = enableFrostedGlass,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .height(bottomInset + navPadding)
+                                        .graphicsLayer {
+                                            val navBarHeightPx = navigationBarHeight.toPx()
+                                            val totalHeightPx = navBarTotalHeight.toPx()
+
+                                            translationY = if (navBarHeightPx == 0f) {
+                                                totalHeightPx
+                                            } else {
+                                                val progress = playerBottomSheetState.progress.coerceIn(0f, 1f)
+                                                val slideOffset = totalHeightPx * progress
+                                                val hideOffset = totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
+                                                slideOffset + hideOffset
+                                            }
+                                        }
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .align(Alignment.BottomCenter)
+                                        .height(bottomInsetDp)
+                                        .graphicsLayer {
+                                            val progress = playerBottomSheetState.progress
+                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || floatingNav || enableFrostedGlass) 0f else 1f
+                                        }
+                                        .background(baseBg)
+                                )
+                            }
+                        } else {
+                            if (currentRoute != "wrapped" && currentRoute != "update" && currentRoute != "listen_together/chat") {
+                                BottomSheetPlayer(
+                                    state = playerBottomSheetState,
+                                    navController = navController,
+                                    pureBlack = pureBlack
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.BottomCenter)
+                                    .height(bottomInsetDp)
+                                    .graphicsLayer {
+                                        val progress = playerBottomSheetState.progress
+                                        alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || enableFrostedGlass) 0f else 1f
+                                    }
+                                    .background(baseBg)
+                            )
+                        }
+                    }
+
                     }
 
                     BottomSheetMenu(

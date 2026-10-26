@@ -10,6 +10,7 @@
 package com.nocturne.music.ui.component.backdrop
 
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -27,7 +28,30 @@ sealed interface BackdropEffectScope : Density, RuntimeShaderCache {
     var padding: Float
 
     var renderEffect: RenderEffect?
+
+    /**
+     * A colour transform to apply when the recorded layer is COMPOSITED, rather than as
+     * another link in [renderEffect]'s chain. Each link is its own render pass, and a
+     * colour matrix is linear: it commutes with the blur's weighted average and with the
+     * lens's warp, so the pixels are the same either way. The layer is already drawn
+     * offscreen for its render effect, so compositing through a colour filter is free.
+     */
+    var compositeColorFilter: ColorFilter?
+
+    /**
+     * Set (via `poolLens`) instead of chaining a lens effect when sampling the shared glass
+     * pool: the pool then refracts this surface's region in its single multi-shape pass, and
+     * this surface needs no offscreen layer or lens pass of its own.
+     */
+    var poolLens: PoolLens?
 }
+
+/** Refraction a pooled glass surface asks the pool for, in this surface's pixels. */
+data class PoolLens(
+    val refractionHeight: Float,
+    val refractionAmount: Float,
+    val depthEffect: Boolean,
+)
 
 internal abstract class BackdropEffectScopeImpl : BackdropEffectScope, RuntimeShaderCache {
 
@@ -37,6 +61,8 @@ internal abstract class BackdropEffectScopeImpl : BackdropEffectScope, RuntimeSh
     override var layoutDirection: LayoutDirection = LayoutDirection.Ltr
     override var padding: Float = 0f
     override var renderEffect: RenderEffect? = null
+    override var compositeColorFilter: ColorFilter? = null
+    override var poolLens: PoolLens? = null
 
     private val runtimeShaderCache = RuntimeShaderCacheImpl()
 
@@ -44,10 +70,11 @@ internal abstract class BackdropEffectScopeImpl : BackdropEffectScope, RuntimeSh
         return runtimeShaderCache.obtainRuntimeShader(key, string)
     }
 
-    // Scale both density and size by contentScale so CornerBasedShape.toPx(size, this)
-    // and RuntimeShader uniforms operate in the exact same downsampled pixel space.
+    // Vendored change: [contentScale] reports the size the effects actually operate
+    // on when the backdrop layer is recorded at a reduced resolution, so shader
+    // geometry (e.g. the lens size uniform) matches the layer's pixel grid.
     fun update(scope: DrawScope, contentScale: Float = 1f): Boolean {
-        val newDensity = scope.density * contentScale
+        val newDensity = scope.density
         val newFontScale = scope.fontScale
         val newSize = if (contentScale != 1f) scope.size * contentScale else scope.size
         val newLayoutDirection = scope.layoutDirection
@@ -70,6 +97,8 @@ internal abstract class BackdropEffectScopeImpl : BackdropEffectScope, RuntimeSh
     fun apply(effects: BackdropEffectScope.() -> Unit) {
         padding = 0f
         renderEffect = null
+        compositeColorFilter = null
+        poolLens = null
         effects()
     }
 
@@ -80,6 +109,8 @@ internal abstract class BackdropEffectScopeImpl : BackdropEffectScope, RuntimeSh
         layoutDirection = LayoutDirection.Ltr
         padding = 0f
         renderEffect = null
+        compositeColorFilter = null
+        poolLens = null
         runtimeShaderCache.clear()
     }
 }

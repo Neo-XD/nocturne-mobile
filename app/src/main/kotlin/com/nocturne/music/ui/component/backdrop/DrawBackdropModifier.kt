@@ -1,9 +1,15 @@
 /*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
+ *
+ * Vendored so the library ships as source with this app (binary AARs compiled
+ * against older Compose broke at runtime) and to add a backdrop resolution
+ * scale for cheaper effect rendering. KMP expect/actual declarations were
+ * merged into this single Android source set. Package renamed accordingly.
  */
 package com.nocturne.music.ui.component.backdrop
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +36,7 @@ import androidx.compose.ui.node.LayoutModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.ObserverModifierNode
 import androidx.compose.ui.node.invalidateDraw
+import kotlinx.coroutines.launch
 import androidx.compose.ui.node.observeReads
 import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.platform.InspectorInfo
@@ -52,6 +59,7 @@ private val DefaultShadow = { Shadow.Default }
 private val DefaultOnDrawBackdrop: DrawScope.(DrawScope.() -> Unit) -> Unit = { it() }
 private val NeverFrozen: () -> Boolean = { false }
 
+/** Defensive cap on a loop-bucket pool's size — see [DrawBackdropNode.drawBucketedLayer]. */
 private const val LoopPoolMaxSize = 64
 
 fun Modifier.drawPlainBackdrop(
@@ -64,7 +72,9 @@ fun Modifier.drawPlainBackdrop(
     onDrawBackdrop: DrawScope.(drawBackdrop: DrawScope.() -> Unit) -> Unit = DefaultOnDrawBackdrop,
     onDrawSurface: (DrawScope.() -> Unit)? = null,
     onDrawFront: (DrawScope.() -> Unit)? = null,
-    backdropScale: Float = 0.33f,
+    // Capture at a lower resolution to reduce effect cost; scale pixel-sized effects by the same factor.
+    backdropScale: Float = 1f,
+    // Reuse the last capture while the surface moves during a transition.
     frozen: () -> Boolean = NeverFrozen
 ): Modifier {
     val shapeProvider = ShapeProvider(shape)
@@ -107,8 +117,11 @@ fun Modifier.drawBackdrop(
     onDrawBackdrop: DrawScope.(drawBackdrop: DrawScope.() -> Unit) -> Unit = DefaultOnDrawBackdrop,
     onDrawSurface: (DrawScope.() -> Unit)? = null,
     onDrawFront: (DrawScope.() -> Unit)? = null,
-    backdropScale: Float = 0.33f,
+    // Capture at a lower resolution to reduce effect cost; scale pixel-sized effects by the same factor.
+    backdropScale: Float = 1f,
+    // Reuse the last capture while the surface moves during a transition.
     frozen: () -> Boolean = NeverFrozen,
+    // Cache one processed layer per bucket for looping backdrops; null uses one layer.
     loopBucket: (() -> Int)? = null
 ): Modifier {
     val shapeProvider = ShapeProvider(shape)
@@ -201,6 +214,7 @@ private class DrawBackdropElement(
     }
 
     override fun update(node: DrawBackdropNode) {
+        // Only capture inputs require a new recording; overlay changes need a redraw only.
         val captureChanged =
             node.backdrop !== backdrop ||
                 node.shapeProvider !== shapeProvider ||
@@ -209,7 +223,6 @@ private class DrawBackdropElement(
                 node.onDrawBackdrop !== onDrawBackdrop ||
                 node.backdropScale != backdropScale
 
-        node.updateBackdropSubscription(backdrop)
         node.backdrop = backdrop
         node.shapeProvider = shapeProvider
         node.effects = effects
@@ -225,6 +238,7 @@ private class DrawBackdropElement(
         node.backdropScale = backdropScale
         node.frozen = frozen
         if (node.loopBucket !== loopBucket) {
+            // Bucket changes invalidate the pool and the current surface capture.
             node.loopBucket = loopBucket
             node.surfaceDirty = true
         }
@@ -232,6 +246,7 @@ private class DrawBackdropElement(
             node.surfaceDirty = true
             node.clearLoopPool()
         }
+        // Redraw overlays even when reusing the capture.
         node.invalidateDrawCache()
     }
 
@@ -296,28 +311,15 @@ private class DrawBackdropNode(
     var loopBucket: (() -> Int)?
 ) : LayoutModifierNode, DrawModifierNode, GlobalPositionAwareModifierNode, ObserverModifierNode, Modifier.Node() {
 
-    private val onSourceRecorded: () -> Unit = {
-        if (isAttached) {
-            invalidateDraw()
-        }
-    }
-
-    internal fun updateBackdropSubscription(newBackdrop: Backdrop) {
-        if (backdrop !== newBackdrop) {
-            (backdrop as? LayerBackdrop)?.removeInvalidationListener(onSourceRecorded)
-            if (isAttached) {
-                (newBackdrop as? LayerBackdrop)?.addInvalidationListener(onSourceRecorded)
-            }
-        }
-    }
-
     private val effectScope =
         object : BackdropEffectScopeImpl() {
+
             override val shape: Shape get() = shapeProvider.innerShape
         }
 
     private var graphicsLayer: GraphicsLayer? = null
 
+    // Processed layers keyed by loop bucket; evicted buckets are recorded again on demand.
     private var loopPool: HashMap<Int, GraphicsLayer>? = null
 
     internal fun clearLoopPool() {
@@ -327,27 +329,50 @@ private class DrawBackdropNode(
         pool.clear()
     }
 
+    // Auto avoids an extra offscreen pass for opaque surfaces; Compose still uses one when alpha requires it.
     private val layoutLayerBlock: GraphicsLayerScope.() -> Unit = {
         clip = true
-        shape = shapeProvider.shape
-        compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+        // The pooled sampler already clips to its shape; path clipping adds a per-frame CPU mask upload.
+        shape = if ((backdrop as? LayerBackdrop)?.masksSamplers == true) {
+            androidx.compose.ui.graphics.RectangleShape
+        } else {
+            shapeProvider.shape
+        }
+        compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Auto
     }
 
     private var layoutCoordinates: LayoutCoordinates? by mutableStateOf(null, neverEqualPolicy())
 
     private var padding by mutableFloatStateOf(0f)
 
+    // Re-record after element/effect changes; otherwise reuse until source content or geometry changes.
     internal var surfaceDirty = true
 
     private var recordedBackdropVersion: Int? = null
     private var recordedBackdropOffset: Offset? = null
     private var recordedBackdropSize: IntSize = IntSize.Zero
 
-    private fun currentBackdropVersion(): Int? = (backdrop as? LayerBackdrop)?.contentVersion
+    // A plain frozen lambda does not invalidate drawing when it becomes false.
+    private var thawJob: kotlinx.coroutines.Job? = null
 
+    private fun scheduleThawRedraw() {
+        if (thawJob?.isActive == true) return
+        thawJob = coroutineScope.launch {
+            // Poll without requesting a frame on every display refresh.
+            while (frozen()) kotlinx.coroutines.delay(ThawPollMs)
+            invalidateDraw()
+        }
+    }
+
+    // LayerBackdrop content redraws live through its RenderNode reference; geometry changes invalidate it.
+    private fun currentBackdropVersion(): Int? = (backdrop as? LayerBackdrop)?.geometryVersion
+
+    /** True if [rect] falls entirely inside a region [backdrop] declared static
+     *  this generation — see [LayerBackdrop.isFullyStatic]. */
     private fun isFullyStatic(rect: Rect): Boolean =
         (backdrop as? LayerBackdrop)?.isFullyStatic(rect) == true
 
+    /** Position of this surface within the backdrop source's coordinate space. */
     private fun currentBackdropOffset(): Offset? {
         val source = backdrop as? LayerBackdrop ?: return null
         val sourceCoordinates = source.layerCoordinates ?: return null
@@ -367,6 +392,7 @@ private class DrawBackdropNode(
         if (padding != 0f) {
             canvas.translate(padding, padding)
         }
+        // Downscale the captured layer to reduce RenderEffect work.
         if (scale != 1f) {
             canvas.scale(scale, scale)
         }
@@ -387,6 +413,7 @@ private class DrawBackdropNode(
         }
     }
 
+    /** Records one layer per loop bucket and reuses it until this surface's geometry changes. */
     private fun DrawScope.drawBucketedLayer(bucket: Int): Boolean {
         val padding = padding
         val scale = backdropScale
@@ -411,6 +438,7 @@ private class DrawBackdropNode(
             val newLayer = requireGraphicsContext().createGraphicsLayer()
             recordLayer(this@DrawBackdropNode, newLayer, size = recordSize, block = recordBackdropBlock)
             newLayer.renderEffect = effectScope.renderEffect
+            newLayer.colorFilter = effectScope.compositeColorFilter
             newLayer
         }
         if (pool.size > LoopPoolMaxSize) {
@@ -447,14 +475,29 @@ private class DrawBackdropNode(
             val version = currentBackdropVersion()
             val offset = currentBackdropOffset()
 
+            // Re-record when source pixels or geometry change. Non-layer backdrops have no
+            // version, so they keep recording every draw. A frozen surface needs an existing
+            // capture to reuse; otherwise it would draw an empty layer.
+            val hasRecording = recordedBackdropSize != IntSize.Zero
             val geometryChanged = surfaceDirty ||
                 offset != recordedBackdropOffset ||
                 recordSize != recordedBackdropSize
             val versionChanged = version == null || version != recordedBackdropVersion
+            // Reuse when this capture is fully inside a static region, so the version bump came from elsewhere.
             val versionChangeIsElsewhere = versionChanged && !geometryChanged &&
                 offset != null && isFullyStatic(Rect(offset, recordSize.toSize()))
-            val needsRecord = (geometryChanged || versionChanged) && !versionChangeIsElsewhere
-
+            val needsRecord = if (frozen() && hasRecording) {
+                // The freeze only holds back source-content changes. A surface that moved or
+                // resized must re-capture now, or it shows the region it used to sit over.
+                if (geometryChanged) {
+                    true
+                } else {
+                    if (versionChanged) scheduleThawRedraw()
+                    false
+                }
+            } else {
+                (geometryChanged || versionChanged) && !versionChangeIsElsewhere
+            }
             if (needsRecord) {
                 recordLayer(
                     this@DrawBackdropNode,
@@ -462,19 +505,17 @@ private class DrawBackdropNode(
                     size = recordSize,
                     block = recordBackdropBlock
                 )
-                if (offset != null) {
-                    recordedBackdropVersion = version
-                    recordedBackdropOffset = offset
-                    recordedBackdropSize = recordSize
-                } else {
-                    surfaceDirty = true
-                }
+                recordedBackdropVersion = version
+                recordedBackdropOffset = offset
+                recordedBackdropSize = recordSize
             }
 
             layer.topLeft =
                 if (padding != 0f) IntOffset(-padding.toInt(), -padding.toInt())
                 else IntOffset.Zero
             if (scale != 1f) {
+                // Vendored addition: stretch the low resolution layer back over the
+                // full surface; the blur in the effect chain masks the upscaling.
                 scale(1f / scale, pivot = Offset.Zero) {
                     drawLayer(layer)
                 }
@@ -523,13 +564,8 @@ private class DrawBackdropNode(
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
         if (coordinates.isAttached) {
-            val wasAttached = layoutCoordinates != null
             if (backdrop.isCoordinatesDependent) {
                 layoutCoordinates = coordinates
-                if (!wasAttached || surfaceDirty) {
-                    surfaceDirty = true
-                    invalidateDrawCache()
-                }
             } else {
                 if (layoutCoordinates != null) {
                     layoutCoordinates = null
@@ -546,9 +582,6 @@ private class DrawBackdropNode(
 
     fun invalidateDrawCache() {
         observeEffects()
-        if (isAttached) {
-            invalidateDraw()
-        }
     }
 
     private fun observeEffects() {
@@ -560,6 +593,7 @@ private class DrawBackdropNode(
 
         effectScope.apply(effects)
         graphicsLayer?.renderEffect = effectScope.renderEffect
+        graphicsLayer?.colorFilter = effectScope.compositeColorFilter
         val newPadding = effectScope.padding
         if (newPadding != padding) {
             padding = newPadding
@@ -570,14 +604,12 @@ private class DrawBackdropNode(
     override fun onAttach() {
         val graphicsContext = requireGraphicsContext()
         graphicsLayer = graphicsContext.createGraphicsLayer()
-        (backdrop as? LayerBackdrop)?.addInvalidationListener(onSourceRecorded)
 
         surfaceDirty = true
         observeEffects()
     }
 
     override fun onDetach() {
-        (backdrop as? LayerBackdrop)?.removeInvalidationListener(onSourceRecorded)
         val graphicsContext = requireGraphicsContext()
         graphicsLayer?.let { layer ->
             graphicsContext.releaseGraphicsLayer(layer)
@@ -585,6 +617,8 @@ private class DrawBackdropNode(
         }
         clearLoopPool()
 
+        // A pooled source refracting this surface must stop once it is gone.
+        (backdrop as? LayerBackdrop)?.lensRequest?.invoke(effectScope, Rect.Zero, null, null, null)
         effectScope.reset()
         layoutCoordinates = null
         exportedBackdrop?.layerCoordinates = null
@@ -593,3 +627,7 @@ private class DrawBackdropNode(
         recordedBackdropSize = IntSize.Zero
     }
 }
+
+/** How often a frozen glass surface checks whether its freeze has lifted. */
+private const val ThawPollMs = 48L
+
