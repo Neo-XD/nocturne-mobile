@@ -5,6 +5,7 @@
 
 package com.nocturne.music.ui.screens.search
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.shrinkVertically
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -117,9 +119,15 @@ fun SearchScreen(
         mutableStateOf(TextFieldValue())
     }
     val pauseSearchHistory by rememberPreference(PauseSearchHistoryKey, defaultValue = false)
-    var isFirstLaunch by rememberSaveable { mutableStateOf(true) }
+    var isFirstLaunch by rememberSaveable { mutableStateOf(false) }
     
     var searchActive by rememberSaveable { mutableStateOf(false) }
+
+    BackHandler(enabled = searchActive) {
+        searchActive = false
+        query = TextFieldValue("")
+        focusManager.clearFocus()
+    }
 
     val searchBarHorizontalPadding by animateDpAsState(
         targetValue = if (searchActive) 0.dp else 16.dp,
@@ -330,14 +338,6 @@ fun SearchScreen(
                     if (isPlayerExpanded) {
                         keyboardController?.hide()
                         focusManager.clearFocus()
-                    } else if (isFirstLaunch) {
-                        // Only request focus on first launch when player is not expanded
-                        try {
-                            focusRequester.requestFocus()
-                        } catch (e: Exception) {
-                            // Ignore focus request failures
-                        }
-                        isFirstLaunch = false
                     }
                 }
                 Lifecycle.Event.ON_PAUSE -> {
