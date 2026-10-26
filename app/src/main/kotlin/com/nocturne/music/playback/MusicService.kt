@@ -2961,6 +2961,43 @@ class MusicService :
 
             val cacheGeneration = songUrlCache.generation(mediaId)
             Timber.tag("MusicService").i("FETCHING STREAM: $mediaId | quality=$audioQuality")
+            // 1. Check Community Streaming Addons for lossless stream resolution
+            if (com.nocturne.music.addons.AddonManager.hasEnabledAddons()) {
+                val addonStream = runBlocking(Dispatchers.IO) {
+                    val songObj = database.getSongByIdBlocking(mediaId)
+                    if (songObj != null) {
+                        com.nocturne.music.addons.AddonManager.resolveLosslessStream(
+                            title = songObj.song.title,
+                            artist = songObj.artists.joinToString { it.name },
+                            durationSec = songObj.song.duration
+                        )
+                    } else null
+                }
+
+                if (addonStream != null) {
+                    Timber.tag("MusicService").i("STREAMING FROM ADDON [${addonStream.sourceName}]: ${addonStream.url} | format=${addonStream.format}")
+                    database.query {
+                        upsert(
+                            FormatEntity(
+                                id = mediaId,
+                                itag = 999,
+                                mimeType = addonStream.mimeType,
+                                codecs = addonStream.format,
+                                bitrate = addonStream.bitrate,
+                                sampleRate = addonStream.sampleRate ?: 44100,
+                                contentLength = 0L,
+                                loudnessDb = null,
+                                perceptualLoudnessDb = null,
+                                playbackUrl = addonStream.url
+                            )
+                        )
+                    }
+                    val addonHeaders = dataSpec.httpRequestHeaders + addonStream.headers
+                    return@Factory dataSpec
+                        .withUri(addonStream.url.toUri())
+                        .withRequestHeaders(addonHeaders)
+                }
+            }
             val playbackData = runBlocking(Dispatchers.IO) {
                 val song = database.getSongByIdBlocking(mediaId)?.song
                 YTPlayerUtils.playerResponseForPlayback(

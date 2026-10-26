@@ -68,6 +68,7 @@ class App : Application(), SingletonImageLoader.Factory {
 
         // Start preferences cache immediately
         ViviPrefCache.start(this)
+        com.nocturne.music.addons.AddonManager.init(this)
 
         // Install crash handler first
         CrashHandler.install(this)

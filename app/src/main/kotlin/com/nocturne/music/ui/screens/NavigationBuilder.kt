@@ -52,6 +52,7 @@ import com.nocturne.music.ui.screens.settings.ContentSettings
 import com.nocturne.music.ui.screens.settings.DarkMode
 import com.nocturne.music.ui.screens.settings.DiscordLoginScreen
 import com.nocturne.music.ui.screens.settings.PlayerSettings
+import com.nocturne.music.ui.screens.settings.AddonsSettings
 import com.nocturne.music.ui.screens.settings.JioSettings
 import com.nocturne.music.ui.screens.settings.PrivacySettings
 import com.nocturne.music.ui.screens.settings.RomanizationSettings
@@ -408,6 +409,10 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("settings/player/jio") {
         JioSettings(navController, scrollBehavior)
+    }
+
+    composable("settings/player/addons") {
+        AddonsSettings(navController, scrollBehavior)
     }
 
     composable("settings/storage") {

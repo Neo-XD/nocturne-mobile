@@ -25,6 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,6 +84,10 @@ fun PlayerSettings(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
+    val addonsGlobalEnabled by com.nocturne.music.addons.AddonManager.globalEnabled.collectAsState()
+    val addonsList by com.nocturne.music.addons.AddonManager.configs.collectAsState()
+    val activeAddonsCount = remember(addonsList) { addonsList.count { it.enabled } }
+
     val (audioQuality, onAudioQualityChange) = rememberEnumPreference(
         AudioQualityKey,
         defaultValue = AudioQuality.AUTO
@@ -294,6 +299,23 @@ fun PlayerSettings(
                         )
                     },
                     onClick = { navController.navigate("settings/player/jio") },
+                    isExpressive = true
+                ))
+                add(Material3SettingsItem(
+                    icon = painterResource(R.drawable.graphic_eq),
+                    title = { Text("Community Streaming Addons") },
+                    description = {
+                        Text(
+                            if (addonsGlobalEnabled && activeAddonsCount > 0) {
+                                "$activeAddonsCount active (Lossless FLAC streaming)"
+                            } else if (addonsGlobalEnabled) {
+                                "No addons configured (Tap to add)"
+                            } else {
+                                "Addon streaming disabled"
+                            }
+                        )
+                    },
+                    onClick = { navController.navigate("settings/player/addons") },
                     isExpressive = true
                 ))
                 add(Material3SettingsItem(
