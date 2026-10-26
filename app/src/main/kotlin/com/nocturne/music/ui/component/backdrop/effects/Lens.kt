@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
  *
@@ -30,8 +30,9 @@ fun BackdropEffectScope.lens(
     if (!isRuntimeShaderSupported()) return
     if (refractionHeight <= 0f || refractionAmount <= 0f) return
 
-    if (padding > 0f) {
-        padding = (padding - refractionHeight).fastCoerceAtLeast(0f)
+    val requiredPadding = refractionHeight + refractionAmount
+    if (requiredPadding > padding) {
+        padding = requiredPadding
     }
 
     val cornerRadii = cornerRadii

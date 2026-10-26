@@ -73,12 +73,15 @@ class App : Application(), SingletonImageLoader.Factory {
         CrashHandler.install(this)
 
         // Initialize cipher deobfuscator for WEB_REMIX streaming
-        CipherDeobfuscator.initialize(this)
+        // Initialize cipher deobfuscator for WEB_REMIX streaming off the main thread
+        applicationScope.launch(Dispatchers.IO) {
+            CipherDeobfuscator.initialize(this@App)
+        }
 
         Timber.plant(Timber.DebugTree())
 
         // ????? ??????? ??????? ??? ???????
-        applicationScope.launch {
+        applicationScope.launch(Dispatchers.IO) {
             initializeSettings()
             observeSettingsChanges()
         }
@@ -277,8 +280,8 @@ class App : Application(), SingletonImageLoader.Factory {
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader {
-        val cacheSize = runBlocking {
-            dataStore.data.map { it[MaxImageCacheSizeKey] ?: 512 }.first()
+        val cacheSize = com.nocturne.music.utils.ViviPrefCache.get<Int>(MaxImageCacheSizeKey) ?: 512; if (false) {
+            // dataStore.get(MaxImageCacheSizeKey, 512)
         }
         return ImageLoader.Builder(this).apply {
             crossfade(true)

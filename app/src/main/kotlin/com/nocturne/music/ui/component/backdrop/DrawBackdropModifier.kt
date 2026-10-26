@@ -1,11 +1,6 @@
 /*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
- *
- * Vendored so the library ships as source with this app (binary AARs compiled
- * against older Compose broke at runtime) and to add a backdrop resolution
- * scale for cheaper effect rendering. KMP expect/actual declarations were
- * merged into this single Android source set. Package renamed accordingly.
  */
 package com.nocturne.music.ui.component.backdrop
 
@@ -34,6 +29,7 @@ import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.LayoutModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.ObserverModifierNode
+import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.node.observeReads
 import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.platform.InspectorInfo
@@ -56,7 +52,6 @@ private val DefaultShadow = { Shadow.Default }
 private val DefaultOnDrawBackdrop: DrawScope.(DrawScope.() -> Unit) -> Unit = { it() }
 private val NeverFrozen: () -> Boolean = { false }
 
-/** Defensive cap on a loop-bucket pool's size — see [DrawBackdropNode.drawBucketedLayer]. */
 private const val LoopPoolMaxSize = 64
 
 fun Modifier.drawPlainBackdrop(
@@ -69,20 +64,7 @@ fun Modifier.drawPlainBackdrop(
     onDrawBackdrop: DrawScope.(drawBackdrop: DrawScope.() -> Unit) -> Unit = DefaultOnDrawBackdrop,
     onDrawSurface: (DrawScope.() -> Unit)? = null,
     onDrawFront: (DrawScope.() -> Unit)? = null,
-    // Vendored addition: same meaning as [drawBackdrop]'s parameter of the same
-    // name — record the backdrop at this fraction of the surface resolution so
-    // the RenderEffect chain processes far fewer pixels. Callers must
-    // pre-multiply pixel-sized effect parameters (blur radius) by the same
-    // factor; the blur hides the upscaling. 1f keeps full resolution.
-    backdropScale: Float = 1f,
-    // While this returns true the surface reuses its last recorded backdrop
-    // instead of re-capturing the source. Meant for the frames of a transition
-    // that animates the surface's size or position: those change every frame, so
-    // the size/offset checks below force a fresh full-screen capture (plus the
-    // whole effect chain) on every one of them. Measured on the search
-    // transition: 9 frames at a 250-450ms median with the nav bar's glass on,
-    // versus 77 frames at 42ms with it off. The bar is moving and heavily
-    // blurred for those ~300ms, so reusing the previous capture is not visible.
+    backdropScale: Float = 0.33f,
     frozen: () -> Boolean = NeverFrozen
 ): Modifier {
     val shapeProvider = ShapeProvider(shape)
@@ -125,29 +107,8 @@ fun Modifier.drawBackdrop(
     onDrawBackdrop: DrawScope.(drawBackdrop: DrawScope.() -> Unit) -> Unit = DefaultOnDrawBackdrop,
     onDrawSurface: (DrawScope.() -> Unit)? = null,
     onDrawFront: (DrawScope.() -> Unit)? = null,
-    // Vendored addition: records the backdrop into a layer at this fraction of the
-    // surface resolution and draws it scaled back up, so the RenderEffect chain
-    // processes far fewer pixels. Pixel-sized effect parameters (blur radius, lens
-    // refraction) must be pre-multiplied by the same factor by the caller; the blur
-    // hides the upscaling. 1f keeps the original full resolution behavior.
-    backdropScale: Float = 1f,
-    // While this returns true the surface reuses its last recorded backdrop
-    // instead of re-capturing the source. Meant for the frames of a transition
-    // that animates the surface's size or position: those change every frame, so
-    // the size/offset checks below force a fresh full-screen capture (plus the
-    // whole effect chain) on every one of them. Measured on the search
-    // transition: 9 frames at a 250-450ms median with the nav bar's glass on,
-    // versus 77 frames at 42ms with it off. The bar is moving and heavily
-    // blurred for those ~300ms, so reusing the previous capture is not visible.
+    backdropScale: Float = 0.33f,
     frozen: () -> Boolean = NeverFrozen,
-    // When set, this surface caches one recorded+effect-processed layer PER
-    // bucket returned here instead of a single reused layer, and replays a
-    // bucket's cached layer on repeat instead of re-recording. Meant for a
-    // backdrop whose source loops (e.g. a looping canvas video): the visual
-    // output at a given position in the loop is identical every repeat, so the
-    // whole capture + blur/lens chain only needs to run once per bucket, ever,
-    // instead of on every frame of every loop. Null (default) keeps the single-
-    // layer behavior unchanged.
     loopBucket: (() -> Int)? = null
 ): Modifier {
     val shapeProvider = ShapeProvider(shape)
@@ -240,12 +201,6 @@ private class DrawBackdropElement(
     }
 
     override fun update(node: DrawBackdropNode) {
-        // Only the parameters that feed the CAPTURE invalidate it. onDrawBehind/
-        // Surface/Front (and with them the highlight rim, shadow and tint) are
-        // painted over an already-captured layer, so a change there needs a
-        // repaint, not a re-record. Conflating the two meant any recomposition
-        // reaching a glass call site — every one of which allocates fresh
-        // lambdas — re-sampled the screen and re-ran saturation/blur/lens.
         val captureChanged =
             node.backdrop !== backdrop ||
                 node.shapeProvider !== shapeProvider ||
@@ -254,6 +209,7 @@ private class DrawBackdropElement(
                 node.onDrawBackdrop !== onDrawBackdrop ||
                 node.backdropScale != backdropScale
 
+        node.updateBackdropSubscription(backdrop)
         node.backdrop = backdrop
         node.shapeProvider = shapeProvider
         node.effects = effects
@@ -269,13 +225,6 @@ private class DrawBackdropElement(
         node.backdropScale = backdropScale
         node.frozen = frozen
         if (node.loopBucket !== loopBucket) {
-            // A different bucket function (or losing/gaining one) invalidates
-            // whatever's pooled — the old buckets no longer mean anything under
-            // the new function's numbering, or looping stopped/started. Force
-            // surfaceDirty too: switching TO null must not let the single-layer
-            // path's stale recordedBackdropVersion/size fields (last touched
-            // before bucketing started, or never) accidentally read as "still
-            // valid" and skip drawing into the never-yet-recorded graphicsLayer.
             node.loopBucket = loopBucket
             node.surfaceDirty = true
         }
@@ -283,7 +232,6 @@ private class DrawBackdropElement(
             node.surfaceDirty = true
             node.clearLoopPool()
         }
-        // Always: the overlay repaints even when the capture is reused.
         node.invalidateDrawCache()
     }
 
@@ -348,17 +296,28 @@ private class DrawBackdropNode(
     var loopBucket: (() -> Int)?
 ) : LayoutModifierNode, DrawModifierNode, GlobalPositionAwareModifierNode, ObserverModifierNode, Modifier.Node() {
 
+    private val onSourceRecorded: () -> Unit = {
+        if (isAttached) {
+            invalidateDraw()
+        }
+    }
+
+    internal fun updateBackdropSubscription(newBackdrop: Backdrop) {
+        if (backdrop !== newBackdrop) {
+            (backdrop as? LayerBackdrop)?.removeInvalidationListener(onSourceRecorded)
+            if (isAttached) {
+                (newBackdrop as? LayerBackdrop)?.addInvalidationListener(onSourceRecorded)
+            }
+        }
+    }
+
     private val effectScope =
         object : BackdropEffectScopeImpl() {
-
             override val shape: Shape get() = shapeProvider.innerShape
         }
 
     private var graphicsLayer: GraphicsLayer? = null
 
-    // Only allocated when loopBucket is non-null. One recorded+effect-processed
-    // layer per bucket, reused forever once present — see drawBucketedLayer.
-    // Capped defensively; an evicted bucket simply re-records next visit.
     private var loopPool: HashMap<Int, GraphicsLayer>? = null
 
     internal fun clearLoopPool() {
@@ -378,11 +337,6 @@ private class DrawBackdropNode(
 
     private var padding by mutableFloatStateOf(0f)
 
-    // True whenever the surface's own state changed in a way that invalidates the
-    // previously recorded backdrop layer (element update, effect retune, first
-    // attach). When false, draw() reuses the last record unless the source content
-    // version, size or offset moved — so surface-local redraws (e.g. a glass rim
-    // highlight animation) no longer re-record the whole backdrop source per frame.
     internal var surfaceDirty = true
 
     private var recordedBackdropVersion: Int? = null
@@ -391,12 +345,9 @@ private class DrawBackdropNode(
 
     private fun currentBackdropVersion(): Int? = (backdrop as? LayerBackdrop)?.contentVersion
 
-    /** True if [rect] falls entirely inside a region [backdrop] declared static
-     *  this generation — see [LayerBackdrop.isFullyStatic]. */
     private fun isFullyStatic(rect: Rect): Boolean =
         (backdrop as? LayerBackdrop)?.isFullyStatic(rect) == true
 
-    /** Position of this surface within the backdrop source's coordinate space. */
     private fun currentBackdropOffset(): Offset? {
         val source = backdrop as? LayerBackdrop ?: return null
         val sourceCoordinates = source.layerCoordinates ?: return null
@@ -416,8 +367,6 @@ private class DrawBackdropNode(
         if (padding != 0f) {
             canvas.translate(padding, padding)
         }
-        // Vendored addition: draw the backdrop content downscaled so the recorded
-        // layer (and therefore the RenderEffect chain) covers fewer pixels.
         if (scale != 1f) {
             canvas.scale(scale, scale)
         }
@@ -438,15 +387,6 @@ private class DrawBackdropNode(
         }
     }
 
-    /**
-     * Loop-bucket path: one recorded+effect-processed layer per bucket, computed
-     * once and reused forever after (unlike the single-layer path below, this
-     * never re-records an existing bucket just because the source's contentVersion
-     * bumped — a looping backdrop's pixels at a given bucket are the same every
-     * repeat by definition). Geometry changes (this surface itself moving or
-     * resizing) invalidate every pooled bucket, since they were all captured at
-     * the old size/offset.
-     */
     private fun DrawScope.drawBucketedLayer(bucket: Int): Boolean {
         val padding = padding
         val scale = backdropScale
@@ -507,30 +447,14 @@ private class DrawBackdropNode(
             val version = currentBackdropVersion()
             val offset = currentBackdropOffset()
 
-            // Re-record only when the source pixels changed (version bump from the
-            // source's own node) or this surface's size/position moved. Non-layer
-            // backdrops have no version, so `version == null` keeps them recording
-            // every draw, matching the original behavior.
-            // Once frozen, hold the last capture. Only skip when there IS one —
-            // a surface frozen before it ever recorded would otherwise draw an
-            // empty layer.
-            val hasRecording = recordedBackdropSize != IntSize.Zero
             val geometryChanged = surfaceDirty ||
                 offset != recordedBackdropOffset ||
                 recordSize != recordedBackdropSize
             val versionChanged = version == null || version != recordedBackdropVersion
-            // A version bump with nothing of ours moved only needs a re-record if
-            // the changed pixels could be ours. If our whole capture rect falls
-            // inside a region declared static THIS generation (backdropStaticRegion),
-            // the bump is provably from elsewhere — reuse the capture. Undeclared or
-            // partially-covered rects fail safe to the original always-record path.
             val versionChangeIsElsewhere = versionChanged && !geometryChanged &&
                 offset != null && isFullyStatic(Rect(offset, recordSize.toSize()))
-            val needsRecord = if (frozen() && hasRecording) {
-                false
-            } else {
-                (geometryChanged || versionChanged) && !versionChangeIsElsewhere
-            }
+            val needsRecord = (geometryChanged || versionChanged) && !versionChangeIsElsewhere
+
             if (needsRecord) {
                 recordLayer(
                     this@DrawBackdropNode,
@@ -551,8 +475,6 @@ private class DrawBackdropNode(
                 if (padding != 0f) IntOffset(-padding.toInt(), -padding.toInt())
                 else IntOffset.Zero
             if (scale != 1f) {
-                // Vendored addition: stretch the low resolution layer back over the
-                // full surface; the blur in the effect chain masks the upscaling.
                 scale(1f / scale, pivot = Offset.Zero) {
                     drawLayer(layer)
                 }
@@ -624,6 +546,9 @@ private class DrawBackdropNode(
 
     fun invalidateDrawCache() {
         observeEffects()
+        if (isAttached) {
+            invalidateDraw()
+        }
     }
 
     private fun observeEffects() {
@@ -645,12 +570,14 @@ private class DrawBackdropNode(
     override fun onAttach() {
         val graphicsContext = requireGraphicsContext()
         graphicsLayer = graphicsContext.createGraphicsLayer()
+        (backdrop as? LayerBackdrop)?.addInvalidationListener(onSourceRecorded)
 
         surfaceDirty = true
         observeEffects()
     }
 
     override fun onDetach() {
+        (backdrop as? LayerBackdrop)?.removeInvalidationListener(onSourceRecorded)
         val graphicsContext = requireGraphicsContext()
         graphicsLayer?.let { layer ->
             graphicsContext.releaseGraphicsLayer(layer)
@@ -666,4 +593,3 @@ private class DrawBackdropNode(
         recordedBackdropSize = IntSize.Zero
     }
 }
-

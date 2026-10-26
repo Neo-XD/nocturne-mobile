@@ -26,293 +26,305 @@ object LyricsUtils {
     private val BACKGROUND_REGEX = "^\\{bg\\}".toRegex()
 
     private val KANA_ROMAJI_MAP: Map<String, String> = mapOf(
-        // Digraphs (Yoon - combinations like kya, sho)
-        "??" to "kya", "??" to "kyu", "??" to "kyo",
-        "??" to "sha", "??" to "shu", "??" to "sho",
-        "??" to "cha", "??" to "chu", "??" to "cho",
-        "??" to "nya", "??" to "nyu", "??" to "nyo",
-        "??" to "hya", "??" to "hyu", "??" to "hyo",
-        "??" to "mya", "??" to "myu", "??" to "myo",
-        "??" to "rya", "??" to "ryu", "??" to "ryo",
-        "??" to "gya", "??" to "gyu", "??" to "gyo",
-        "??" to "ja", "??" to "ju", "??" to "jo",
-        "??" to "ja", "??" to "ju", "??" to "jo",
-        "??" to "bya", "??" to "byu", "??" to "byo",
-        "??" to "pya", "??" to "pyu", "??" to "pyo",
+        // Digraphs (Yoon - combinations like kya, sho) - Katakana & Hiragana
+        "キャ" to "kya", "キュ" to "kyu", "キョ" to "kyo",
+        "シャ" to "sha", "シュ" to "shu", "ショ" to "sho",
+        "チャ" to "cha", "チュ" to "chu", "チョ" to "cho",
+        "ニャ" to "nya", "ニュ" to "nyu", "ニョ" to "nyo",
+        "ヒャ" to "hya", "ヒュ" to "hyu", "ヒョ" to "hyo",
+        "ミャ" to "mya", "ミュ" to "myu", "ミョ" to "myo",
+        "リャ" to "rya", "リュ" to "ryu", "リョ" to "ryo",
+        "ギャ" to "gya", "ギュ" to "gyu", "ギョ" to "gyo",
+        "ジャ" to "ja", "ジュ" to "ju", "ジョ" to "jo",
+        "ヂャ" to "ja", "ヂュ" to "ju", "ヂョ" to "jo",
+        "ビャ" to "bya", "ビュ" to "byu", "ビョ" to "byo",
+        "ピャ" to "pya", "ピュ" to "pyu", "ピョ" to "pyo",
+        "きゃ" to "kya", "きゅ" to "kyu", "きょ" to "kyo",
+        "しゃ" to "sha", "しゅ" to "shu", "しょ" to "sho",
+        "ちゃ" to "cha", "ちゅ" to "chu", "ちょ" to "cho",
+        "にゃ" to "nya", "にゅ" to "nyu", "にょ" to "nyo",
+        "ひゃ" to "hya", "ひゅ" to "hyu", "ひょ" to "hyo",
+        "みゃ" to "mya", "みゅ" to "myu", "みょ" to "myo",
+        "りゃ" to "rya", "りゅ" to "ryu", "りょ" to "ryo",
+        "ぎゃ" to "gya", "ぎゅ" to "gyu", "ぎょ" to "gyo",
+        "じゃ" to "ja", "じゅ" to "ju", "じょ" to "jo",
+        "ぢゃ" to "ja", "ぢゅ" to "ju", "ぢょ" to "jo",
+        "びゃ" to "bya", "びゅ" to "byu", "びょ" to "byo",
+        "ぴゃ" to "pya", "ぴゅ" to "pyu", "ぴょ" to "pyo",
         // Basic Katakana Characters
-        "?" to "a", "?" to "i", "?" to "u", "?" to "e", "?" to "o",
-        "?" to "ka", "?" to "ki", "?" to "ku", "?" to "ke", "?" to "ko",
-        "?" to "sa", "?" to "shi", "?" to "su", "?" to "se", "?" to "so",
-        "?" to "ta", "?" to "chi", "?" to "tsu", "?" to "te", "?" to "to",
-        "?" to "na", "?" to "ni", "?" to "nu", "?" to "ne", "?" to "no",
-        "?" to "ha", "?" to "hi", "?" to "fu", "?" to "he", "?" to "ho",
-        "?" to "ma", "?" to "mi", "?" to "mu", "?" to "me", "?" to "mo",
-        "?" to "ya", "?" to "yu", "?" to "yo",
-        "?" to "ra", "?" to "ri", "?" to "ru", "?" to "re", "?" to "ro",
-        "?" to "wa", "?" to "o", "?" to "n",
+        "ア" to "a", "イ" to "i", "ウ" to "u", "エ" to "e", "オ" to "o",
+        "カ" to "ka", "キ" to "ki", "ク" to "ku", "ケ" to "ke", "コ" to "ko",
+        "サ" to "sa", "シ" to "shi", "ス" to "su", "セ" to "se", "ソ" to "so",
+        "タ" to "ta", "チ" to "chi", "ツ" to "tsu", "テ" to "te", "ト" to "to",
+        "ナ" to "na", "ニ" to "ni", "ヌ" to "nu", "ネ" to "ne", "ノ" to "no",
+        "ハ" to "ha", "ヒ" to "hi", "フ" to "fu", "ヘ" to "he", "ホ" to "ho",
+        "マ" to "ma", "ミ" to "mi", "ム" to "mu", "メ" to "me", "モ" to "mo",
+        "ヤ" to "ya", "ユ" to "yu", "ヨ" to "yo",
+        "ラ" to "ra", "リ" to "ri", "ル" to "ru", "レ" to "re", "ロ" to "ro",
+        "ワ" to "wa", "ヲ" to "o", "ン" to "n",
         // Dakuten (voiced consonants)
-        "?" to "ga", "?" to "gi", "?" to "gu", "?" to "ge", "?" to "go",
-        "?" to "za", "?" to "ji", "?" to "zu", "?" to "ze", "?" to "zo",
-        "?" to "da", "?" to "ji", "?" to "zu", "?" to "de", "?" to "do",
+        "ガ" to "ga", "ギ" to "gi", "グ" to "gu", "ゲ" to "ge", "ゴ" to "go",
+        "ザ" to "za", "ジ" to "ji", "ズ" to "zu", "ゼ" to "ze", "ゾ" to "zo",
+        "ダ" to "da", "ヂ" to "ji", "ヅ" to "zu", "デ" to "de", "ド" to "do",
         // Handakuten (p-sounds for 'h' group)
-        "?" to "ba", "?" to "bi", "?" to "bu", "?" to "be", "?" to "bo",
-        "?" to "pa", "?" to "pi", "?" to "pu", "?" to "pe", "?" to "po",
+        "バ" to "ba", "ビ" to "bi", "ブ" to "bu", "ベ" to "be", "ボ" to "bo",
+        "パ" to "pa", "ピ" to "pi", "プ" to "pu", "ペ" to "pe", "ポ" to "po",
+        // Basic Hiragana Characters
+        "あ" to "a", "い" to "i", "う" to "u", "え" to "e", "お" to "o",
+        "か" to "ka", "き" to "ki", "く" to "ku", "け" to "ke", "こ" to "ko",
+        "さ" to "sa", "し" to "shi", "す" to "su", "せ" to "se", "そ" to "so",
+        "た" to "ta", "ち" to "chi", "つ" to "tsu", "て" to "te", "と" to "to",
+        "な" to "na", "に" to "ni", "ぬ" to "nu", "ね" to "ne", "の" to "no",
+        "は" to "ha", "ひ" to "hi", "ふ" to "fu", "へ" to "he", "ほ" to "ho",
+        "ま" to "ma", "み" to "mi", "む" to "mu", "め" to "me", "も" to "mo",
+        "や" to "ya", "ゆ" to "yu", "よ" to "yo",
+        "ら" to "ra", "り" to "ri", "る" to "ru", "れ" to "re", "ろ" to "ro",
+        "わ" to "wa", "を" to "o", "ん" to "n",
+        "が" to "ga", "ぎ" to "gi", "ぐ" to "gu", "げ" to "ge", "ご" to "go",
+        "ざ" to "za", "じ" to "ji", "ず" to "zu", "ぜ" to "ze", "ぞ" to "zo",
+        "だ" to "da", "ぢ" to "ji", "づ" to "zu", "で" to "de", "ど" to "do",
+        "ば" to "ba", "び" to "bi", "ぶ" to "bu", "べ" to "be", "ぼ" to "bo",
+        "ぱ" to "pa", "ぴ" to "pi", "ぷ" to "pu", "ぺ" to "pe", "ぽ" to "po",
         // Choonpu (long vowel mark)
-        "?" to ""
+        "ー" to ""
     )
 
     private val HANGUL_ROMAJA_MAP: Map<String, Map<String, String>> = mapOf(
         "cho" to mapOf(
-            "?" to "g", "?" to "kk", "?" to "n", "?" to "d",
-            "?" to "tt", "?" to "r", "?" to "m", "?" to "b",
-            "?" to "pp", "?" to "s", "?" to "ss", "?" to "",
-            "?" to "j", "?" to "jj", "?" to "ch", "?" to "k",
-            "?" to "t", "?" to "p", "?" to "h"
+            "\u1100" to "g", "\u1101" to "kk", "\u1102" to "n", "\u1103" to "d",
+            "\u1104" to "tt", "\u1105" to "r", "\u1106" to "m", "\u1107" to "b",
+            "\u1108" to "pp", "\u1109" to "s", "\u110A" to "ss", "\u110B" to "",
+            "\u110C" to "j", "\u110D" to "jj", "\u110E" to "ch", "\u110F" to "k",
+            "\u1110" to "t", "\u1111" to "p", "\u1112" to "h"
         ),
         "jung" to mapOf(
-            "?" to "a", "?" to "ae", "?" to "ya", "?" to "yae",
-            "?" to "eo", "?" to "e", "?" to "yeo", "?" to "ye",
-            "?" to "o", "?" to "wa", "?" to "wae", "?" to "oe",
-            "?" to "yo", "?" to "u", "?" to "wo", "?" to "we",
-            "?" to "wi", "?" to "yu", "?" to "eu", "?" to "eui",
-            "?" to "i"
+            "\u1161" to "a", "\u1162" to "ae", "\u1163" to "ya", "\u1164" to "yae",
+            "\u1165" to "eo", "\u1166" to "e", "\u1167" to "yeo", "\u1168" to "ye",
+            "\u1169" to "o", "\u116A" to "wa", "\u116B" to "wae", "\u116C" to "oe",
+            "\u116D" to "yo", "\u116E" to "u", "\u116F" to "wo", "\u1170" to "we",
+            "\u1171" to "wi", "\u1172" to "yu", "\u1173" to "eu", "\u1174" to "eui",
+            "\u1175" to "i"
         ),
         "jong" to mapOf(
-            "?" to "k", "??" to "g", "??" to "ngn", "??" to "ngn", "??" to "ngm", "??" to "kh",
-            "?" to "kk", "??" to "kg", "??" to "ngn", "??" to "ngn", "??" to "ngm", "??" to "kh",
-            "?" to "k", "??" to "ks", "??" to "ngn", "??" to "ngn", "??" to "ngm", "??" to "kch",
-            "?" to "n", "??" to "ll", "?" to "n", "??" to "nj", "??" to "nn", "??" to "nn",
-            "??" to "nm", "??" to "nch", "?" to "n", "??" to "nh", "??" to "nn", "?" to "t",
-            "??" to "d", "??" to "nn", "??" to "nn", "??" to "nm", "??" to "th", "?" to "l",
-            "??" to "r", "??" to "ll", "??" to "ll", "?" to "k", "??" to "lg", "??" to "ngn",
-            "??" to "ngn", "??" to "ngm", "??" to "lkh", "?" to "m", "??" to "lm", "??" to "mn",
-            "??" to "mn", "??" to "mm", "??" to "lmh", "?" to "p", "??" to "lb", "??" to "mn",
-            "??" to "mn", "??" to "mm", "??" to "lph", "?" to "t", "??" to "ls", "??" to "nn",
-            "??" to "nn", "??" to "nm", "??" to "lsh", "?" to "t", "??" to "lt", "??" to "nn",
-            "??" to "nn", "??" to "nm", "??" to "lth", "?" to "p", "??" to "lp", "??" to "mn",
-            "??" to "mn", "??" to "mm", "??" to "lph", "?" to "l", "??" to "lh", "??" to "ll",
-            "??" to "ll", "??" to "lm", "??" to "lh", "?" to "m", "??" to "mn", "?" to "p",
-            "??" to "b", "??" to "mn", "??" to "mn", "??" to "mm", "??" to "ph", "?" to "p",
-            "??" to "ps", "??" to "mn", "??" to "mn", "??" to "mm", "??" to "psh", "?" to "t",
-            "??" to "s", "??" to "nn", "??" to "nn", "??" to "nm", "??" to "sh", "?" to "t",
-            "??" to "ss", "??" to "tn", "??" to "tn", "??" to "nm", "??" to "th", "?" to "ng",
-            "?" to "t", "??" to "j", "??" to "nn", "??" to "nn", "??" to "nm", "??" to "ch",
-            "?" to "t", "??" to "ch", "??" to "nn", "??" to "nn", "??" to "nm", "??" to "ch",
-            "?" to "k", "??" to "k", "??" to "ngn", "??" to "ngn", "??" to "ngm", "??" to "kh",
-            "?" to "t", "??" to "t", "??" to "nn", "??" to "nn", "??" to "nm", "??" to "th",
-            "?" to "p", "??" to "p", "??" to "mn", "??" to "mn", "??" to "mm", "??" to "ph",
-            "?" to "t", "??" to "h", "??" to "nn", "??" to "nn", "??" to "mm", "??" to "t",
-            "??" to "k"
+            "\u11A8" to "k", "\u11A8\u110B" to "g", "\u11A8\u1102" to "ngn", "\u11A8\u1105" to "ngn", "\u11A8\u1106" to "ngm", "\u11A8\u1112" to "kh",
+            "\u11A9" to "kk", "\u11A9\u110B" to "kg", "\u11A9\u1102" to "ngn", "\u11A9\u1105" to "ngn", "\u11A9\u1106" to "ngm", "\u11A9\u1112" to "kh",
+            "\u11AA" to "k", "\u11AA\u110B" to "ks", "\u11AA\u1102" to "ngn", "\u11AA\u1105" to "ngn", "\u11AA\u1106" to "ngm", "\u11AA\u1112" to "kch",
+            "\u11AB" to "n", "\u11AB\u1105" to "ll", "\u11AC" to "n", "\u11AC\u110B" to "nj", "\u11AC\u1102" to "nn", "\u11AC\u1105" to "nn",
+            "\u11AC\u1106" to "nm", "\u11AC\u1112" to "nch", "\u11AD" to "n", "\u11AD\u110B" to "nh", "\u11AD\u1105" to "nn", "\u11AE" to "t",
+            "\u11AE\u110B" to "d", "\u11AE\u1102" to "nn", "\u11AE\u1105" to "nn", "\u11AE\u1106" to "nm", "\u11AE\u1112" to "th", "\u11AF" to "l",
+            "\u11AF\u110B" to "r", "\u11AF\u1102" to "ll", "\u11AF\u1105" to "ll", "\u11B0" to "k", "\u11B0\u110B" to "lg", "\u11B0\u1102" to "ngn",
+            "\u11B0\u1105" to "ngn", "\u11B0\u1106" to "ngm", "\u11B0\u1112" to "lkh", "\u11B1" to "m", "\u11B1\u110B" to "lm", "\u11B1\u1102" to "mn",
+            "\u11B1\u1105" to "mn", "\u11B1\u1106" to "mm", "\u11B1\u1112" to "lmh", "\u11B2" to "p", "\u11B2\u110B" to "lb", "\u11B2\u1102" to "mn",
+            "\u11B2\u1105" to "mn", "\u11B2\u1106" to "mm", "\u11B2\u1112" to "lph", "\u11B3" to "t", "\u11B3\u110B" to "ls", "\u11B3\u1102" to "nn",
+            "\u11B3\u1105" to "nn", "\u11B3\u1106" to "nm", "\u11B3\u1112" to "lsh", "\u11B4" to "t", "\u11B4\u110B" to "lt", "\u11B4\u1102" to "nn",
+            "\u11B4\u1105" to "nn", "\u11B4\u1106" to "nm", "\u11B4\u1112" to "lth", "\u11B5" to "p", "\u11B5\u110B" to "lp", "\u11B5\u1102" to "mn",
+            "\u11B5\u1105" to "mn", "\u11B5\u1106" to "mm", "\u11B5\u1112" to "lph", "\u11B6" to "l", "\u11B6\u110B" to "lh", "\u11B6\u1102" to "ll",
+            "\u11B6\u1105" to "ll", "\u11B6\u1106" to "lm", "\u11B6\u1112" to "lh", "\u11B7" to "m", "\u11B7\u1105" to "mn", "\u11B8" to "p",
+            "\u11B8\u110B" to "b", "\u11B8\u1102" to "mn", "\u11B8\u1105" to "mn", "\u11B8\u1106" to "mm", "\u11B8\u1112" to "ph", "\u11B9" to "p",
+            "\u11B9\u110B" to "ps", "\u11B9\u1102" to "mn", "\u11B9\u1105" to "mn", "\u11B9\u1106" to "mm", "\u11B9\u1112" to "psh", "\u11BA" to "t",
+            "\u11BA\u110B" to "s", "\u11BA\u1102" to "nn", "\u11BA\u1105" to "nn", "\u11BA\u1106" to "nm", "\u11BA\u1112" to "sh", "\u11BB" to "t",
+            "\u11BB\u110B" to "ss", "\u11BB\u1102" to "tn", "\u11BB\u1105" to "tn", "\u11BB\u1106" to "nm", "\u11BB\u1112" to "th", "\u11BC" to "ng",
+            "\u11BD" to "t", "\u11BD\u110B" to "j", "\u11BD\u1102" to "nn", "\u11BD\u1105" to "nn", "\u11BD\u1106" to "nm", "\u11BD\u1112" to "ch",
+            "\u11BE" to "t", "\u11BE\u110B" to "ch", "\u11BE\u1102" to "nn", "\u11BE\u1105" to "nn", "\u11BE\u1106" to "nm", "\u11BE\u1112" to "ch",
+            "\u11BF" to "k", "\u11BF\u110B" to "k", "\u11BF\u1102" to "ngn", "\u11BF\u1105" to "ngn", "\u11BF\u1106" to "ngm", "\u11BF\u1112" to "kh",
+            "\u11C0" to "t", "\u11C0\u110B" to "t", "\u11C0\u1102" to "nn", "\u11C0\u1105" to "nn", "\u11C0\u1106" to "nm", "\u11C0\u1112" to "th",
+            "\u11C1" to "p", "\u11C1\u110B" to "p", "\u11C1\u1102" to "mn", "\u11C1\u1105" to "mn", "\u11C1\u1106" to "mm", "\u11C1\u1112" to "ph",
+            "\u11C2" to "t", "\u11C2\u110B" to "h", "\u11C2\u1102" to "nn", "\u11C2\u1105" to "nn", "\u11C2\u1106" to "mm", "\u11C2\u1103" to "t",
+            "\u11C2\u1100" to "k"
         )
     )
 
     private val DEVANAGARI_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "a", "?" to "aa", "?" to "i", "?" to "ee", "?" to "u", "?" to "oo",
-        "?" to "ri", "?" to "e", "?" to "ai", "?" to "o", "?" to "au",
-        "?" to "k", "?" to "kh", "?" to "g", "?" to "gh", "?" to "ng",
-        "?" to "ch", "?" to "chh", "?" to "j", "?" to "jh", "?" to "ny",
-        "?" to "t", "?" to "th", "?" to "d", "?" to "dh", "?" to "n",
-        "?" to "t", "?" to "th", "?" to "d", "?" to "dh", "?" to "n",
-        "?" to "p", "?" to "ph", "?" to "b", "?" to "bh", "?" to "m",
-        "?" to "y", "?" to "r", "?" to "l", "?" to "v",
-        "?" to "sh", "?" to "sh", "?" to "s", "?" to "h",
-        "???" to "ksh", "???" to "tr", "???" to "gy", "???" to "shr",
-        "?" to "aa", "?" to "i", "?" to "ee", "?" to "u", "?" to "oo",
-        "?" to "ri", "?" to "e", "?" to "ai", "?" to "o", "?" to "au",
-        "?" to "n", "?" to "h", "?" to "n", "?" to "", "?" to "",
-        "?" to "0", "?" to "1", "?" to "2", "?" to "3", "?" to "4",
-        "?" to "5", "?" to "6", "?" to "7", "?" to "8", "?" to "9",
-        "?" to "Om", "?" to "",
-        "?" to "q", "?" to "kh", "?" to "g", "?" to "z", "?" to "r", "?" to "rh", "?" to "f", "?" to "y",
-        // Decomposed characters with Nukta
-        "?\u093C" to "q", "?\u093C" to "kh", "?\u093C" to "g", "?\u093C" to "z", "?\u093C" to "r", "?\u093C" to "rh", "?\u093C" to "f", "?\u093C" to "y"
+        "अ" to "a", "आ" to "aa", "इ" to "i", "ई" to "ee", "उ" to "u", "ऊ" to "oo",
+        "ऋ" to "ri", "ए" to "e", "ऐ" to "ai", "ओ" to "o", "औ" to "au",
+        "क" to "k", "ख" to "kh", "ग" to "g", "घ" to "gh", "ङ" to "ng",
+        "च" to "ch", "छ" to "chh", "ज" to "j", "झ" to "jh", "ञ" to "ny",
+        "ट" to "t", "ठ" to "th", "ड" to "d", "ढ" to "dh", "ण" to "n",
+        "त" to "t", "थ" to "th", "द" to "d", "ध" to "dh", "न" to "n",
+        "प" to "p", "फ" to "ph", "ब" to "b", "भ" to "bh", "म" to "m",
+        "य" to "y", "र" to "r", "ल" to "l", "व" to "v",
+        "श" to "sh", "ष" to "sh", "स" to "s", "ह" to "h",
+        "क्ष" to "ksh", "त्र" to "tr", "ज्ञ" to "gy", "श्र" to "shr",
+        "ा" to "aa", "ि" to "i", "ी" to "ee", "ु" to "u", "ू" to "oo",
+        "ृ" to "ri", "े" to "e", "ै" to "ai", "ो" to "o", "ौ" to "au",
+        "ं" to "n", "ः" to "h", "ँ" to "n", "्" to "", "़" to "",
+        "०" to "0", "१" to "1", "२" to "2", "३" to "3", "४" to "4",
+        "५" to "5", "६" to "6", "७" to "7", "८" to "8", "९" to "9",
+        "ॐ" to "Om", "ऽ" to "",
+        "क़" to "q", "ख़" to "kh", "ग़" to "g", "ज़" to "z", "ड़" to "r", "ढ़" to "rh", "फ़" to "f", "य़" to "y"
     )
 
     private val GURMUKHI_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "o", "?" to "a", "?" to "e", "?" to "s", "?" to "h",
-        "?" to "k", "?" to "kh", "?" to "g", "?" to "gh", "?" to "ng",
-        "?" to "ch", "?" to "chh", "?" to "j", "?" to "jh", "?" to "ny",
-        "?" to "t", "?" to "th", "?" to "d", "?" to "dh", "?" to "n",
-        "?" to "t", "?" to "th", "?" to "d", "?" to "dh", "?" to "n",
-        "?" to "p", "?" to "ph", "?" to "b", "?" to "bh", "?" to "m",
-        "?" to "y", "?" to "r", "?" to "l", "?" to "v", "?" to "r",
-        "?" to "sh", "?" to "kh", "?" to "g", "?" to "z", "?" to "f", "?" to "l",
-        "?" to "aa", "?" to "i", "?" to "ee", "?" to "u", "?" to "oo",
-        "?" to "e", "?" to "ai", "?" to "o", "?" to "au",
-        "?" to "n", "?" to "n", "?" to "", "?" to "", "?" to "",
-        "?" to "Ek Onkar",
-        "?" to "0", "?" to "1", "?" to "2", "?" to "3", "?" to "4",
-        "?" to "5", "?" to "6", "?" to "7", "?" to "8", "?" to "9"
+        "ੳ" to "o", "ਅ" to "a", "ੲ" to "e", "ਸ" to "s", "ਹ" to "h",
+        "ਕ" to "k", "ਖ" to "kh", "ਗ" to "g", "ਘ" to "gh", "ਙ" to "ng",
+        "ਚ" to "ch", "ਛ" to "chh", "ਜ" to "j", "ਝ" to "jh", "ਞ" to "ny",
+        "ਟ" to "t", "ਠ" to "th", "ਡ" to "d", "ਢ" to "dh", "ण" to "n",
+        "ਤ" to "t", "ਥ" to "th", "ਦ" to "d", "ਧ" to "dh", "ਨ" to "n",
+        "ਪ" to "p", "ਫ" to "ph", "ਬ" to "b", "ਭ" to "bh", "ਮ" to "m",
+        "ਯ" to "y", "ਰ" to "r", "ਲ" to "l", "ਵ" to "v", "ੜ" to "r",
+        "ਸ਼" to "sh", "ਖ਼" to "kh", "ਗ਼" to "g", "ਜ਼" to "z", "ਫ਼" to "f", "ਲ਼" to "l",
+        "ਾ" to "aa", "ਿ" to "i", "ी" to "ee", "ੁ" to "u", "ੂ" to "oo",
+        "ੇ" to "e", "ੈ" to "ai", "ੋ" to "o", "ौ" to "au",
+        "ੰ" to "n", "ਂ" to "n", "ੱ" to "", "੍" to "", "਼" to "",
+        "ੴ" to "Ek Onkar",
+        "੦" to "0", "੧" to "1", "੨" to "2", "੩" to "3", "੪" to "4",
+        "੫" to "5", "੬" to "6", "੭" to "7", "੮" to "8", "੯" to "9"
     )
 
     private val GENERAL_CYRILLIC_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "A", "?" to "B", "?" to "V", "?" to "G", "?" to "G", "?" to "D",
-        "?" to "G", "?" to "", "?" to "E", "?" to "Yo", "?" to "Ye", "?" to "Zh",
-        "?" to "Z", "?" to "Dz", "?" to "I", "?" to "I", "?" to "Yi", "?" to "Y",
-        "?" to "Y", "?" to "K", "?" to "L", "?" to "Ly", "?" to "M", "?" to "N",
-        "?" to "Ny", "?" to "O", "?" to "P", "?" to "R", "?" to "S", "?" to "T",
-        "?" to "C", "?" to "U", "?" to "U", "?" to "F", "?" to "Kh", "?" to "Ts",
-        "?" to "Ch", "?" to "D", "?" to "Sh", "?" to "Shch", "?" to """, "?" to "Y",
-        "?" to "'", "?" to "E", "?" to "Yu", "?" to "Ya",
-        "?" to "O", "?" to "Ya", "?" to "Ye", "?" to "Ya", "?" to "Ya",
-        "?" to "U", "?" to "Yu", "?" to "Ks", "?" to "Ps", "?" to "F",
-        "?" to "I", "?" to "I", "?" to "Gh", "?" to "G", "?" to "Zh",
-        "?" to "Dz", "?" to "Q", "?" to "K", "?" to "K", "?" to "K",
-        "?" to "Ng", "?" to "Ng", "?" to "P", "?" to "O", "?" to "S",
-        "?" to "T", "?" to "U", "?" to "U", "?" to "Kh", "?" to "Ts",
-        "?" to "Ch", "?" to "Ch", "?" to "H", "?" to "Ch", "?" to "Ch",
-        "?" to "K", "?" to "",
+        "А" to "A", "Б" to "B", "В" to "V", "Г" to "G", "Ґ" to "G", "Д" to "D",
+        "Ѓ" to "G", "Ђ" to "Dj", "Е" to "E", "Ё" to "Yo", "Є" to "Ye", "Ж" to "Zh",
+        "З" to "Z", "Ѕ" to "Dz", "И" to "I", "І" to "I", "Ї" to "Yi", "Й" to "Y",
+        "Ј" to "J", "К" to "K", "Л" to "L", "Љ" to "Lj", "М" to "M", "Н" to "N",
+        "Њ" to "Nj", "О" to "O", "П" to "P", "Р" to "R", "С" to "S", "Т" to "T",
+        "Ћ" to "C", "У" to "U", "Ў" to "U", "Ф" to "F", "Х" to "Kh", "Ц" to "Ts",
+        "Ч" to "Ch", "Џ" to "Dz", "Ш" to "Sh", "Щ" to "Shch", "Ъ" to "\"", "Ы" to "Y",
+        "Ь" to "'", "Э" to "E", "Ю" to "Yu", "Я" to "Ya",
+        "Ө" to "O", "Ү" to "U", "Ң" to "Ng",
 
-        "?" to "a", "?" to "b", "?" to "v", "?" to "g", "?" to "g", "?" to "d",
-        "?" to "g", "?" to "d", "?" to "e", "?" to "yo", "?" to "ye", "?" to "zh",
-        "?" to "z", "?" to "dz", "?" to "i", "?" to "i", "?" to "yi", "?" to "y",
-        "?" to "y", "?" to "k", "?" to "l", "?" to "ly", "?" to "m", "?" to "n",
-        "?" to "ny", "?" to "o", "?" to "p", "?" to "r", "?" to "s", "?" to "t",
-        "?" to "c", "?" to "u", "?" to "u", "?" to "f", "?" to "kh", "?" to "ts",
-        "?" to "ch", "?" to "d", "?" to "sh", "?" to "shch", "?" to """, "?" to "y",
-        "?" to "'", "?" to "e", "?" to "yu", "?" to "ya",
-        "?" to "o", "?" to "ya", "?" to "ye", "?" to "ya", "?" to "ya",
-        "?" to "u", "?" to "yu", "?" to "ks", "?" to "ps", "?" to "f",
-        "?" to "i", "?" to "i", "?" to "gh", "?" to "g", "?" to "zh",
-        "?" to "dz", "?" to "q", "?" to "k", "?" to "k", "?" to "k",
-        "?" to "ng", "?" to "ng", "?" to "p", "?" to "o", "?" to "s",
-        "?" to "t", "?" to "u", "?" to "u", "?" to "kh", "?" to "ts",
-        "?" to "ch", "?" to "ch", "h" to "h", "?" to "ch", "?" to "ch",
-        "?" to "?", "?" to ""
+        "а" to "a", "б" to "b", "в" to "v", "г" to "g", "ґ" to "g", "д" to "d",
+        "ѓ" to "g", "ђ" to "dj", "е" to "e", "ё" to "yo", "є" to "ye", "ж" to "zh",
+        "з" to "z", "ѕ" to "dz", "и" to "i", "і" to "i", "ї" to "yi", "й" to "y",
+        "ј" to "j", "к" to "k", "л" to "l", "љ" to "lj", "м" to "m", "н" to "n",
+        "њ" to "nj", "о" to "o", "п" to "p", "р" to "r", "с" to "s", "т" to "t",
+        "ћ" to "c", "у" to "u", "ў" to "u", "ф" to "f", "х" to "kh", "ц" to "ts",
+        "ч" to "ch", "џ" to "dz", "ш" to "sh", "щ" to "shch", "ъ" to "\"", "ы" to "y",
+        "ь" to "'", "э" to "e", "ю" to "yu", "я" to "ya",
+        "ө" to "o", "ү" to "u", "ң" to "ng"
     )
 
     private val RUSSIAN_ROMAJI_MAP: Map<String, String> = mapOf(
-        "???" to "ovo", "???" to "Ovo", "???" to "evo", "???" to "Evo"
+        "ого" to "ovo", "Ого" to "Ovo", "его" to "evo", "Его" to "Evo"
     )
 
     private val UKRAINIAN_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "H", "?" to "h",
-        "?" to "G", "?" to "g",
-        "?" to "Ye", "?" to "ye",
-        "?" to "I", "?" to "i",
-        "?" to "Yi", "?" to "yi"
+        "Г" to "H", "г" to "h",
+        "Ґ" to "G", "ґ" to "g",
+        "Є" to "Ye", "є" to "ye",
+        "І" to "I", "і" to "i",
+        "Ї" to "Yi", "ї" to "yi"
     )
 
     private val SERBIAN_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "", "?" to "Lj", "?" to "Nj", "?" to "C", "?" to "C",
-        "?" to "D", "?" to "", "?" to "H",
+        "Ђ" to "Dj", "Љ" to "Lj", "Њ" to "Nj", "Ћ" to "C", "Ц" to "C",
+        "Џ" to "Dz", "Ј" to "J", "Х" to "H",
 
-        "?" to "", "?" to "lj", "?" to "nj", "?" to "c", "?" to "c",
-        "?" to "d", "?" to "", "?" to "h"
+        "ђ" to "dj", "љ" to "lj", "њ" to "nj", "ћ" to "c", "ц" to "c",
+        "џ" to "dz", "ј" to "j", "х" to "h"
     )
 
     private val BULGARIAN_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "Zh", "?" to "Ts", "?" to "Ch", "?" to "Sh", "?" to "Sht",
-        "?" to "A", "?" to "Y", "?" to "Yu", "?" to "Ya",
+        "Ж" to "Zh", "Ц" to "Ts", "Ч" to "Ch", "Ш" to "Sh", "Щ" to "Sht",
+        "Ъ" to "A", "Ь" to "Y", "Ю" to "Yu", "Я" to "Ya",
 
-        "?" to "zh", "?" to "ts", "?" to "ch", "?" to "sh", "?" to "sht",
-        "?" to "a", "?" to "y", "?" to "yu", "?" to "ya"
+        "ж" to "zh", "ц" to "ts", "ч" to "ch", "ш" to "sh", "щ" to "sht",
+        "ъ" to "a", "ь" to "y", "ю" to "yu", "я" to "ya"
     )
 
     private val BELARUSIAN_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "H", "?" to "h", "?" to "W", "?" to "w"
+        "Г" to "H", "г" to "h", "Ў" to "W", "ў" to "w"
     )
 
     private val KYRGYZ_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "", "?" to "", "?" to "Y", "?" to "y"
+        "Ө" to "O", "ө" to "o", "Ү" to "Y", "ү" to "y", "Ң" to "Ng", "ң" to "ng"
     )
 
     private val MACEDONIAN_ROMAJI_MAP: Map<String, String> = mapOf(
-        "?" to "Gj", "?" to "Dz", "?" to "I", "?" to "J", "?" to "Lj",
-        "?" to "Nj", "?" to "Kj", "?" to "D", "?" to "C", "?" to "Sh",
-        "?" to "Zh", "?" to "C", "?" to "H",
+        "Ѓ" to "Gj", "Ѕ" to "Dz", "И" to "I", "Ј" to "J", "Љ" to "Lj",
+        "Њ" to "Nj", "Ќ" to "Kj", "Џ" to "Dz", "Ч" to "Ch", "Ш" to "Sh",
+        "Ж" to "Zh", "Ц" to "C", "Х" to "H",
 
-        "?" to "gj", "?" to "dz", "?" to "i", "?" to "j", "?" to "lj",
-        "?" to "nj", "?" to "kj", "?" to "d", "?" to "c", "?" to "sh",
-        "?" to "zh", "?" to "c", "?" to "h"
+        "ѓ" to "gj", "ѕ" to "dz", "и" to "i", "ј" to "j", "љ" to "lj",
+        "њ" to "nj", "ќ" to "kj", "џ" to "dz", "ч" to "ch", "ш" to "sh",
+        "ж" to "zh", "ц" to "c", "х" to "h"
     )
 
     private val RUSSIAN_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?",
+        "А", "Б", "В", "Г", "Д", "Е", "Ё", "Ж", "З", "И", "Й", "К", "Л", "М", "Н",
+        "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", "Ш", "Щ", "Ъ", "Ы", "Ь",
+        "Э", "Ю", "Я",
 
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?"
+        "а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й", "к", "л", "м", "н",
+        "о", "п", "р", "с", "т", "у", "ф", "х", "ц", "ч", "ш", "щ", "ъ", "ы", "ь",
+        "э", "ю", "я"
     )
 
     private val UKRAINIAN_CYRILLIC_LETTERS = setOf(
-       "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?",
+        "А", "Б", "В", "Г", "Ґ", "Д", "Е", "Є", "Ж", "З", "И", "І", "Ї", "Й",
+        "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч",
+        "Ш", "Щ", "Ь", "Ю", "Я",
 
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?"
+        "а", "б", "в", "г", "ґ", "д", "е", "є", "ж", "з", "и", "і", "ї", "й",
+        "к", "л", "м", "н", "о", "п", "р", "с", "т", "у", "ф", "х", "ц", "ч",
+        "ш", "щ", "ь", "ю", "я"
     )
 
     private val SERBIAN_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
+        "А", "Б", "В", "Г", "Д", "Ђ", "Е", "Ж", "З", "И", "Ј", "К", "Л", "Љ", "М",
+        "Н", "Њ", "О", "П", "Р", "С", "Т", "Ћ", "У", "Ф", "Х", "Ц", "Ч", "Џ", "Ш",
 
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"
+        "а", "б", "в", "г", "д", "ђ", "е", "ж", "з", "и", "ј", "к", "л", "љ", "м",
+        "н", "њ", "о", "п", "р", "с", "т", "ћ", "у", "ф", "х", "ц", "ч", "џ", "ш"
     )
 
     private val BULGARIAN_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?",
+        "А", "Б", "В", "Г", "Д", "Е", "Ж", "З", "И", "Й", "К", "Л", "М",
+        "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", "Ш", "Щ",
+        "Ъ", "Ь", "Ю", "Я",
 
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?"
+        "а", "б", "в", "г", "д", "е", "ж", "з", "и", "й", "к", "л", "м",
+        "н", "о", "п", "р", "с", "т", "у", "ф", "х", "ц", "ч", "ш", "щ",
+        "ъ", "ь", "ю", "я"
     )
 
     private val BELARUSIAN_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?",
+        "А", "Б", "В", "Г", "Д", "Е", "Ё", "Ж", "З", "І", "Й", "К", "Л", "М", "Н",
+        "О", "П", "Р", "С", "Т", "У", "Ў", "Ф", "Х", "Ц", "Ч", "Ш", "Ы", "Ь", "Э",
+        "Ю", "Я",
 
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?"
+        "а", "б", "в", "г", "д", "е", "ё", "ж", "з", "і", "й", "к", "л", "м", "н",
+        "о", "п", "р", "с", "т", "у", "ў", "ф", "х", "ц", "ч", "ш", "ы", "ь", "э",
+        "ю", "я"
     )
 
     private val KYRGYZ_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?",
+        "А", "Б", "В", "Г", "Д", "Е", "Ё", "Ж", "З", "И", "Й", "К", "Л", "М", "Н",
+        "Ң", "О", "Ө", "П", "Р", "С", "Т", "У", "Ү", "Ф", "Х", "Ц", "Ч", "Ш", "Щ",
+        "Ъ", "Ы", "Ь", "Э", "Ю", "Я",
 
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?"
+        "а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й", "к", "л", "м", "н",
+        "ң", "о", "ө", "п", "р", "с", "т", "у", "ү", "ф", "х", "ц", "ч", "ш", "щ",
+        "ъ", "ы", "ь", "э", "ю", "я"
     )
 
     private val MACEDONIAN_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?",
+        "А", "Б", "В", "Г", "Д", "Ѓ", "Е", "Ж", "З", "Ѕ", "И", "Ј", "К", "Л",
+        "Љ", "М", "Н", "Њ", "О", "П", "Р", "С", "Т", "Ќ", "У", "Ф", "Х", "Ц",
+        "Ч", "Џ", "Ш",
 
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        "?", "?", "?", "?"
+        "а", "б", "в", "г", "д", "ѓ", "е", "ж", "з", "ѕ", "и", "ј", "к", "л",
+        "љ", "м", "н", "њ", "о", "п", "р", "с", "т", "ќ", "у", "ф", "х", "ц",
+        "ч", "џ", "ш"
     )
 
     private val UKRAINIAN_SPECIFIC_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?"
+        "Ґ", "Є", "І", "Ї", "ґ", "є", "і", "ї"
     )
 
     private val SERBIAN_SPECIFIC_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"
+        "Ђ", "Ј", "Љ", "Њ", "Ћ", "Џ", "ђ", "ј", "љ", "њ", "ћ", "џ"
     )
 
     private val BELARUSIAN_SPECIFIC_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?"
+        "І", "Ў", "і", "ў"
     )
 
     private val KYRGYZ_SPECIFIC_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?"
+        "Ң", "Ө", "Ү", "ң", "ө", "ү"
     )
 
     private val MACEDONIAN_SPECIFIC_CYRILLIC_LETTERS = setOf(
-        "?", "?", "?", "?", "?", "?"
+        "Ѓ", "Ѕ", "Ќ", "ѓ", "ѕ", "ќ"
     )
 
     // Lazy initialized Tokenizer
@@ -608,7 +620,7 @@ object LyricsUtils {
         }
 
         if (!hasWordTimings && active.size > 1) {
-            val mainActive = active.filter { !it.let { lines[it].isBackground } }
+            val mainActive = active.filter { !lines[it].isBackground }
             if (mainActive.size > 1) {
                 val maxTime = mainActive.maxOf { lines[it].time }
                 active.removeAll { it in mainActive && lines[it].time < maxTime }
@@ -617,18 +629,6 @@ object LyricsUtils {
 
         return active
     }
-
-
-    // TODO: Will be useful if we let the user pick the language, useless for now
-    /* enum class CyrillicLanguage {
-        RUSSIAN,
-        UKRAINIAN,
-        SERBIAN,
-        BULGARIAN,
-        BELARUSIAN,
-        KYRGYZ,
-        MACEDONIAN
-    } */
 
     fun katakanaToRomaji(katakana: String?): String {
         if (katakana.isNullOrEmpty()) return ""
@@ -698,8 +698,8 @@ object LyricsUtils {
                 }
             }
 
-            if (!consumed && katakana[i] == '?') {
-                val nextCharToDouble = nextKatakana?.getOrNull(0)
+            if (!consumed && (katakana[i] == 'ッ' || katakana[i] == 'っ')) {
+                val nextCharToDouble = katakana.getOrNull(i + 1) ?: nextKatakana?.getOrNull(0)
                 if (nextCharToDouble != null) {
                     val nextCharRomaji = KANA_ROMAJI_MAP[nextCharToDouble.toString()]?.getOrNull(0)?.toString()
                         ?: nextCharToDouble.toString()
@@ -783,7 +783,7 @@ object LyricsUtils {
         // Remove whitespaces before ASCII and CJK punctuations
         builder.toString()
             .replace(Regex("\\s+([,.!?;:])"), "$1")
-            .replace(Regex("\\s+([,?!?;:?()<>??????])"), "$1")
+            .replace(Regex("\\s+([，。！？；：、（）《》「」『』【】])"), "$1")
             .trim()
     }
 
@@ -793,7 +793,7 @@ object LyricsUtils {
         val cyrillicChars = text.filter { it in '\u0400'..'\u04FF' }
 
         if (cyrillicChars.isEmpty() ||
-            (cyrillicChars.length == 1 && (cyrillicChars[0] == '?' || cyrillicChars[0] == '?'))) {
+            (cyrillicChars.length == 1 && (cyrillicChars[0] == 'Я' || cyrillicChars[0] == 'я'))) {
             return@withContext null
         }
 
@@ -833,11 +833,11 @@ object LyricsUtils {
 
                     if (!consumed) {
                         val charStr = word[charIndex].toString()
-                        // Special case for '?' or '?' at the start of a word
-                        if ((charStr == "?" || charStr == "?") && (charIndex == 0 || word[charIndex - 1].isWhitespace())) {
-                            romajiBuilder.append(if (charStr == "?") "ye" else "Ye")
+                        // Special case for 'е' or 'Е' at the start of a word
+                        if ((charStr == "е" || charStr == "Е") && (charIndex == 0 || word[charIndex - 1].isWhitespace())) {
+                            romajiBuilder.append(if (charStr == "е") "ye" else "Ye")
                         } else {
-                            // Apply general Cyrillic mapping (Russian is no different so there's no need to apply a russian map)
+                            // Apply general Cyrillic mapping
                             val romanizedChar = GENERAL_CYRILLIC_ROMAJI_MAP[charStr] ?: charStr
                             romajiBuilder.append(romanizedChar)
                         }
@@ -864,19 +864,24 @@ object LyricsUtils {
                     var processed = false
 
                     if (charIndex > 0 && word[charIndex - 1].isLetter() && !isCyrillicVowel(word[charIndex - 1])) {
-                        // Check if the current character is ? or ? and is preceded by a consonant
-                        if (charStr == "?") {
-                            romajiBuilder.append("Iu")
-                            processed = true
-                        } else if (charStr == "?") {
-                            romajiBuilder.append("iu")
-                            processed = true
-                        } else if (charStr == "?") {
-                            romajiBuilder.append("Ia")
-                            processed = true
-                        } else if (charStr == "?") {
-                            romajiBuilder.append("ia")
-                            processed = true
+                        // Check if the current character is Ю or Я and is preceded by a consonant
+                        when (charStr) {
+                            "Ю" -> {
+                                romajiBuilder.append("Iu")
+                                processed = true
+                            }
+                            "ю" -> {
+                                romajiBuilder.append("iu")
+                                processed = true
+                            }
+                            "Я" -> {
+                                romajiBuilder.append("Ia")
+                                processed = true
+                            }
+                            "я" -> {
+                                romajiBuilder.append("ia")
+                                processed = true
+                            }
                         }
                     }
 
@@ -944,9 +949,9 @@ object LyricsUtils {
                 var charIndex = 0
                 while (charIndex < word.length) {
                     val charStr = word[charIndex].toString()
-                    // Special case for '?' or '?' at the start of a word
-                    if ((charStr == "?" || charStr == "?") && (charIndex == 0 || word[charIndex - 1].isWhitespace())) {
-                        romajiBuilder.append(if (charStr == "?") "ye" else "Ye")
+                    // Special case for 'е' or 'Е' at the start of a word
+                    if ((charStr == "е" || charStr == "Е") && (charIndex == 0 || word[charIndex - 1].isWhitespace())) {
+                        romajiBuilder.append(if (charStr == "е") "ye" else "Ye")
                     } else {
                         // General mapping
                         val romanizedChar = BELARUSIAN_ROMAJI_MAP[charStr] ?: GENERAL_CYRILLIC_ROMAJI_MAP[charStr] ?: charStr
@@ -1002,91 +1007,6 @@ object LyricsUtils {
         return romajiBuilder.toString()
     }
 
-    // TODO: This function might be used later if we let the user choose the language manually
-    /** private suspend fun romanizeCyrillicWithLanguage(text: String, language: CyrillicLanguage): String = withContext(Dispatchers.Default) {
-        if (text.isEmpty()) return@withContext ""
-
-        val detectedLanguage = language ?: when {
-            isRussian(text) -> CyrillicLanguage.RUSSIAN
-            isUkrainian(text) -> CyrillicLanguage.UKRAINIAN
-            isSerbian(text) -> CyrillicLanguage.SERBIAN
-            isBelarusian(text) -> CyrillicLanguage.BELARUSIAN
-            isKyrgyz(text) -> CyrillicLanguage.KYRGYZ
-            isMacedonian(text) -> CyrillicLanguage.MACEDONIAN
-            else -> return@withContext text
-        }
-
-        val languageMap: Map<String, String> = when (detectedLanguage) {
-            CyrillicLanguage.RUSSIAN -> RUSSIAN_ROMAJI_MAP
-            CyrillicLanguage.UKRAINIAN -> UKRAINIAN_ROMAJI_MAP
-            CyrillicLanguage.SERBIAN -> SERBIAN_ROMAJI_MAP
-            CyrillicLanguage.BELARUSIAN -> BELARUSIAN_ROMAJI_MAP
-            CyrillicLanguage.KYRGYZ -> KYRGYZ_ROMAJI_MAP
-            CyrillicLanguage.MACEDONIAN -> MACEDONIAN_ROMAJI_MAP
-            // else -> emptyMap()
-        }
-        val languageLetters = when (language) {
-            CyrillicLanguage.RUSSIAN -> RUSSIAN_CYRILLIC_LETTERS
-            CyrillicLanguage.UKRAINIAN -> UKRAINIAN_CYRILLIC_LETTERS
-            CyrillicLanguage.SERBIAN -> SERBIAN_CYRILLIC_LETTERS
-            CyrillicLanguage.BELARUSIAN -> BELARUSIAN_CYRILLIC_LETTERS
-            CyrillicLanguage.KYRGYZ -> KYRGYZ_CYRILLIC_LETTERS
-            CyrillicLanguage.MACEDONIAN -> MACEDONIAN_CYRILLIC_LETTERS
-            else -> GENERAL_CYRILLIC_ROMAJI_MAP.keys
-        }
-
-        val romajiBuilder = StringBuilder(text.length)
-        val words = text.split("((?<=\\s|[.,!?;])|(?=\\s|[.,!?;]))".toRegex())
-            .filter { it.isNotEmpty() }
-
-        words.forEachIndexed { _, word ->
-            if (word.matches("[.,!?;]".toRegex()) || word.isBlank()) {
-                // Preserve punctuation or spaces as is
-                romajiBuilder.append(word)
-            } else {
-                // Process word
-                var charIndex = 0
-                while (charIndex < word.length) {
-                    var consumed = false
-                    // Check for 3-character sequences (language-specific, e.g., Russian)
-                    if (detectedLanguage == CyrillicLanguage.RUSSIAN && charIndex + 2 < word.length) {
-                        val threeCharCandidate = word.substring(charIndex, charIndex + 3)
-                        if (languageLetters is Set<*> && languageLetters.containsAll(threeCharCandidate.toList().map { it.toString() })) {
-                            val mappedThreeChar = languageMap[threeCharCandidate]
-                            if (mappedThreeChar != null) {
-                                romajiBuilder.append(mappedThreeChar)
-                                charIndex += 3
-                                consumed = true
-                            }
-                        }
-                    }
-                    if (!consumed) {
-                        val charStr = word[charIndex].toString()
-                        val isSpecificLanguageChar = languageLetters is Set<*> && languageLetters.contains(charStr)
-                        val isGeneralCyrillicChar = GENERAL_CYRILLIC_ROMAJI_MAP.containsKey(charStr)
-
-                        if (isSpecificLanguageChar || isGeneralCyrillicChar) {
-                            if (detectedLanguage == CyrillicLanguage.RUSSIAN && (charStr == "?" || charStr == "?") && charIndex == 0 && (charIndex == 0 || word[charIndex-1].isWhitespace())) {
-                                romajiBuilder.append(if (charStr == "?") "ye" else "Ye")
-                            } else {
-                                val romanizedChar = languageMap[charStr] ?: GENERAL_CYRILLIC_ROMAJI_MAP[charStr]
-                                if (romanizedChar != null) {
-                                    romajiBuilder.append(romanizedChar)
-                                } else {
-                                    romajiBuilder.append(charStr)
-                                }
-                            }
-                        } else {
-                            romajiBuilder.append(charStr)
-                        }
-                        charIndex += 1
-                    }
-                }
-            }
-        }
-        romajiBuilder.toString()
-    } */
-
     fun isRussian(text: String): Boolean {
         return text.any { char ->
             RUSSIAN_CYRILLIC_LETTERS.contains(char.toString())
@@ -1114,7 +1034,7 @@ object LyricsUtils {
 
     fun isBulgarian(text: String): Boolean {
         return text.any { char ->
-            BULGARIAN_CYRILLIC_LETTERS.contains(char.toString()) // Bulgarian doesn't have any language specific letters
+            BULGARIAN_CYRILLIC_LETTERS.contains(char.toString())
         } && text.all { char ->
             BULGARIAN_CYRILLIC_LETTERS.contains(char.toString()) || !char.toString().matches("[\\u0400-\\u04FF]".toRegex())
         }
@@ -1213,9 +1133,9 @@ object LyricsUtils {
             if (char == '\u0A71') {
                  // Double next consonant if possible
                  if (i + 1 < text.length) {
-                     val nextCharStr = text[i+1].toString()
+                     val nextCharStr = text[i + 1].toString()
                      val nextMapped = GURMUKHI_ROMAJI_MAP[nextCharStr]
-                     if (nextMapped != null && nextMapped.isNotEmpty()) {
+                     if (!nextMapped.isNullOrEmpty()) {
                          sb.append(nextMapped[0])
                      }
                  }
@@ -1244,8 +1164,6 @@ object LyricsUtils {
     }
 
     private fun isCyrillicVowel(char: Char): Boolean {
-        return "????????????????????????".contains(char)
+        return "АЕЄИІЇОУЮЯаеєиіїоуюяЁЫЭёыэ".contains(char)
     }
 }
-
-

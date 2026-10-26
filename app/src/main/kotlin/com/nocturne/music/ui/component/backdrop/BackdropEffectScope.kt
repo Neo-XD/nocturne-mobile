@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
  *
@@ -44,11 +44,10 @@ internal abstract class BackdropEffectScopeImpl : BackdropEffectScope, RuntimeSh
         return runtimeShaderCache.obtainRuntimeShader(key, string)
     }
 
-    // Vendored change: [contentScale] reports the size the effects actually operate
-    // on when the backdrop layer is recorded at a reduced resolution, so shader
-    // geometry (e.g. the lens size uniform) matches the layer's pixel grid.
+    // Scale both density and size by contentScale so CornerBasedShape.toPx(size, this)
+    // and RuntimeShader uniforms operate in the exact same downsampled pixel space.
     fun update(scope: DrawScope, contentScale: Float = 1f): Boolean {
-        val newDensity = scope.density
+        val newDensity = scope.density * contentScale
         val newFontScale = scope.fontScale
         val newSize = if (contentScale != 1f) scope.size * contentScale else scope.size
         val newLayoutDirection = scope.layoutDirection
@@ -84,4 +83,3 @@ internal abstract class BackdropEffectScopeImpl : BackdropEffectScope, RuntimeSh
         runtimeShaderCache.clear()
     }
 }
-

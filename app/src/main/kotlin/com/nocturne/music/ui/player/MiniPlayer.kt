@@ -313,9 +313,9 @@ private fun NewMiniPlayer(
     )
     
     // Frosted glass
-    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = false)
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
     val isDynamicBackground = miniPlayerBackground != PlayerBackgroundStyle.DEFAULT
-    val isGlassActive = enableFrostedGlass && !isDynamicBackground && !pureBlack && isGlassAllowed()
+    val isGlassActive = enableFrostedGlass && !isDynamicBackground && isGlassAllowed()
     val glassConfig = LocalGlassEffectConfig.current
 
     // Memoize colors
@@ -691,7 +691,7 @@ private fun HybridMiniPlayer(
     val useDarkTheme = remember(darkTheme, isSystemInDarkTheme) {
         if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
     }
-    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = false)
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
     val miniPlayerBackground by rememberEnumPreference(MiniPlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.DEFAULT)
 
     val playbackState by playerConnection.playbackState.collectAsState()
@@ -739,7 +739,7 @@ private fun HybridMiniPlayer(
     val isDynamicBackground = miniPlayerBackground != PlayerBackgroundStyle.DEFAULT
     val backgroundColor = when {
         isDynamicBackground && !enableFrostedGlass -> Color.Transparent
-        enableFrostedGlass && !pureBlack -> MaterialTheme.colorScheme.surface.copy(alpha = 0.70f)
+        enableFrostedGlass -> if (pureBlack && useDarkTheme) Color.Black.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.70f)
         pureBlack && useDarkTheme -> Color.Black
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
@@ -789,7 +789,7 @@ private fun HybridMiniPlayer(
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) },
             shape = pillShape,
             backgroundColor = backgroundColor,
-            borderBrush = if (enableFrostedGlass && !pureBlack) {
+            borderBrush = if (enableFrostedGlass) {
                 glassBorderBrush
             } else {
                 Brush.linearGradient(listOf(outlineColor.copy(alpha = 0.3f), outlineColor.copy(alpha = 0.3f)))
@@ -967,8 +967,8 @@ private fun LegacyMiniPlayer(
     val primaryColor = MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
 
-    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = false)
-    val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+    val enableFrostedGlass by rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val isGlassActive = enableFrostedGlass && isGlassAllowed()
     val glassConfig = LocalGlassEffectConfig.current
 
     Box(

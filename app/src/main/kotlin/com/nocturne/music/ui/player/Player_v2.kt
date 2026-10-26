@@ -208,7 +208,7 @@ fun PlayerV2(
 
     val storedPlayerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
-        defaultValue = PlayerBackgroundStyle.GRADIENT
+        defaultValue = PlayerBackgroundStyle.BLUR
     )
     val playerBackground = if (storedPlayerBackground == PlayerBackgroundStyle.APPLE_MUSIC) {
         PlayerBackgroundStyle.DEFAULT
@@ -220,6 +220,8 @@ fun PlayerV2(
     val playerThumbnailShadowElevation by rememberPreference(PlayerThumbnailShadowElevationKey, defaultValue = 8f)
     val enableGoogleCast by rememberPreference(EnableGoogleCastKey, defaultValue = true)
     val hidePlayerThumbnail by rememberPreference(HidePlayerThumbnailKey, false)
+    val (showAudioQualityBadge) = rememberPreference(com.nocturne.music.constants.ShowAudioQualityBadgeKey, defaultValue = true)
+    val playingAudioFormatLabel = rememberPlayingAudioFormatLabel(playerConnection)
 
     var showAudioDeviceBottomSheet by remember { mutableStateOf(false) }
     
@@ -851,6 +853,33 @@ fun PlayerV2(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(makeTimeString(currentPosLong), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        if (showAudioQualityBadge && playingAudioFormatLabel.isNotBlank()) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(adaptivePrimary.copy(alpha = 0.10f))
+                                    .clickable {
+                                        effectiveMediaMetadata?.id?.let { id ->
+                                            bottomSheetPageState.show {
+                                                com.nocturne.music.ui.utils.ShowMediaInfo(id)
+                                            }
+                                        }
+                                    }
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = playingAudioFormatLabel,
+                                    color = adaptivePrimary.copy(alpha = 0.85f),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.2.sp
+                                    ),
+                                    maxLines = 1
+                                )
+                            }
+                        }
                         Text("-" + makeTimeString(maxOf(0L, duration - currentPosLong)), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 

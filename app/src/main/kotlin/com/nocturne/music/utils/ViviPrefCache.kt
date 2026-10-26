@@ -32,6 +32,10 @@ object ViviPrefCache {
         }
     }
 
+    fun update(prefs: Preferences) {
+        preferences = prefs
+    }
+
     fun <T> get(key: Preferences.Key<T>): T? {
         return preferences?.get(key)
     }
@@ -40,5 +44,3 @@ object ViviPrefCache {
         return preferences != null
     }
 }
-
-

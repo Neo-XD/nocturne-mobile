@@ -50,19 +50,20 @@ import com.nocturne.music.utils.rememberPreference
 /**
  * User-configurable parameters of the liquid glass effect, sourced from DataStore
  * preferences in MainActivity and distributed through [LocalGlassEffectConfig].
+ * Pre-optimized using Convx (GlassTintTokens) & BitChord liquid glass physics.
  */
 @Stable
 data class GlassEffectConfig(
     val globalEnabled: Boolean = true,
-    val vibrancy: Float = 1.2f,
+    val vibrancy: Float = 1.35f,
     /** Blur in dp applied to glass elements. User-controlled via settings slider. */
-    val blurRadius: Float = 50f,
-    /** 0..1, mapped to 0..[LENS_MAX_DP] dp of lens refraction height. 0.4 = 40%. */
-    val lensHeight: Float = 0.4f,
-    /** 0..1, mapped to 0..[LENS_MAX_DP] dp of lens refraction amount. 0.6 = 60%. */
-    val lensAmount: Float = 0.6f,
-    val chromaticAberration: Boolean = false,
-    val depthEffect: Boolean = false,
+    val blurRadius: Float = 36f,
+    /** 0..1, mapped to 0..[LENS_MAX_DP] dp of lens refraction height. */
+    val lensHeight: Float = 0.42f,
+    /** 0..1, mapped to 0..[LENS_MAX_DP] dp of lens refraction amount. */
+    val lensAmount: Float = 0.65f,
+    val chromaticAberration: Boolean = true,
+    val depthEffect: Boolean = true,
     /** [Color.Unspecified] means adaptive. */
     val surfaceTintColor: Color = Color.Unspecified,
     /** Specular rim colour. [Color.Unspecified] keeps the default white. */
@@ -71,7 +72,7 @@ data class GlassEffectConfig(
     val highlightOpacity: Float = EdgeHighlightAlpha,
     /** Which rendering style every glass surface uses. */
     val style: GlassStyle = GlassStyle.LIQUID,
-    val surfaceOpacity: Float = 0.5f,
+    val surfaceOpacity: Float = 0.22f,
     val textColor: Color = Color.White,
     val playerEnabled: Boolean = true,
     val miniPlayerEnabled: Boolean = true,
@@ -110,7 +111,7 @@ enum class GlassComponent {
 
 internal const val LENS_MAX_DP = 48f
 internal const val PLAYER_BLUR_MULTIPLIER = 2f
-internal const val MIN_GLASS_RESOLUTION_SCALE = 0.30f
+internal const val MIN_GLASS_RESOLUTION_SCALE = 0.33f
 internal const val FULL_QUALITY_BLUR_DP = 8f
 
 fun glassResolutionScale(blurRadiusDp: Float): Float {
@@ -142,7 +143,7 @@ fun glassContentColorFor(behind: Color, tint: Color, opacity: Float): Color {
     return if (effective.luminance() > 0.5f) Color(0xFF1A1A1A) else Color.White
 }
 
-private val EdgeHighlightWidth = 0.8f.dp
+private val EdgeHighlightWidth = 0.85f.dp
 private const val EdgeHighlightAlpha = 0.55f
 private const val HighlightAngleFrozen = 45f
 
@@ -155,15 +156,15 @@ val LocalBackdropLoopBucket = staticCompositionLocalOf<(() -> Int)?> { null }
 
 @Composable
 fun rememberGlassEffectConfig(): GlassEffectConfig {
-    val (enabled) = rememberPreference(EnableFrostedGlassKey, defaultValue = false)
-    val (blurRadius) = rememberPreference(GlassBlurRadiusKey, defaultValue = 50f)
-    val (vibrancy) = rememberPreference(GlassVibrancyKey, defaultValue = 1.2f)
+    val (enabled) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val (blurRadius) = rememberPreference(GlassBlurRadiusKey, defaultValue = 36f)
+    val (vibrancy) = rememberPreference(GlassVibrancyKey, defaultValue = 1.35f)
     val (highlightOpacity) = rememberPreference(GlassHighlightOpacityKey, defaultValue = EdgeHighlightAlpha)
-    val (lensAmount) = rememberPreference(GlassLensAmountKey, defaultValue = 0.6f)
-    val (lensHeight) = rememberPreference(GlassLensHeightKey, defaultValue = 0.4f)
-    val (chromaticAberration) = rememberPreference(GlassChromaticAberrationKey, defaultValue = false)
-    val (depthEffect) = rememberPreference(GlassDepthEffectKey, defaultValue = false)
-    val (surfaceOpacity) = rememberPreference(GlassSurfaceOpacityKey, defaultValue = 0.5f)
+    val (lensAmount) = rememberPreference(GlassLensAmountKey, defaultValue = 0.65f)
+    val (lensHeight) = rememberPreference(GlassLensHeightKey, defaultValue = 0.42f)
+    val (chromaticAberration) = rememberPreference(GlassChromaticAberrationKey, defaultValue = true)
+    val (depthEffect) = rememberPreference(GlassDepthEffectKey, defaultValue = true)
+    val (surfaceOpacity) = rememberPreference(GlassSurfaceOpacityKey, defaultValue = 0.22f)
 
     return remember(
         enabled,
@@ -192,7 +193,9 @@ fun rememberGlassEffectConfig(): GlassEffectConfig {
 }
 
 /**
- * Renders this composable as a liquid glass surface sampling [LocalAppBackdrop].
+ * Renders this composable as a liquid/frosted glass surface sampling [LocalAppBackdrop].
+ * Incorporates BitChord 0.33f downsampled backdrop capture and Convx GlassTintTokens
+ * white-lift dark surface physics for genuine optical translucency and edge refraction.
  */
 @Composable
 fun Modifier.liquidGlass(
@@ -213,19 +216,29 @@ fun Modifier.liquidGlass(
     val saturation = glassSaturation(config.vibrancy)
     val lensHeightPx = with(density) { (config.lensHeight * LENS_MAX_DP).dp.toPx() } * resolutionScale
     val lensAmountPx = with(density) { (config.lensAmount * LENS_MAX_DP).dp.toPx() } * resolutionScale
-    
+
+    val isLightSurface = MaterialTheme.colorScheme.surface.luminance() > 0.5f
     val surfaceTintColor = if (config.surfaceTintColor.isSpecified) {
         config.surfaceTintColor
-    } else if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
-        Color(0xFFFAFAFA)
+    } else if (isLightSurface) {
+        Color(0xFFFDFDFF)
     } else {
-        Color(0xFF2C2C2E)
+        Color(0xFF1A1B20)
     }
+
+    // Convx GlassTintTokens: keep tint translucent so backdrop blur & saturation shine through,
+    // plus a subtle white specular lift on dark surfaces so glass never looks muddy.
+    val effectiveTintAlpha = if (isLightSurface) {
+        config.surfaceOpacity.coerceIn(0.18f, 0.55f)
+    } else {
+        (config.surfaceOpacity * 0.75f).coerceIn(0.22f, 0.48f)
+    }
+    val darkWhiteLiftAlpha = if (isLightSurface) 0f else 0.12f
 
     if (backdrop == null || shouldUseTranslucentGlassFallback(config.style, isRenderEffectSupported())) {
         return this
             .clip(shape)
-            .background(surfaceTintColor.copy(alpha = config.surfaceOpacity.coerceIn(0f, 1f)))
+            .background(surfaceTintColor.copy(alpha = config.surfaceOpacity.coerceIn(0.25f, 0.85f)))
     }
 
     val shapeBlock: () -> Shape = remember(shape) { { shape } }
@@ -243,7 +256,11 @@ fun Modifier.liquidGlass(
     ) {
         {
             if (saturation != 1f) {
-                colorControls(saturation = saturation)
+                colorControls(
+                    brightness = if (isLightSurface) 0.02f else -0.02f,
+                    contrast = 1.05f,
+                    saturation = saturation,
+                )
             }
             if (blurPx > 0f) {
                 blur(blurPx)
@@ -286,11 +303,17 @@ fun Modifier.liquidGlass(
         if (applyEdgeEffects) ({ Shadow.Default }) else null
     }
 
-    val surfaceBlock: DrawScope.() -> Unit = remember(surfaceTintColor, config.surfaceOpacity) {
+    val surfaceBlock: DrawScope.() -> Unit = remember(surfaceTintColor, effectiveTintAlpha, darkWhiteLiftAlpha) {
         {
-            if (config.surfaceOpacity > 0f) {
+            if (effectiveTintAlpha > 0f) {
                 drawRect(
-                    color = surfaceTintColor.copy(alpha = config.surfaceOpacity),
+                    color = surfaceTintColor.copy(alpha = effectiveTintAlpha),
+                    size = size,
+                )
+            }
+            if (darkWhiteLiftAlpha > 0f) {
+                drawRect(
+                    color = Color.White.copy(alpha = darkWhiteLiftAlpha),
                     size = size,
                 )
             }

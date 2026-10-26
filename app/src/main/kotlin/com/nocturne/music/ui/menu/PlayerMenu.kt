@@ -93,7 +93,16 @@ import com.nocturne.music.ui.component.NewAction
 import com.nocturne.music.ui.component.NewActionGrid
 import com.nocturne.music.ui.component.VolumeSlider
 import com.nocturne.music.constants.EnableSaavnStreamingKey
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.ui.res.pluralStringResource
+import com.nocturne.music.ui.component.ActionPromptDialog
+import com.nocturne.music.utils.makeTimeString
 import com.nocturne.music.utils.rememberPreference
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.log2
@@ -214,6 +223,99 @@ fun PlayerMenu(
     }
 
     if (showPitchTempoDialog) {
+        TempoPitchDialog(
+            onDismiss = { showPitchTempoDialog = false },
+        )
+    }
+
+    var showSleepTimerDialog by remember { mutableStateOf(false) }
+    var sleepTimerValue by remember { mutableFloatStateOf(30f) }
+    val sleepTimerEnabled = remember(
+        playerConnection.service.sleepTimer.triggerTime,
+        playerConnection.service.sleepTimer.pauseWhenSongEnd
+    ) {
+        playerConnection.service.sleepTimer.isActive
+    }
+    var sleepTimerTimeLeft by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(sleepTimerEnabled) {
+        if (sleepTimerEnabled) {
+            while (isActive) {
+                sleepTimerTimeLeft = if (playerConnection.service.sleepTimer.pauseWhenSongEnd) {
+                    playerConnection.player.duration - playerConnection.player.currentPosition
+                } else {
+                    playerConnection.service.sleepTimer.triggerTime - System.currentTimeMillis()
+                }
+                delay(1000L)
+            }
+        }
+    }
+
+    if (showSleepTimerDialog) {
+        ActionPromptDialog(
+            titleBar = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.sleep_timer),
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                }
+            },
+            onDismiss = { showSleepTimerDialog = false },
+            onConfirm = {
+                showSleepTimerDialog = false
+                playerConnection.service.sleepTimer.start(sleepTimerValue.roundToInt())
+                onDismiss()
+            },
+            onCancel = {
+                showSleepTimerDialog = false
+            },
+            onReset = {
+                sleepTimerValue = 30f
+            },
+            content = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = pluralStringResource(
+                            R.plurals.minute,
+                            sleepTimerValue.roundToInt(),
+                            sleepTimerValue.roundToInt()
+                        ),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Slider(
+                        value = sleepTimerValue,
+                        onValueChange = { sleepTimerValue = it },
+                        valueRange = 5f..120f,
+                        steps = (120 - 5) / 5 - 1,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            showSleepTimerDialog = false
+                            playerConnection.service.sleepTimer.start(-1)
+                            onDismiss()
+                        }
+                    ) {
+                        Text(stringResource(R.string.end_of_song))
+                    }
+                }
+            }
+        )
+    }
+
+    if (false) {
         TempoPitchDialog(
             onDismiss = { showPitchTempoDialog = false },
         )
@@ -680,6 +782,46 @@ fun PlayerMenu(
                                 },
                                 onClick = {
                                     showPitchTempoDialog = true
+                                }
+                            )
+                        )
+                    }
+                    if (!isListenTogetherGuest) {
+                        add(
+                            Material3MenuItemData(
+                                title = {
+                                    Text(
+                                        text = if (sleepTimerEnabled) {
+                                            "${stringResource(R.string.sleep_timer)} (${makeTimeString(sleepTimerTimeLeft.coerceAtLeast(0L))})"
+                                        } else {
+                                            stringResource(R.string.sleep_timer)
+                                        }
+                                    )
+                                },
+                                icon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.bedtime),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                        tint = if (sleepTimerEnabled) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current
+                                    )
+                                },
+                                onClick = {
+                                    if (sleepTimerEnabled) {
+                                        playerConnection.service.sleepTimer.clear()
+                                        onDismiss()
+                                    } else {
+                                        showSleepTimerDialog = true
+                                    }
+                                }
+                            )
+                        )
+                    }
+                    if (false) {
+                        add(
+                            Material3MenuItemData(
+                                title = { Text("") },
+                                onClick = {
                                 }
                             )
                         )

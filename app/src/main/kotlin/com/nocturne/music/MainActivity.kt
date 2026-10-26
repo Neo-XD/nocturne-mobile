@@ -390,7 +390,7 @@ class MainActivity : ComponentActivity() {
         listenTogetherManager.initialize()
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            val locale = dataStore[AppLanguageKey]
+            val locale = com.nocturne.music.utils.ViviPrefCache.get(AppLanguageKey)
                 ?.takeUnless { it == SYSTEM_DEFAULT }
                 ?.let { Locale.forLanguageTag(it) }
                 ?: Locale.getDefault()
@@ -606,10 +606,10 @@ class MainActivity : ComponentActivity() {
                 val homeViewModel: HomeViewModel = hiltViewModel()
                 // Pre-warm HistoryViewModel at Activity scope so history data loads
                 // in background immediately — zero lag when user taps the history icon
-                hiltViewModel<HistoryViewModel>()
+                // HistoryViewModel is loaded on demand when the user opens History
                 // Pre-warm SuggestionsViewModel at Activity scope so suggestions data loads
                 // in background immediately — zero lag when user opens the Search screen
-                hiltViewModel<SuggestionsViewModel>()
+                // SuggestionsViewModel is loaded on demand when the user opens Search
                 val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val (previousTab, setPreviousTab) = rememberSaveable { mutableStateOf("home") }
@@ -626,10 +626,11 @@ class MainActivity : ComponentActivity() {
                 val (floatingNav) = rememberPreference(FloatingNavBarKey, defaultValue = true)
                 val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
                 val (useAppleMiniPlayer) = rememberPreference(UseAppleMiniPlayerKey, defaultValue = false)
-                val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = false)
-                val (dynamicAppBackground) = rememberPreference(DynamicAppBackgroundKey, defaultValue = false)
+                val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
 
-                if (dynamicAppBackground) {
+
+                val unusedDynamicBg = false
+                if (unusedDynamicBg) {
                     val playingTrackMetadata by playerConnection?.mediaMetadata?.collectAsState() ?: remember { mutableStateOf(null) }
                     GlassyWarpBackground(
                         thumbnailUrl = playingTrackMetadata?.thumbnailUrl,
@@ -1096,7 +1097,7 @@ class MainActivity : ComponentActivity() {
                     LocalGlassEffectConfig provides glassConfig,
                 ) {
                     Scaffold(
-                        containerColor = if (dynamicAppBackground) {
+                        containerColor = if (false) {
                             if (pureBlack) Color.Black.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
                         } else {
                             if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface
@@ -1108,15 +1109,15 @@ class MainActivity : ComponentActivity() {
                                 exit = fadeOut(animationSpec = tween(durationMillis = 200))
                             ) {
                                 val (floatingTopBar) = rememberPreference(FloatingTopBarKey, defaultValue = true)
-                                val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+                                val isGlassActive = enableFrostedGlass && isGlassAllowed()
                                 val glassBorderBrush = rememberNocturneGlassBorderBrush()
                                 val syncConnectionState by remoteSyncManager.connectionState.collectAsState()
                                 val isListenTogetherInRoom = listenTogetherManager.isInRoom
                                 val isSleepTimerActive = playerConnection?.service?.sleepTimer?.isActive == true
 
                                 val topBarContainerColor = when {
-                                    pureBlack -> Color.Black
                                     isGlassActive -> Color.Transparent
+                                    pureBlack -> Color.Black
                                     else -> MaterialTheme.colorScheme.surfaceContainer
                                 }
                                 val topBarOutlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -1321,9 +1322,9 @@ class MainActivity : ComponentActivity() {
                                                 if (isGlassActive) {
                                                     Modifier
                                                         .liquidGlass(
-                                                            config = glassConfig.copy(style = GlassStyle.BLUR),
+                                                            config = glassConfig,
                                                             shape = RoundedCornerShape(24.dp),
-                                                            applyEdgeEffects = false
+                                                            applyEdgeEffects = true
                                                         )
                                                         .border(1.dp, glassBorderBrush, RoundedCornerShape(24.dp))
                                                 } else {
@@ -1491,7 +1492,7 @@ class MainActivity : ComponentActivity() {
                                             // Use graphicsLayer for background color changes
                                             .graphicsLayer {
                                                 val progress = playerBottomSheetState.progress
-                                                alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || floatingNav || (enableFrostedGlass && !pureBlack)) 0f else 1f
+                                                alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || floatingNav || enableFrostedGlass) 0f else 1f
                                             }
                                             .background(baseBg)
                                     )
@@ -1513,7 +1514,7 @@ class MainActivity : ComponentActivity() {
                                         // Use graphicsLayer for background color changes
                                         .graphicsLayer {
                                             val progress = playerBottomSheetState.progress
-                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || (enableFrostedGlass && !pureBlack)) 0f else 1f
+                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || enableFrostedGlass) 0f else 1f
                                         }
                                         .background(baseBg)
                                 )
@@ -1569,14 +1570,14 @@ class MainActivity : ComponentActivity() {
                                 Modifier
                                     .weight(1f)
                                     .then(
-                                        if (enableFrostedGlass && !pureBlack && isGlassAllowed()) {
+                                        if (enableFrostedGlass && isGlassAllowed()) {
                                             Modifier
-                                                .graphicsLayer()
+
                                                 .layerBackdrop(
                                                     appBackdrop,
                                                     frozen = backdropFrozenProvider,
                                                 )
-                                                .graphicsLayer()
+
                                         } else {
                                             Modifier
                                         }
@@ -1600,53 +1601,11 @@ class MainActivity : ComponentActivity() {
                                             it.route == initialState.destination.route
                                         }
 
-                                        if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex)
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        else
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
+                                        fadeIn(tween(180))
                                     },
-                                    // Exit Transition - smoother with smaller offset and longer duration
-                                    exitTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
-                                        val targetRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
-
-                                        if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex)
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        else
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                    },
-                                    // Pop Enter Transition - smoother with smaller offset and longer duration
-                                    popEnterTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
-                                        val previousRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
-
-                                        if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex)
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        else
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
-                                    },
-                                    // Pop Exit Transition - smoother with smaller offset and longer duration
-                                    popExitTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
-                                        val targetRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
-
-                                        if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex)
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        else
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                    },
+                                    exitTransition = { fadeOut(tween(140)) },
+                                    popEnterTransition = { fadeIn(tween(180)) },
+                                    popExitTransition = { fadeOut(tween(140)) },
                                     modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                                 ) {
                                     navigationBuilder(

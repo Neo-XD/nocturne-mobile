@@ -87,7 +87,7 @@ fun LyricsV2(
 
     val playerBackground by com.nocturne.music.utils.rememberEnumPreference(
         key = com.nocturne.music.constants.PlayerBackgroundStyleKey,
-        defaultValue = com.nocturne.music.constants.PlayerBackgroundStyle.DEFAULT
+        defaultValue = com.nocturne.music.constants.PlayerBackgroundStyle.LIVE_MESH
     )
 
     val adaptivePrimary =

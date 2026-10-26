@@ -127,7 +127,7 @@ fun QueueV2(
 
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
-        defaultValue = PlayerBackgroundStyle.DEFAULT
+        defaultValue = PlayerBackgroundStyle.BLUR
     )
     val adaptivePrimary = if (playerBackground == PlayerBackgroundStyle.DEFAULT) MaterialTheme.colorScheme.onSurface else Color.White
     val adaptiveSecondary = if (playerBackground == PlayerBackgroundStyle.DEFAULT) MaterialTheme.colorScheme.onSurfaceVariant else Color.White.copy(alpha = 0.7f)
@@ -275,7 +275,7 @@ fun QueueV2(
                     }
                 }
             }
-            // Timer
+            /* Timer moved to 3-dot menu
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -303,6 +303,9 @@ fun QueueV2(
                     }
                 }
             }
+        }
+
+            */
         }
 
         // Queue Header Row

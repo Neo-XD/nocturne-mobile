@@ -165,7 +165,10 @@ import com.nocturne.music.constants.TranslateLanguageKey
 import com.nocturne.music.constants.TranslateModeKey
 import com.nocturne.music.constants.DeeplFormalityKey
 import com.nocturne.music.constants.PlayerBackgroundStyleKey
+import com.nocturne.music.db.entities.LyricsEntity
 import com.nocturne.music.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
+import com.nocturne.music.di.LyricsHelperEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import com.nocturne.music.lyrics.LyricsEntry
 import com.nocturne.music.lyrics.LyricsUtils.findCurrentLineIndex
 import com.nocturne.music.lyrics.LyricsUtils.findActiveLineIndices
@@ -287,9 +290,38 @@ fun Lyrics(
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val lyrics = remember(lyricsEntity) { lyricsEntity?.lyrics?.trim() }
 
+    LaunchedEffect(mediaMetadata?.id, lyricsEntity) {
+        val currentMetadata = mediaMetadata
+        if (currentMetadata != null && lyricsEntity == null) {
+            delay(350)
+            withContext(Dispatchers.IO) {
+                try {
+                    if (database.lyrics(currentMetadata.id).first() == null) {
+                        val entryPoint = EntryPointAccessors.fromApplication(
+                            context.applicationContext,
+                            LyricsHelperEntryPoint::class.java
+                        )
+                        val lyricsHelper = entryPoint.lyricsHelper()
+                        val fetchedLyricsWithProvider = lyricsHelper.getLyrics(currentMetadata)
+                        database.query {
+                            upsert(
+                                LyricsEntity(
+                                    id = currentMetadata.id,
+                                    lyrics = fetchedLyricsWithProvider.lyrics,
+                                    provider = fetchedLyricsWithProvider.provider
+                                )
+                            )
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
-        defaultValue = PlayerBackgroundStyle.GRADIENT
+        defaultValue = PlayerBackgroundStyle.BLUR
     )
 
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)

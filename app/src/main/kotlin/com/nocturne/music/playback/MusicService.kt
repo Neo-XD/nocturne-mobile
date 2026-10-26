@@ -722,7 +722,7 @@ class MusicService :
         ) { mediaMetadata, showLyrics ->
             mediaMetadata to showLyrics
         }.collectLatest(scope) { (mediaMetadata, showLyrics) ->
-            if (showLyrics && mediaMetadata != null && database.lyrics(mediaMetadata.id)
+            if (mediaMetadata != null && database.lyrics(mediaMetadata.id)
                     .first() == null
             ) {
                 val lyricsWithProvider = lyricsHelper.getLyrics(mediaMetadata)
@@ -892,6 +892,7 @@ class MusicService :
             }
 
         if (dataStore.get(PersistentQueueKey, true)) {
+            scope.launch(Dispatchers.IO) {
             val queueFile = filesDir.resolve(PERSISTENT_QUEUE_FILE)
             if (queueFile.exists()) {
                 runCatching {
@@ -975,6 +976,7 @@ class MusicService :
             }
         }
 
+            }
         // Save queue periodically to prevent queue loss from crash or force kill
         scope.launch {
             while (isActive) {
@@ -3068,6 +3070,7 @@ class MusicService :
         DefaultMediaSourceFactory(
             createDataSourceFactory(),
             ExtractorsFactory {
+                androidx.media3.extractor.DefaultExtractorsFactory().createExtractors() +
                 arrayOf(
                     MatroskaExtractor(),        // .webm / Opus
                     FragmentedMp4Extractor(),   // fragmented .mp4 / AAC (YouTube)

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -133,7 +133,7 @@ fun GlassyWarpBackground(
                         model = ImageRequest.Builder(context)
                             .data(url)
                             .size(160, 160)
-                            .allowHardware(false)
+                            .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                             .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
@@ -153,7 +153,7 @@ fun GlassyWarpBackground(
                         model = ImageRequest.Builder(context)
                             .data(url)
                             .size(140, 140)
-                            .allowHardware(false)
+                            .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                             .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,

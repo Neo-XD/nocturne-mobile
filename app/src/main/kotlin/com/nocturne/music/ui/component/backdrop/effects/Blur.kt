@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Vendored from Kyant0/backdrop v2.0.0 (io.github.kyant0:backdrop)
  * https://github.com/Kyant0/backdrop — Copyright 2025 Kyant0, Apache License 2.0
  *
@@ -22,10 +22,8 @@ fun BackdropEffectScope.blur(
     if (!isRenderEffectSupported()) return
     if (radius <= 0f) return
 
-    if (edgeTreatment != TileMode.Clamp || renderEffect != null) {
-        if (radius > padding) {
-            padding = radius
-        }
+    if (radius > padding) {
+        padding = radius
     }
 
     renderEffect =

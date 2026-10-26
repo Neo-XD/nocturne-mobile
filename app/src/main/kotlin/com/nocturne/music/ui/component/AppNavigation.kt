@@ -79,12 +79,12 @@ fun AppNavigationRail(
     floatingNav: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = false)
-    val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+    val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+    val isGlassActive = enableFrostedGlass && isGlassAllowed()
     val glassConfig = LocalGlassEffectConfig.current
     val containerColor = when {
-        pureBlack -> Color.Black
         isGlassActive -> Color.Transparent
+        pureBlack -> Color.Black
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
     val outlineColor = if (pureBlack) Color(0xFF222222) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -291,11 +291,11 @@ fun AppNavigationBar(
             bottomInset = bottomInset
         )
     } else {
-        val isGlassActive = enableFrostedGlass && !pureBlack && isGlassAllowed()
+        val isGlassActive = enableFrostedGlass && isGlassAllowed()
         val glassConfig = LocalGlassEffectConfig.current
         val containerColor = when {
-            pureBlack -> Color.Black
             isGlassActive -> Color.Transparent
+            pureBlack -> Color.Black
             else -> MaterialTheme.colorScheme.surfaceContainer
         }
         val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant

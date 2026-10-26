@@ -195,20 +195,20 @@ fun AppearanceSettings(
         defaultValue = true
     )
     val (showAudioQualityBadge, onShowAudioQualityBadgeChange) = rememberPreference(
-        ShowAudioQualityBadgeKey,
+        ShowAudioQualityBadgeKey, defaultValue = true) /*
         defaultValue = false
     )
-    val (enableSettingsPopup, onEnableSettingsPopupChange) = rememberPreference(
+    */; val (enableSettingsPopup, onEnableSettingsPopupChange) = rememberPreference(
         EnableSettingsPopupKey,
         defaultValue = true
     )
     val (enableFrostedGlass, onEnableFrostedGlassChange) = rememberPreference(
-        EnableFrostedGlassKey,
+        EnableFrostedGlassKey, defaultValue = true) /*
         defaultValue = false
     )
-    val (glassBlurRadius, onGlassBlurRadiusChange) = rememberPreference(
+    */; val (glassBlurRadius, onGlassBlurRadiusChange) = rememberPreference(
         GlassBlurRadiusKey,
-        defaultValue = 50f
+        defaultValue = 36f
     )
     val (glassVibrancy, onGlassVibrancyChange) = rememberPreference(
         GlassVibrancyKey,
@@ -224,7 +224,7 @@ fun AppearanceSettings(
     )
     val (glassSurfaceOpacity, onGlassSurfaceOpacityChange) = rememberPreference(
         GlassSurfaceOpacityKey,
-        defaultValue = 0.5f
+        defaultValue = 0.22f
     )
     val (glassChromaticAberration, onGlassChromaticAberrationChange) = rememberPreference(
         GlassChromaticAberrationKey,
@@ -324,7 +324,7 @@ fun AppearanceSettings(
     val (playerBackground, onPlayerBackgroundChange) =
         rememberEnumPreference(
             PlayerBackgroundStyleKey,
-            defaultValue = PlayerBackgroundStyle.GRADIENT,
+            defaultValue = PlayerBackgroundStyle.BLUR,
         )
     val (miniPlayerBackground, onMiniPlayerBackgroundChange) =
         rememberEnumPreference(

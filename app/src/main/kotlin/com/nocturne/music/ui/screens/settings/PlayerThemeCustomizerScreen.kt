@@ -108,7 +108,7 @@ fun PlayerThemeCustomizerScreen(
     // Persistent preferences
     val (backgroundStyle, onBackgroundStyleChange) = rememberEnumPreference(
         PlayerBackgroundStyleKey,
-        defaultValue = PlayerBackgroundStyle.GLASSY_WARP
+        defaultValue = PlayerBackgroundStyle.BLUR
     )
     val (blurRadius, onBlurRadiusChange) = rememberPreference(
         PlayerBackgroundBlurRadiusKey,

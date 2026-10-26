@@ -33,8 +33,10 @@ operator fun <T> DataStore<Preferences>.get(key: Preferences.Key<T>): T? =
     } else {
         runBlocking(Dispatchers.IO) {
             try {
-                kotlinx.coroutines.withTimeoutOrNull(1500) {
-                    data.first()[key]
+                kotlinx.coroutines.withTimeoutOrNull(120) {
+                    val prefs = data.first()
+                    ViviPrefCache.update(prefs)
+                    prefs[key]
                 }
             } catch (e: Exception) {
                 null
@@ -51,8 +53,10 @@ fun <T> DataStore<Preferences>.get(
     } else {
         runBlocking(Dispatchers.IO) {
             try {
-                kotlinx.coroutines.withTimeoutOrNull(1500) {
-                    data.first()[key]
+                kotlinx.coroutines.withTimeoutOrNull(120) {
+                    val prefs = data.first()
+                    ViviPrefCache.update(prefs)
+                    prefs[key]
                 } ?: defaultValue
             } catch (e: Exception) {
                 defaultValue
@@ -61,13 +65,13 @@ fun <T> DataStore<Preferences>.get(
     }
 
 suspend fun <T> DataStore<Preferences>.getAsync(key: Preferences.Key<T>): T? =
-    ViviPrefCache.get(key) ?: data.first()[key]
+    ViviPrefCache.get(key) ?: data.first().also { ViviPrefCache.update(it) }[key]
 
 suspend fun <T> DataStore<Preferences>.getAsync(
     key: Preferences.Key<T>,
     defaultValue: T,
 ): T =
-    ViviPrefCache.get(key) ?: data.first()[key] ?: defaultValue
+    ViviPrefCache.get(key) ?: data.first().also { ViviPrefCache.update(it) }[key] ?: defaultValue
 
 fun <T> preference(
     context: Context,
@@ -89,14 +93,17 @@ fun <T> rememberPreference(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    val initialValue = remember(key) {
+        ViviPrefCache.get(key) ?: defaultValue
+    }
     val state =
-        remember {
+        remember(key) {
             context.dataStore.data
                 .map { it[key] ?: defaultValue }
                 .distinctUntilChanged()
-        }.collectAsState(context.dataStore[key] ?: defaultValue)
+        }.collectAsState(initialValue)
 
-    return remember {
+    return remember(key) {
         object : MutableState<T> {
             override var value: T
                 get() = state.value
@@ -123,15 +130,17 @@ inline fun <reified T : Enum<T>> rememberEnumPreference(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val initialValue = context.dataStore[key].toEnum(defaultValue = defaultValue)
+    val initialValue = remember(key) {
+        ViviPrefCache.get(key).toEnum(defaultValue = defaultValue)
+    }
     val state =
-        remember {
+        remember(key) {
             context.dataStore.data
                 .map { it[key].toEnum(defaultValue = defaultValue) }
                 .distinctUntilChanged()
         }.collectAsState(initialValue)
 
-    return remember {
+    return remember(key) {
         object : MutableState<T> {
             override var value: T
                 get() = state.value
@@ -149,5 +158,3 @@ inline fun <reified T : Enum<T>> rememberEnumPreference(
         }
     }
 }
-
-
