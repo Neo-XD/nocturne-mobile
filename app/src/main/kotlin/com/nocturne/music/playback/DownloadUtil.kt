@@ -116,9 +116,13 @@ constructor(
                 ),
         ) { dataSpec ->
             val mediaId = dataSpec.key ?: error("No media id")
-            val length = if (dataSpec.length >= 0) dataSpec.length else 1
-
-            if (playerCache.isCached(mediaId, dataSpec.position, length)) {
+            val contentLength = runBlocking(Dispatchers.IO) { database.song(mediaId).firstOrNull()?.format?.contentLength }
+            val requiredLength = when {
+                dataSpec.length >= 0 -> dataSpec.length
+                contentLength != null && contentLength > dataSpec.position -> contentLength - dataSpec.position
+                else -> null
+            }
+            if (requiredLength != null && playerCache.isCached(mediaId, dataSpec.position, requiredLength)) {
                 return@Factory dataSpec
             }
 
@@ -145,7 +149,7 @@ constructor(
             val format = playbackData.format
 
             val actualContentLength = format.contentLength ?: run {
-                var length: Long? = null
+                var length: Long? = null; try {
                 val client = OkHttpClient.Builder()
                     .proxy(YouTube.proxy)
                     .proxyAuthenticator { _, response ->
@@ -166,7 +170,7 @@ constructor(
                     }
                     .build()
                 client.newCall(request).execute().use { response ->
-                    length = response.header("Content-Length")?.toLongOrNull()
+                    length = response.header("Content-Length")?.toLongOrNull() } } catch (_: Exception) {
                 }
                 length ?: 0L
             }
@@ -226,7 +230,7 @@ constructor(
             val streamUrl = if (playbackData.isSaavnStream) {
                 playbackData.streamUrl
             } else {
-                "${playbackData.streamUrl}&range=0-${format.contentLength ?: 10_000_000}"
+                playbackData.streamUrl
             }
 
             songUrlCache.put(
@@ -245,7 +249,9 @@ constructor(
                     .withRequestHeaders(dataSpec.httpRequestHeaders + cachedStream.requestHeaders)
             }
 
-            dataSpec.withUri(streamUrl.toUri())
+            dataSpec
+                .withUri(streamUrl.toUri())
+                .withRequestHeaders(dataSpec.httpRequestHeaders + playbackData.streamHeaders)
         }
 
     val downloadNotificationHelper =
@@ -330,5 +336,3 @@ constructor(
         scope.cancel()
     }
 }
-
-
