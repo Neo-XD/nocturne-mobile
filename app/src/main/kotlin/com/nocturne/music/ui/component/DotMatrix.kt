@@ -252,11 +252,23 @@ enum class DotMatrixGlyph {
     PAUSE,
     NEXT,
     PREVIOUS,
-    REPLAY
+    REPLAY,
+    SHUFFLE,
+    REPEAT,
+    REPEAT_ONE,
+    FAVORITE,
+    FAVORITE_BORDER,
+    MORE_VERT,
+    VOLUME_DOWN,
+    VOLUME_UP,
+    QUEUE,
+    DEVICE,
+    LYRICS,
+    DISMISS
 }
 
 /**
- * Renders an LED dot-matrix icon for playback controls (Play, Pause, Next, Prev, Replay).
+ * Renders an LED dot-matrix icon for playback controls and player UI elements.
  */
 @Composable
 fun DotMatrixIcon(
@@ -268,13 +280,13 @@ fun DotMatrixIcon(
     androidx.compose.foundation.Canvas(modifier = modifier.size(size)) {
         val grid: Array<IntArray> = when (glyph) {
             DotMatrixGlyph.PLAY -> arrayOf(
-                intArrayOf(1, 0, 0, 0, 0, 0, 0),
-                intArrayOf(1, 1, 0, 0, 0, 0, 0),
-                intArrayOf(1, 1, 1, 0, 0, 0, 0),
-                intArrayOf(1, 1, 1, 1, 1, 0, 0),
-                intArrayOf(1, 1, 1, 0, 0, 0, 0),
-                intArrayOf(1, 1, 0, 0, 0, 0, 0),
-                intArrayOf(1, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 1, 0, 0, 0, 0, 0),
+                intArrayOf(0, 1, 1, 0, 0, 0, 0),
+                intArrayOf(0, 1, 1, 1, 0, 0, 0),
+                intArrayOf(0, 1, 1, 1, 1, 0, 0),
+                intArrayOf(0, 1, 1, 1, 0, 0, 0),
+                intArrayOf(0, 1, 1, 0, 0, 0, 0),
+                intArrayOf(0, 1, 0, 0, 0, 0, 0),
             )
             DotMatrixGlyph.PAUSE -> arrayOf(
                 intArrayOf(0, 1, 1, 0, 1, 1, 0),
@@ -289,7 +301,7 @@ fun DotMatrixIcon(
                 intArrayOf(1, 0, 0, 0, 0, 0, 1),
                 intArrayOf(1, 1, 0, 0, 0, 0, 1),
                 intArrayOf(1, 1, 1, 0, 0, 0, 1),
-                intArrayOf(1, 1, 1, 1, 1, 0, 1),
+                intArrayOf(1, 1, 1, 1, 0, 0, 1),
                 intArrayOf(1, 1, 1, 0, 0, 0, 1),
                 intArrayOf(1, 1, 0, 0, 0, 0, 1),
                 intArrayOf(1, 0, 0, 0, 0, 0, 1),
@@ -298,7 +310,7 @@ fun DotMatrixIcon(
                 intArrayOf(1, 0, 0, 0, 0, 0, 1),
                 intArrayOf(1, 0, 0, 0, 0, 1, 1),
                 intArrayOf(1, 0, 0, 0, 1, 1, 1),
-                intArrayOf(1, 0, 1, 1, 1, 1, 1),
+                intArrayOf(1, 0, 0, 1, 1, 1, 1),
                 intArrayOf(1, 0, 0, 0, 1, 1, 1),
                 intArrayOf(1, 0, 0, 0, 0, 1, 1),
                 intArrayOf(1, 0, 0, 0, 0, 0, 1),
@@ -311,6 +323,114 @@ fun DotMatrixIcon(
                 intArrayOf(1, 0, 0, 1, 0, 1, 0),
                 intArrayOf(0, 1, 0, 0, 1, 0, 0),
                 intArrayOf(0, 0, 1, 1, 0, 0, 0),
+            )
+            DotMatrixGlyph.SHUFFLE -> arrayOf(
+                intArrayOf(0, 0, 0, 0, 1, 1, 1),
+                intArrayOf(1, 1, 0, 0, 0, 0, 1),
+                intArrayOf(0, 0, 1, 0, 0, 1, 0),
+                intArrayOf(0, 0, 0, 1, 1, 0, 0),
+                intArrayOf(0, 0, 1, 0, 0, 1, 0),
+                intArrayOf(1, 1, 0, 0, 0, 0, 1),
+                intArrayOf(0, 0, 0, 0, 1, 1, 1),
+            )
+            DotMatrixGlyph.REPEAT -> arrayOf(
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 0, 0, 0, 1, 1, 0),
+            )
+            DotMatrixGlyph.REPEAT_ONE -> arrayOf(
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(1, 0, 0, 1, 0, 0, 1),
+                intArrayOf(1, 0, 1, 1, 0, 0, 1),
+                intArrayOf(1, 0, 0, 1, 0, 0, 1),
+                intArrayOf(1, 0, 1, 1, 1, 0, 1),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 0, 0, 0, 1, 1, 0),
+            )
+            DotMatrixGlyph.FAVORITE -> arrayOf(
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(1, 1, 1, 1, 1, 1, 1),
+                intArrayOf(1, 1, 1, 1, 1, 1, 1),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 0, 1, 1, 1, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+            )
+            DotMatrixGlyph.FAVORITE_BORDER -> arrayOf(
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(1, 0, 0, 1, 0, 0, 1),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(0, 1, 0, 0, 0, 1, 0),
+                intArrayOf(0, 0, 1, 0, 1, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+            )
+            DotMatrixGlyph.MORE_VERT -> arrayOf(
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+            )
+            DotMatrixGlyph.VOLUME_DOWN -> arrayOf(
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 1, 1, 1, 0, 0, 0),
+                intArrayOf(1, 1, 1, 1, 0, 1, 0),
+                intArrayOf(0, 1, 1, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+            )
+            DotMatrixGlyph.VOLUME_UP -> arrayOf(
+                intArrayOf(0, 0, 0, 1, 0, 0, 1),
+                intArrayOf(0, 1, 1, 1, 0, 1, 0),
+                intArrayOf(1, 1, 1, 1, 1, 0, 1),
+                intArrayOf(1, 1, 1, 1, 0, 0, 0),
+                intArrayOf(1, 1, 1, 1, 1, 0, 1),
+                intArrayOf(0, 1, 1, 1, 0, 1, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 1),
+            )
+            DotMatrixGlyph.QUEUE -> arrayOf(
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+            )
+            DotMatrixGlyph.DEVICE -> arrayOf(
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 1, 0, 0, 0, 1, 0),
+                intArrayOf(0, 1, 0, 1, 0, 1, 0),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 1, 0, 1, 0, 1, 0),
+                intArrayOf(0, 1, 0, 0, 0, 1, 0),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+            )
+            DotMatrixGlyph.LYRICS -> arrayOf(
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(1, 0, 1, 1, 1, 0, 1),
+                intArrayOf(1, 0, 1, 1, 0, 0, 1),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(0, 1, 1, 1, 1, 1, 0),
+                intArrayOf(0, 1, 1, 0, 0, 0, 0),
+            )
+            DotMatrixGlyph.DISMISS -> arrayOf(
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(0, 1, 0, 0, 0, 1, 0),
+                intArrayOf(0, 0, 1, 0, 1, 0, 0),
+                intArrayOf(0, 0, 0, 1, 0, 0, 0),
+                intArrayOf(0, 0, 0, 0, 0, 0, 0),
             )
         }
 

@@ -80,7 +80,7 @@ object AddonManager {
             }
 
             val client = AddonClient(normalized)
-            val manifest = client.manifest().getOrThrow()
+            val manifest = client.verifyAndGetManifest().getOrThrow()
 
             val config = AddonConfig(
                 name = manifest.displayName,

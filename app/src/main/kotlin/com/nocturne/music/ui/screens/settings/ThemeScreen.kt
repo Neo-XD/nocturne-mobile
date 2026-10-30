@@ -46,7 +46,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.nocturne.music.constants.NothingDotMatrixIconsKey
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -484,6 +486,36 @@ fun ThemeControls(
                             pureBlack = pureBlack,
                             darkTheme = effectiveDark,
                             onClick = { onNocturnePresetChange(preset.name) }
+                        )
+                    }
+                }
+
+                if (nocturnePreset == NocturneThemePreset.NOTHING || nocturnePreset == NocturneThemePreset.NOTHING_MONO) {
+                    val (useDotMatrixIcons, onUseDotMatrixIconsChange) = rememberPreference(NothingDotMatrixIconsKey, defaultValue = true)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onUseDotMatrixIconsChange(!useDotMatrixIcons) }
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Dot-matrix icons",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Render playback controls and action buttons using Nothing dot-matrix glyphs",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = useDotMatrixIcons,
+                            onCheckedChange = onUseDotMatrixIconsChange
                         )
                     }
                 }

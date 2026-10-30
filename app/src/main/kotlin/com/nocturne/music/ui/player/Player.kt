@@ -2187,11 +2187,6 @@ fun BottomSheetPlayer(
                                     val isLossless = playingAudioFormatLabel.contains("LOSSLESS", ignoreCase = true) ||
                                         playingAudioFormatLabel.contains("FLAC", ignoreCase = true) ||
                                         playingAudioFormatLabel.contains("HI-RES", ignoreCase = true)
-                                    com.nocturne.music.ui.component.NothingLedDot(
-                                        active = true,
-                                        color = if (isLossless) com.nocturne.music.ui.component.NothingRed else TextBackgroundColor.copy(alpha = 0.8f),
-                                        size = 4.dp
-                                    )
                                     Icon(
                                         painter = painterResource(R.drawable.stream_old_player),
                                         contentDescription = null,
@@ -2288,6 +2283,9 @@ fun BottomSheetPlayer(
                                 label = "nextButtonWeight"
                             )
 
+                            val isNothingTheme = LocalIsNothingTheme.current
+                            val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
+
                             FilledIconButton(
                                 onClick = playerConnection::seekToPrevious,
                                 enabled = canSkipPrevious && !isListenTogetherGuest,
@@ -2301,8 +2299,7 @@ fun BottomSheetPlayer(
                                     .height(68.dp)
                                     .weight(backButtonWeight)
                             ) {
-                                val isNothingTheme = LocalIsNothingTheme.current
-                                if (isNothingTheme) {
+                                if (useDotMatrixIcons) {
                                     DotMatrixIcon(glyph = DotMatrixGlyph.PREVIOUS, tint = sideButtonContentColor, size = 28.dp)
                                 } else {
                                     Icon(
@@ -2337,8 +2334,7 @@ fun BottomSheetPlayer(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    val isNothingTheme = LocalIsNothingTheme.current
-                                    if (isNothingTheme && !isListenTogetherGuest) {
+                                    if (useDotMatrixIcons && !isListenTogetherGuest) {
                                         val glyph = when {
                                             playbackState == STATE_ENDED -> DotMatrixGlyph.REPLAY
                                             effectiveIsPlaying -> DotMatrixGlyph.PAUSE
@@ -2391,7 +2387,8 @@ fun BottomSheetPlayer(
                                     )
                             ) {
                                 val isNothingTheme = LocalIsNothingTheme.current
-                                if (isNothingTheme) {
+                                val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
+                                if (useDotMatrixIcons) {
                                     DotMatrixIcon(glyph = DotMatrixGlyph.NEXT, tint = sideButtonContentColor, size = 28.dp)
                                 } else {
                                     Icon(
@@ -2410,29 +2407,10 @@ fun BottomSheetPlayer(
                                 .fillMaxWidth()
                                 .padding(horizontal = PlayerHorizontalPadding),
                         ) {
-//                            Box(modifier = Modifier.weight(1f)) {
-//                                ResizableIconButton(
-//                                    icon = when (repeatMode) {
-//                                        Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ALL -> R.drawable.repeat
-//                                        Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
-//                                        else -> throw IllegalStateException()
-//                                    },
-//                                    color = TextBackgroundColor,
-//                                    modifier = Modifier
-//                                        .size(32.dp)
-//                                        .padding(4.dp)
-//                                        .align(Alignment.Center)
-//                                        .alpha(if (isListenTogetherGuest) 0.5f else 1f),
-//                                    enabled = !isListenTogetherGuest,
-//                                    onClick = {
-//                                        playerConnection.player.toggleRepeatMode()
-//                                    }
-//                                )
-//                            }
-
                             val isNothingTheme = LocalIsNothingTheme.current
+                            val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
                             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                                if (isNothingTheme) {
+                                if (useDotMatrixIcons) {
                                     IconButton(
                                         onClick = playerConnection::seekToPrevious,
                                         enabled = canSkipPrevious && !isListenTogetherGuest,
@@ -2471,7 +2449,7 @@ fun BottomSheetPlayer(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (isNothingTheme && !isListenTogetherGuest) {
+                                if (useDotMatrixIcons && !isListenTogetherGuest) {
                                     val glyph = when {
                                         playbackState == STATE_ENDED -> DotMatrixGlyph.REPLAY
                                         effectiveIsPlaying -> DotMatrixGlyph.PAUSE
@@ -2507,7 +2485,7 @@ fun BottomSheetPlayer(
                             Spacer(Modifier.width(8.dp))
 
                             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                                if (isNothingTheme) {
+                                if (useDotMatrixIcons) {
                                     IconButton(
                                         onClick = playerConnection::seekToNext,
                                         enabled = canSkipNext && !isListenTogetherGuest,
@@ -2596,14 +2574,26 @@ fun BottomSheetPlayer(
                                 label = "volumeIconScale"
                             )
 
-                            Icon(
-                                painter = painterResource(R.drawable.volume_mute),
-                                contentDescription = null,
-                                tint = textButtonColor,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .graphicsLayer(scaleX = volumeIconScale, scaleY = volumeIconScale)
-                            )
+                            val isNothingTheme = LocalIsNothingTheme.current
+                            val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
+
+                            if (useDotMatrixIcons) {
+                                DotMatrixIcon(
+                                    glyph = DotMatrixGlyph.VOLUME_DOWN,
+                                    tint = textButtonColor,
+                                    size = 20.dp,
+                                    modifier = Modifier.graphicsLayer(scaleX = volumeIconScale, scaleY = volumeIconScale)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(R.drawable.volume_mute),
+                                    contentDescription = null,
+                                    tint = textButtonColor,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .graphicsLayer(scaleX = volumeIconScale, scaleY = volumeIconScale)
+                                )
+                            }
 
                             Spacer(Modifier.width(12.dp))
 
@@ -2638,14 +2628,23 @@ fun BottomSheetPlayer(
 
                             Spacer(Modifier.width(12.dp))
 
-                            Icon(
-                                painter = painterResource(R.drawable.volume_up),
-                                contentDescription = null,
-                                tint = textButtonColor,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .graphicsLayer(scaleX = volumeIconScale, scaleY = volumeIconScale)
-                            )
+                            if (useDotMatrixIcons) {
+                                DotMatrixIcon(
+                                    glyph = DotMatrixGlyph.VOLUME_UP,
+                                    tint = textButtonColor,
+                                    size = 20.dp,
+                                    modifier = Modifier.graphicsLayer(scaleX = volumeIconScale, scaleY = volumeIconScale)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(R.drawable.volume_up),
+                                    contentDescription = null,
+                                    tint = textButtonColor,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .graphicsLayer(scaleX = volumeIconScale, scaleY = volumeIconScale)
+                                )
+                            }
                         }
 
                         val displayBluetoothName = remember(bluetoothDeviceName) {

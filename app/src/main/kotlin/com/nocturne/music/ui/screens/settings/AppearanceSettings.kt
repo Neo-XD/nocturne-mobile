@@ -271,6 +271,10 @@ fun AppearanceSettings(
         com.nocturne.music.constants.UsePlayerV2Key,
         defaultValue = false
     )
+    val (useDotMatrixIcons, onUseDotMatrixIconsChange) = rememberPreference(
+        com.nocturne.music.constants.NothingDotMatrixIconsKey,
+        defaultValue = true
+    )
     
     val currentPlayerDesign = remember(useNewPlayerDesign, usePlayerV2) {
         when {
@@ -2399,6 +2403,29 @@ fun AppearanceSettings(
                     title = { Text("Player Appearance & Theme") },
                     description = { Text("Customize background, blur, slider style, and navigation bar") },
                     onClick = { navController.navigate("settings/appearance/player_customizer") },
+                    isExpressive = true,
+                    descriptionBelow = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.play),
+                    title = { Text("Dot-matrix icons") },
+                    description = { Text("Render playback controls in dot-matrix style (Nothing theme)") },
+                    trailingContent = {
+                        Switch(
+                            checked = useDotMatrixIcons,
+                            onCheckedChange = onUseDotMatrixIconsChange,
+                            thumbContent = {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (useDotMatrixIcons) R.drawable.check else R.drawable.close
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    },
+                    onClick = { onUseDotMatrixIconsChange(!useDotMatrixIcons) },
                     isExpressive = true,
                     descriptionBelow = true
                 ),

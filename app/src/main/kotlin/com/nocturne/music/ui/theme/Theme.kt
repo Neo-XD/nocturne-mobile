@@ -42,6 +42,7 @@ import com.nocturne.music.constants.NocturneThemePreset
 import com.nocturne.music.constants.NocturneThemePresetKey
 
 val LocalIsNothingTheme = staticCompositionLocalOf { false }
+val LocalUseDotMatrixIcons = staticCompositionLocalOf { true }
 
 val DefaultThemeColor = Color(0xFFED5564)
 
@@ -213,7 +214,11 @@ fun NocturneTheme(
 
     val isNothingTheme = (themeCategory == ThemeCategory.NOCTURNE_UI) && (nocturnePreset == NocturneThemePreset.NOTHING || nocturnePreset == NocturneThemePreset.NOTHING_MONO)
 
-    CompositionLocalProvider(LocalIsNothingTheme provides isNothingTheme) {
+    val (useDotMatrixIcons) = rememberPreference(com.nocturne.music.constants.NothingDotMatrixIconsKey, defaultValue = true)
+    CompositionLocalProvider(
+        LocalIsNothingTheme provides isNothingTheme,
+        LocalUseDotMatrixIcons provides useDotMatrixIcons
+    ) {
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         typography = typography,

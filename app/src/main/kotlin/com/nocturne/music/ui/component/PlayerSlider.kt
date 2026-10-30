@@ -89,6 +89,7 @@ private fun DrawScope.drawDotMatrixTrack(
 
     val count = (availableWidth / minSpacing).toInt().coerceAtLeast(8)
     val stepX = availableWidth / count
+    val currentDotIndex = (fraction.coerceIn(0f, 1f) * count).toInt().coerceIn(0, count)
 
     for (i in 0..count) {
         val dotFraction = i.toFloat() / count
@@ -97,12 +98,14 @@ private fun DrawScope.drawDotMatrixTrack(
         val cy = center.y
 
         val isPlayed = if (isRtl) (effectiveDotFraction >= (1f - fraction)) else (effectiveDotFraction <= fraction)
+        val isCurrent = if (isRtl) (i == (count - currentDotIndex)) else (i == currentDotIndex)
+        val currentRadius = if (isCurrent) (dotRadius * 1.5f).coerceAtMost(stepX * 0.48f) else dotRadius
 
         if (isPlayed) {
-            // Full (filled) dot for played parts
+            // Full (filled) dot for played parts (slightly larger at current position)
             drawCircle(
                 color = activeColor,
-                radius = dotRadius,
+                radius = currentRadius,
                 center = Offset(cx, cy),
                 style = Fill
             )
@@ -110,7 +113,7 @@ private fun DrawScope.drawDotMatrixTrack(
             // Hollow (stroked) dot for unplayed parts
             drawCircle(
                 color = inactiveColor.copy(alpha = 0.55f),
-                radius = dotRadius - strokeWidth / 2f,
+                radius = (currentRadius - strokeWidth / 2f).coerceAtLeast(1f),
                 center = Offset(cx, cy),
                 style = Stroke(width = strokeWidth)
             )

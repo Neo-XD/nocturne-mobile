@@ -54,6 +54,7 @@ enum class ThemeCategory {
 }
 
 val NocturneThemePresetKey = stringPreferencesKey("nocturne_theme_preset")
+val NothingDotMatrixIconsKey = booleanPreferencesKey("nothing_dot_matrix_icons")
 
 enum class NocturneThemePreset(val label: String, val accentHex: Long) {
     NOTHING("Nothing Dot", 0xFFD71921),

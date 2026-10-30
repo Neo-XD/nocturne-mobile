@@ -1088,24 +1088,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 val glassAllowed = isGlassAllowed()
-                val pooledGlass = remember(
-                    glassPoolBackdrop,
-                    glassConfig.blurRadius,
-                    glassConfig.vibrancy,
-                    enableFrostedGlass,
-                    glassConfig.anyComponentEnabled,
-                    glassAllowed,
-                ) {
-                    if (enableFrostedGlass && glassAllowed && glassConfig.anyComponentEnabled) {
-                        PooledGlass(
-                            backdrop = glassPoolBackdrop,
-                            blurRadiusDp = glassConfig.blurRadius,
-                            vibrancy = glassConfig.vibrancy,
-                        )
-                    } else {
-                        null
-                    }
-                }
+                val pooledGlass: PooledGlass? = null
 
                 val onNavItemClick: (Screens, Boolean) -> Unit = remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState) {
                     { screen: Screens, isSelected: Boolean ->

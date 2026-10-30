@@ -59,6 +59,10 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import com.nocturne.music.ui.component.DotMatrixGlyph
+import com.nocturne.music.ui.component.DotMatrixIcon
+import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import com.nocturne.music.ui.theme.LocalUseDotMatrixIcons
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -1640,16 +1644,34 @@ private fun PlayerQueueButton(
                 }
             }
             val finalTint = if (enabled) baseTint else baseTint.copy(alpha = 0.5f)
+            val isNothingTheme = LocalIsNothingTheme.current
+            val useDotMatrixIcons = isNothingTheme && LocalUseDotMatrixIcons.current
+            val dotGlyph = when (icon) {
+                R.drawable.lyrics -> DotMatrixGlyph.LYRICS
+                R.drawable.shuffle -> DotMatrixGlyph.SHUFFLE
+                R.drawable.repeat -> DotMatrixGlyph.REPEAT
+                R.drawable.repeat_one -> DotMatrixGlyph.REPEAT_ONE
+                R.drawable.speaker_apple, R.drawable.headset_applemusic -> DotMatrixGlyph.DEVICE
+                else -> null
+            }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    painter = painterResource(id = icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSize),
-                    tint = finalTint
-                )
+                if (useDotMatrixIcons && dotGlyph != null) {
+                    DotMatrixIcon(
+                        glyph = dotGlyph,
+                        tint = finalTint,
+                        size = iconSize
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(id = icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(iconSize),
+                        tint = finalTint
+                    )
+                }
                 if (isActive) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Box(

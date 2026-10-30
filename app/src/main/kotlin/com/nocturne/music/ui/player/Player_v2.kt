@@ -689,16 +689,26 @@ fun PlayerV2(
                                         )
                                     ) {
                                         val isLiked = currentSong?.song?.liked == true
+                                        val isNothingTheme = LocalIsNothingTheme.current
+                                        val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
                                         
                                         IconButton(
                                             onClick = playerConnection::toggleLike
                                         ) {
-                                            Icon(
-                                                painter = painterResource(if (isLiked) R.drawable.star_filled_liked else R.drawable.star_like),
-                                                contentDescription = "Like",
-                                                tint = adaptivePrimary,
-                                                modifier = Modifier.size(24.dp)
-                                            )
+                                            if (useDotMatrixIcons) {
+                                                DotMatrixIcon(
+                                                    glyph = if (isLiked) DotMatrixGlyph.FAVORITE else DotMatrixGlyph.FAVORITE_BORDER,
+                                                    tint = if (isLiked) com.nocturne.music.ui.component.NothingRed else adaptivePrimary,
+                                                    size = 24.dp
+                                                )
+                                            } else {
+                                                Icon(
+                                                    painter = painterResource(if (isLiked) R.drawable.star_filled_liked else R.drawable.star_like),
+                                                    contentDescription = "Like",
+                                                    tint = adaptivePrimary,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
                                         }
                                         
                                         IconButton(
@@ -738,12 +748,20 @@ fun PlayerV2(
                                                 }
                                             }
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.MoreVert,
-                                                contentDescription = "Options",
-                                                tint = adaptivePrimary,
-                                                modifier = Modifier.size(24.dp)
-                                            )
+                                            if (useDotMatrixIcons) {
+                                                DotMatrixIcon(
+                                                    glyph = DotMatrixGlyph.MORE_VERT,
+                                                    tint = adaptivePrimary,
+                                                    size = 24.dp
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.MoreVert,
+                                                    contentDescription = "Options",
+                                                    tint = adaptivePrimary,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -885,6 +903,7 @@ fun PlayerV2(
                     Spacer(modifier = Modifier.height(16.dp))
                 
                     val isNothingTheme = LocalIsNothingTheme.current
+                    val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
                     // Naked Transparent Playback Controls
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -903,7 +922,7 @@ fun PlayerV2(
                                 .size(64.dp)
                                 .alpha(if (isListenTogetherGuest || !canSkipPrevious) 0.4f else 1f)
                         ) {
-                            if (isNothingTheme) {
+                            if (useDotMatrixIcons) {
                                 DotMatrixIcon(glyph = DotMatrixGlyph.PREVIOUS, tint = adaptivePrimary, size = 36.dp)
                             } else {
                                 Icon(painter = painterResource(R.drawable.apple_skip_previous), contentDescription = "Previous", tint = adaptivePrimary, modifier = Modifier.size(48.dp))
@@ -927,7 +946,7 @@ fun PlayerV2(
                                     modifier = Modifier.size(64.dp),
                                     tint = adaptivePrimary
                                 )
-                            } else if (isNothingTheme) {
+                            } else if (useDotMatrixIcons) {
                                 val glyph = when {
                                     playbackState == androidx.media3.common.Player.STATE_ENDED -> DotMatrixGlyph.REPLAY
                                     effectiveIsPlaying -> DotMatrixGlyph.PAUSE
@@ -956,7 +975,7 @@ fun PlayerV2(
                                 .size(64.dp)
                                 .alpha(if (isListenTogetherGuest || !canSkipNext) 0.4f else 1f)
                         ) {
-                            if (isNothingTheme) {
+                            if (useDotMatrixIcons) {
                                 DotMatrixIcon(glyph = DotMatrixGlyph.NEXT, tint = adaptivePrimary, size = 36.dp)
                             } else {
                                 Icon(painter = painterResource(R.drawable.apple_skip_next), contentDescription = "Next", tint = adaptivePrimary, modifier = Modifier.size(48.dp))
@@ -971,7 +990,11 @@ fun PlayerV2(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.VolumeMute, contentDescription = "Volume Down", tint = adaptiveSecondary, modifier = Modifier.size(20.dp))
+                        if (useDotMatrixIcons) {
+                            DotMatrixIcon(glyph = DotMatrixGlyph.VOLUME_DOWN, tint = adaptiveSecondary, size = 20.dp)
+                        } else {
+                            Icon(Icons.Default.VolumeMute, contentDescription = "Volume Down", tint = adaptiveSecondary, modifier = Modifier.size(20.dp))
+                        }
                         Spacer(modifier = Modifier.width(16.dp))
                         
                         val volumeInteractionSource = remember { MutableInteractionSource() }
@@ -1014,8 +1037,12 @@ fun PlayerV2(
                             modifier = Modifier.weight(1f).height(24.dp)
                         )
                         Spacer(modifier = Modifier.width(16.dp))
+                        if (useDotMatrixIcons) {
+                            DotMatrixIcon(glyph = DotMatrixGlyph.VOLUME_UP, tint = adaptiveSecondary, size = 22.dp)
+                        } else {
                             Icon(Icons.Default.VolumeUp, contentDescription = "Volume Up", tint = adaptiveSecondary, modifier = Modifier.size(24.dp))
                         }
+                    }
                     }
                 }
             // (Controls AnimatedVisibility closed above)
@@ -1042,16 +1069,26 @@ fun PlayerV2(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                val isNothingTheme = LocalIsNothingTheme.current
+                val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
                 val isLyricsActive = playerState == PlayerInternalState.LYRICS
                 IconButton(
                     onClick = { playerState = if (isLyricsActive) PlayerInternalState.COVER else PlayerInternalState.LYRICS }
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.lyrics_apple), 
-                        contentDescription = "Lyrics", 
-                        tint = if (isLyricsActive) adaptivePrimary else adaptiveSecondary, 
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (useDotMatrixIcons) {
+                        DotMatrixIcon(
+                            glyph = DotMatrixGlyph.LYRICS,
+                            tint = if (isLyricsActive) adaptivePrimary else adaptiveSecondary,
+                            size = 28.dp
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.lyrics_apple), 
+                            contentDescription = "Lyrics", 
+                            tint = if (isLyricsActive) adaptivePrimary else adaptiveSecondary, 
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
 
                 Box(contentAlignment = Alignment.Center) {
@@ -1060,12 +1097,20 @@ fun PlayerV2(
                             onClick = { showAudioDeviceBottomSheet = true },
                             modifier = Modifier.background(Color.Transparent, RoundedCornerShape(12.dp))
                         ) {
-                            Icon(
-                                Icons.Default.Bluetooth, 
-                                contentDescription = "Audio Device", 
-                                tint = adaptiveSecondary, 
-                                modifier = Modifier.size(28.dp)
-                            )
+                            if (useDotMatrixIcons) {
+                                DotMatrixIcon(
+                                    glyph = DotMatrixGlyph.DEVICE,
+                                    tint = adaptiveSecondary,
+                                    size = 28.dp
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Bluetooth, 
+                                    contentDescription = "Audio Device", 
+                                    tint = adaptiveSecondary, 
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                         Text(
                             text = bluetoothDeviceName!!,
@@ -1090,12 +1135,20 @@ fun PlayerV2(
                             onClick = { showAudioDeviceBottomSheet = true },
                             modifier = Modifier.background(Color.Transparent, RoundedCornerShape(12.dp))
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.speaker_apple),
-                                contentDescription = "Speaker", 
-                                tint = adaptiveSecondary, 
-                                modifier = Modifier.size(28.dp)
-                            )
+                            if (useDotMatrixIcons) {
+                                DotMatrixIcon(
+                                    glyph = DotMatrixGlyph.DEVICE,
+                                    tint = adaptiveSecondary,
+                                    size = 28.dp
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(R.drawable.speaker_apple),
+                                    contentDescription = "Speaker", 
+                                    tint = adaptiveSecondary, 
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -1104,12 +1157,20 @@ fun PlayerV2(
                 IconButton(
                     onClick = { playerState = if (isQueueActive) PlayerInternalState.COVER else PlayerInternalState.QUEUE }
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.apple_queue),
-                        contentDescription = "Queue", 
-                        tint = if (isQueueActive) adaptivePrimary else adaptiveSecondary, 
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (useDotMatrixIcons) {
+                        DotMatrixIcon(
+                            glyph = DotMatrixGlyph.QUEUE,
+                            tint = if (isQueueActive) adaptivePrimary else adaptiveSecondary,
+                            size = 28.dp
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.apple_queue),
+                            contentDescription = "Queue", 
+                            tint = if (isQueueActive) adaptivePrimary else adaptiveSecondary, 
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
                 }
             }
