@@ -540,7 +540,7 @@ fun NocturnePresetItem(
         label = "preset_scale"
     )
     val interactionSource = remember { MutableInteractionSource() }
-    val accentColor = if (preset == NocturneThemePreset.MONOCHROME) {
+    val accentColor = if (preset == NocturneThemePreset.MONOCHROME || preset == NocturneThemePreset.NOTHING_MONO) {
         if (darkTheme) Color.White else Color.Black
     } else {
         Color(preset.accentHex)
@@ -585,7 +585,7 @@ fun NocturnePresetItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (isSelected) {
-                    val checkTint = if (preset == NocturneThemePreset.MONOCHROME) {
+                    val checkTint = if (preset == NocturneThemePreset.MONOCHROME || preset == NocturneThemePreset.NOTHING_MONO) {
                         if (darkTheme) Color.Black else Color.White
                     } else if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) {
                         Color(0xFF131314)

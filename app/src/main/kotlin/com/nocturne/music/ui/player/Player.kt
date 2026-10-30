@@ -2110,12 +2110,12 @@ fun BottomSheetPlayer(
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(100.dp))
                             .background(TextBackgroundColor.copy(alpha = 0.08f))
                             .border(
                                 width = 0.5.dp,
-                                color = TextBackgroundColor.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(4.dp)
+                                color = TextBackgroundColor.copy(alpha = 0.20f),
+                                shape = RoundedCornerShape(100.dp)
                             )
                             .clickable(enabled = !sleepTimerEnabled) {
                                 mediaMetadata.id.let {
@@ -2180,6 +2180,14 @@ fun BottomSheetPlayer(
                                         )
                                     )
 
+                                    val isLossless = playingAudioFormatLabel.contains("LOSSLESS", ignoreCase = true) ||
+                                        playingAudioFormatLabel.contains("FLAC", ignoreCase = true) ||
+                                        playingAudioFormatLabel.contains("HI-RES", ignoreCase = true)
+                                    com.nocturne.music.ui.component.NothingLedDot(
+                                        active = true,
+                                        color = if (isLossless) com.nocturne.music.ui.component.NothingRed else TextBackgroundColor.copy(alpha = 0.8f),
+                                        size = 4.dp
+                                    )
                                     Icon(
                                         painter = painterResource(R.drawable.stream_old_player),
                                         contentDescription = null,

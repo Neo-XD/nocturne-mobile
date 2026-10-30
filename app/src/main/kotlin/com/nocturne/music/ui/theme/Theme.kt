@@ -46,25 +46,24 @@ fun buildNocturneDesktopColorScheme(
     darkTheme: Boolean,
     pureBlack: Boolean
 ): ColorScheme {
-    val accent = if (preset == NocturneThemePreset.MONOCHROME) {
-        if (darkTheme) Color.White else Color.Black
-    } else {
-        Color(preset.accentHex)
+    val isNothing = preset == NocturneThemePreset.NOTHING || preset == NocturneThemePreset.NOTHING_MONO
+    val accent = when (preset) {
+        NocturneThemePreset.MONOCHROME, NocturneThemePreset.NOTHING_MONO -> if (darkTheme) Color.White else Color.Black
+        NocturneThemePreset.NOTHING -> Color(0xFFD71921)
+        else -> Color(preset.accentHex)
     }
-    val onAccent = if (preset == NocturneThemePreset.MONOCHROME) {
-        if (darkTheme) Color.Black else Color.White
-    } else if (preset == NocturneThemePreset.LIME || preset == NocturneThemePreset.TEAL) {
-        Color(0xFF131314)
-    } else {
-        Color.White
+    val onAccent = when (preset) {
+        NocturneThemePreset.MONOCHROME, NocturneThemePreset.NOTHING_MONO -> if (darkTheme) Color.Black else Color.White
+        NocturneThemePreset.LIME, NocturneThemePreset.TEAL -> Color(0xFF131314)
+        else -> Color.White
     }
 
     return if (darkTheme) {
-        val bg = if (pureBlack) Color.Black else Color(0xFF131314)
-        val surface = if (pureBlack) Color.Black else Color(0xFF171719)
-        val card = if (pureBlack) Color(0xFF101012) else Color(0xFF1E1E22)
-        val popover = if (pureBlack) Color(0xFF1A1A1E) else Color(0xFF26262B)
-        val secondary = Color(0xFF2E2E33)
+        val bg = if (pureBlack || isNothing) Color.Black else Color(0xFF131314)
+        val surface = if (pureBlack || isNothing) Color.Black else Color(0xFF171719)
+        val card = if (pureBlack || isNothing) Color(0xFF0F0F12) else Color(0xFF1E1E22)
+        val popover = if (pureBlack || isNothing) Color(0xFF18181C) else Color(0xFF26262B)
+        val secondary = if (isNothing) Color(0xFF222226) else Color(0xFF2E2E33)
         
         ColorScheme(
             primary = accent,

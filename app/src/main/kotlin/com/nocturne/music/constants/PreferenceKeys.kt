@@ -56,6 +56,8 @@ enum class ThemeCategory {
 val NocturneThemePresetKey = stringPreferencesKey("nocturne_theme_preset")
 
 enum class NocturneThemePreset(val label: String, val accentHex: Long) {
+    NOTHING("Nothing Dot", 0xFFD71921),
+    NOTHING_MONO("Nothing Mono", 0xFFFFFFFF),
     MONOCHROME("Monochrome", 0xFFFFFFFF),
     ROSE("Rose", 0xFFE54D60),
     BLUE("Blue", 0xFF3B82F6),

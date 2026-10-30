@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.nocturne.music.ui.component.NavigationTitle
+import com.nocturne.music.ui.component.dotMatrixGrid
 import com.nocturne.music.ui.component.shimmer.ListItemPlaceHolder
 import com.nocturne.music.ui.component.shimmer.ShimmerHost
 import com.nocturne.music.ui.screens.MoodAndGenresButtonHeight
@@ -251,6 +252,7 @@ private fun VibeCard(
             .height(96.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Brush.linearGradient(vibe.gradientColors))
+            .dotMatrixGrid(dotColor = Color.White, alpha = 0.08f)
             .clickable(onClick = onClick)
             .padding(12.dp)
     ) {
@@ -298,13 +300,24 @@ private fun CategoryButton(
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp)
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(4.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

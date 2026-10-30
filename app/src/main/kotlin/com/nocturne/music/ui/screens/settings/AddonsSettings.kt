@@ -48,6 +48,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import com.nocturne.music.ui.component.DotMatrixBadge
+import com.nocturne.music.ui.component.NothingRed
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -125,12 +127,22 @@ fun AddonsSettings(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Enable Community Addons",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Community Addons",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = contentColor
+                        )
+                        DotMatrixBadge(
+                            text = if (globalEnabled) "Active" else "Off",
+                            active = globalEnabled,
+                            ledColor = if (globalEnabled) NothingRed else contentColor.copy(alpha = 0.5f)
+                        )
+                    }
                     Text(
                         text = if (globalEnabled) "Lossless stream resolution active" else "Addon streaming disabled",
                         style = MaterialTheme.typography.bodySmall,

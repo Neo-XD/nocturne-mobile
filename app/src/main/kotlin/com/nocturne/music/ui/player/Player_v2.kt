@@ -48,6 +48,8 @@ import com.nocturne.music.constants.ShowPlayerThumbnailShadowKey
 import com.nocturne.music.constants.PlayerThumbnailShadowElevationKey
 import com.nocturne.music.constants.EnableGoogleCastKey
 import com.nocturne.music.constants.HidePlayerThumbnailKey
+import com.nocturne.music.ui.component.DotMatrixBadge
+import com.nocturne.music.ui.component.NothingRed
 import com.nocturne.music.models.MediaMetadata
 import com.nocturne.music.playback.rememberIsPlayingOnActiveTarget
 import com.nocturne.music.ui.component.BottomSheetState
@@ -854,31 +856,23 @@ fun PlayerV2(
                     ) {
                         Text(makeTimeString(currentPosLong), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                         if (showAudioQualityBadge && playingAudioFormatLabel.isNotBlank()) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(adaptivePrimary.copy(alpha = 0.10f))
-                                    .clickable {
-                                        effectiveMediaMetadata?.id?.let { id ->
-                                            bottomSheetPageState.show {
-                                                com.nocturne.music.ui.utils.ShowMediaInfo(id)
-                                            }
+                            val isLossless = playingAudioFormatLabel.contains("LOSSLESS", ignoreCase = true) ||
+                                playingAudioFormatLabel.contains("FLAC", ignoreCase = true) ||
+                                playingAudioFormatLabel.contains("HI-RES", ignoreCase = true)
+                            DotMatrixBadge(
+                                text = playingAudioFormatLabel,
+                                active = true,
+                                ledColor = if (isLossless) NothingRed else adaptivePrimary,
+                                containerColor = adaptivePrimary.copy(alpha = 0.12f),
+                                contentColor = adaptivePrimary.copy(alpha = 0.9f),
+                                modifier = Modifier.clickable {
+                                    effectiveMediaMetadata?.id?.let { id ->
+                                        bottomSheetPageState.show {
+                                            com.nocturne.music.ui.utils.ShowMediaInfo(id)
                                         }
                                     }
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = playingAudioFormatLabel,
-                                    color = adaptivePrimary.copy(alpha = 0.85f),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.2.sp
-                                    ),
-                                    maxLines = 1
-                                )
-                            }
+                                }
+                            )
                         }
                         Text("-" + makeTimeString(maxOf(0L, duration - currentPosLong)), color = adaptiveSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
