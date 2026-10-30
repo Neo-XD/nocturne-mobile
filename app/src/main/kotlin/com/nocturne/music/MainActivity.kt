@@ -1463,7 +1463,8 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxSize()
                             .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
-                    ) {
+                    ) { _ ->
+                        Box(Modifier.fillMaxSize()) {
                         Row(Modifier.fillMaxSize()) {
                             if (showRail && currentRoute != "wrapped" && currentRoute != "update") {
                                 AppNavigationRail(
@@ -1641,6 +1642,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    }
                     }
 
                     BottomSheetMenu(

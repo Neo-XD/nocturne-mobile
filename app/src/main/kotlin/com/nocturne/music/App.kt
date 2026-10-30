@@ -66,12 +66,12 @@ class App : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         context = this
 
-        // Start preferences cache immediately
-        ViviPrefCache.start(this)
-        com.nocturne.music.addons.AddonManager.init(this)
-
         // Install crash handler first
         CrashHandler.install(this)
+
+        // Start preferences cache immediately
+        runCatching { ViviPrefCache.start(this) }
+        runCatching { com.nocturne.music.addons.AddonManager.init(this) }
 
         // Initialize cipher deobfuscator for WEB_REMIX streaming
         // Initialize cipher deobfuscator for WEB_REMIX streaming off the main thread
