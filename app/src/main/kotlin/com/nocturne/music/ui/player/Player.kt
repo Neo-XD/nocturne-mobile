@@ -4,6 +4,10 @@
  */
 
 package com.nocturne.music.ui.player
+import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import com.nocturne.music.ui.component.DotMatrixGlyph
+import com.nocturne.music.ui.component.DotMatrixIcon
+import androidx.compose.material3.IconButton
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -817,7 +821,7 @@ fun BottomSheetPlayer(
                         duration = d
                     }
                 }
-                delay(100)
+                delay(250)
             }
         } else if (!isCasting) {
             if (!effectiveIsPlaying) {
@@ -828,7 +832,7 @@ fun BottomSheetPlayer(
                 }
             } else {
                 while (isActive) {
-                    delay(100) // Update more frequently for smoother progress bar
+                    delay(250) // Update more frequently for smoother progress bar
                     if (sliderPosition == null) { // Only update if user isn't dragging
                         val rawDuration = playerConnection.player.duration
                         position = playerConnection.player.currentPosition.coerceAtLeast(0L)
@@ -910,7 +914,7 @@ fun BottomSheetPlayer(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .alpha(backgroundAlpha)
+                                        .graphicsLayer { alpha = backgroundAlpha }
                                 ) {
                                     // 1. Pre-blurred CPU StackBlur + LRU cache (zero per-frame GPU overhead)
                                     BlurredBackdropImage(
@@ -992,7 +996,7 @@ fun BottomSheetPlayer(
                                 Box(
                                     Modifier
                                         .fillMaxSize()
-                                        .alpha(backgroundAlpha)
+                                        .graphicsLayer { alpha = backgroundAlpha }
                                         .background(Brush.verticalGradient(colorStops = gradientColorStops))
                                         .background(Color.Black.copy(alpha = 0.2f))
                                 )
@@ -1080,7 +1084,7 @@ fun BottomSheetPlayer(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .alpha(backgroundAlpha)
+                                        .graphicsLayer { alpha = backgroundAlpha }
                                         .drawWithCache {
                                             val width = size.width
                                             val height = size.height
@@ -1167,7 +1171,7 @@ fun BottomSheetPlayer(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .alpha(backgroundAlpha)
+                                        .graphicsLayer { alpha = backgroundAlpha }
                                 ) {
                                     // Layer 1: Full-Screen Blurred Background (Pre-blurred CPU StackBlur + LRU Cache)
                                      BlurredBackdropImage(
@@ -1301,7 +1305,7 @@ fun BottomSheetPlayer(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .alpha(backgroundAlpha)
+                                        .graphicsLayer { alpha = backgroundAlpha }
                                         .graphicsLayer {
                                             // Scale up to avoid showing edges during rotation
                                             scaleX = 1.7f
@@ -2297,11 +2301,16 @@ fun BottomSheetPlayer(
                                     .height(68.dp)
                                     .weight(backButtonWeight)
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.skip_previous),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp)
-                                )
+                                val isNothingTheme = LocalIsNothingTheme.current
+                                if (isNothingTheme) {
+                                    DotMatrixIcon(glyph = DotMatrixGlyph.PREVIOUS, tint = sideButtonContentColor, size = 28.dp)
+                                } else {
+                                    Icon(
+                                        painter = painterResource(R.drawable.skip_previous),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
                             }
 
                             Spacer(modifier = Modifier.width(8.dp))
@@ -2328,21 +2337,31 @@ fun BottomSheetPlayer(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    Icon(
-                                        painter = painterResource(
-                                            if (isListenTogetherGuest) {
-                                                if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                                    val isNothingTheme = LocalIsNothingTheme.current
+                                    if (isNothingTheme && !isListenTogetherGuest) {
+                                        val glyph = when {
+                                            playbackState == STATE_ENDED -> DotMatrixGlyph.REPLAY
+                                            effectiveIsPlaying -> DotMatrixGlyph.PAUSE
+                                            else -> DotMatrixGlyph.PLAY
+                                        }
+                                        DotMatrixIcon(glyph = glyph, tint = iconButtonColor, size = 28.dp)
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(
+                                                if (isListenTogetherGuest) {
+                                                    if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                                                } else {
+                                                    if (effectiveIsPlaying) R.drawable.pause else R.drawable.play
+                                                }
+                                            ),
+                                            contentDescription = if (isListenTogetherGuest) {
+                                                if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute)
                                             } else {
-                                                if (effectiveIsPlaying) R.drawable.pause else R.drawable.play
-                                            }
-                                        ),
-                                        contentDescription = if (isListenTogetherGuest) {
-                                            if (isMuted) stringResource(R.string.unmute) else stringResource(R.string.mute)
-                                        } else {
-                                            if (effectiveIsPlaying) stringResource(R.string.pause) else stringResource(R.string.play)
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    )
+                                                if (effectiveIsPlaying) stringResource(R.string.pause) else stringResource(R.string.play)
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = if (isListenTogetherGuest) {
@@ -2371,11 +2390,16 @@ fun BottomSheetPlayer(
                                     .weight(nextButtonWeight
                                     )
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.skip_next),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp)
-                                )
+                                val isNothingTheme = LocalIsNothingTheme.current
+                                if (isNothingTheme) {
+                                    DotMatrixIcon(glyph = DotMatrixGlyph.NEXT, tint = sideButtonContentColor, size = 28.dp)
+                                } else {
+                                    Icon(
+                                        painter = painterResource(R.drawable.skip_next),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
                             }
                         }
                     } else {
@@ -2406,18 +2430,29 @@ fun BottomSheetPlayer(
 //                                )
 //                            }
 
-                            Box(modifier = Modifier.weight(1f)) {
-                                ResizableIconButton(
-                                    icon = R.drawable.apple_skip_previous,
-                                    enabled = canSkipPrevious && !isListenTogetherGuest,
-                                    color = TextBackgroundColor,
-                                    modifier =
-                                Modifier
-                                    .size(48.dp)
-                                    .align(Alignment.Center)
-                                    .alpha(if (isListenTogetherGuest) 0.5f else 1f),
-                                    onClick = playerConnection::seekToPrevious,
-                                )
+                            val isNothingTheme = LocalIsNothingTheme.current
+                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                if (isNothingTheme) {
+                                    IconButton(
+                                        onClick = playerConnection::seekToPrevious,
+                                        enabled = canSkipPrevious && !isListenTogetherGuest,
+                                        modifier = Modifier.size(48.dp).alpha(if (isListenTogetherGuest) 0.5f else 1f)
+                                    ) {
+                                        DotMatrixIcon(glyph = DotMatrixGlyph.PREVIOUS, tint = TextBackgroundColor, size = 32.dp)
+                                    }
+                                } else {
+                                    ResizableIconButton(
+                                        icon = R.drawable.apple_skip_previous,
+                                        enabled = canSkipPrevious && !isListenTogetherGuest,
+                                        color = TextBackgroundColor,
+                                        modifier =
+                                    Modifier
+                                        .size(48.dp)
+                                        .align(Alignment.Center)
+                                        .alpha(if (isListenTogetherGuest) 0.5f else 1f),
+                                        onClick = playerConnection::seekToPrevious,
+                                    )
+                                }
                             }
 
                             Spacer(Modifier.width(8.dp))
@@ -2434,45 +2469,65 @@ fun BottomSheetPlayer(
                                         }
                                         playerConnection.togglePlayPause()
                                     },
+                                contentAlignment = Alignment.Center
                             ) {
-                                Image(
-                                    painter =
-                                    painterResource(
-                                        if (isListenTogetherGuest) {
-                                            if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                                        } else if (playbackState ==
-                                            STATE_ENDED
-                                        ) {
-                                            R.drawable.replay
-                                        } else if (effectiveIsPlaying) {
-                                            R.drawable.pause_applemusic
-                                        } else {
-                                            R.drawable.play_applemusic
-                                        },
-                                    ),
-                                    contentDescription = null,
-                                    colorFilter = ColorFilter.tint(TextBackgroundColor),
-                                    modifier =
-                                    Modifier
-                                        .align(Alignment.Center)
-                                        .size(72.dp),
-                                )
+                                if (isNothingTheme && !isListenTogetherGuest) {
+                                    val glyph = when {
+                                        playbackState == STATE_ENDED -> DotMatrixGlyph.REPLAY
+                                        effectiveIsPlaying -> DotMatrixGlyph.PAUSE
+                                        else -> DotMatrixGlyph.PLAY
+                                    }
+                                    DotMatrixIcon(glyph = glyph, tint = TextBackgroundColor, size = 52.dp)
+                                } else {
+                                    Image(
+                                        painter =
+                                        painterResource(
+                                            if (isListenTogetherGuest) {
+                                                if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                                            } else if (playbackState ==
+                                                STATE_ENDED
+                                            ) {
+                                                R.drawable.replay
+                                            } else if (effectiveIsPlaying) {
+                                                R.drawable.pause_applemusic
+                                            } else {
+                                                R.drawable.play_applemusic
+                                            },
+                                        ),
+                                        contentDescription = null,
+                                        colorFilter = ColorFilter.tint(TextBackgroundColor),
+                                        modifier =
+                                        Modifier
+                                            .align(Alignment.Center)
+                                            .size(72.dp),
+                                    )
+                                }
                             }
 
                             Spacer(Modifier.width(8.dp))
 
-                            Box(modifier = Modifier.weight(1f)) {
-                                ResizableIconButton(
-                                    icon = R.drawable.apple_skip_next,
-                                    enabled = canSkipNext && !isListenTogetherGuest,
-                                    color = TextBackgroundColor,
-                                    modifier =
-                                Modifier
-                                    .size(48.dp)
-                                    .align(Alignment.Center)
-                                    .alpha(if (isListenTogetherGuest) 0.5f else 1f),
-                                    onClick = playerConnection::seekToNext,
-                                )
+                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                if (isNothingTheme) {
+                                    IconButton(
+                                        onClick = playerConnection::seekToNext,
+                                        enabled = canSkipNext && !isListenTogetherGuest,
+                                        modifier = Modifier.size(48.dp).alpha(if (isListenTogetherGuest) 0.5f else 1f)
+                                    ) {
+                                        DotMatrixIcon(glyph = DotMatrixGlyph.NEXT, tint = TextBackgroundColor, size = 32.dp)
+                                    }
+                                } else {
+                                    ResizableIconButton(
+                                        icon = R.drawable.apple_skip_next,
+                                        enabled = canSkipNext && !isListenTogetherGuest,
+                                        color = TextBackgroundColor,
+                                        modifier =
+                                    Modifier
+                                        .size(48.dp)
+                                        .align(Alignment.Center)
+                                        .alpha(if (isListenTogetherGuest) 0.5f else 1f),
+                                        onClick = playerConnection::seekToNext,
+                                    )
+                                }
                             }
 
 //                            Box(modifier = Modifier.weight(1f)) {
@@ -3252,27 +3307,73 @@ fun rememberPlayingAudioFormatLabel(
             combined.contains("audio/raw") ||
             combined.contains("pcm")
 
+        val freqStr = if (sampleRate > 0) {
+            if (sampleRate % 1000 == 0) "kHz" else String.format(Locale.ROOT, "%.1fkHz", sampleRate / 1000f)
+        } else null
+
+        val bitDepthStr = if (bitDepth > 0) "-bit" else null
+        val bitrateKbps = if (bitrate > 0) bitrate / 1000 else 0
+        val bitrateStr = if (bitrateKbps > 0) " kbps" else null
+
         when {
             isFlacOrLossless -> {
                 val isHiRes = (bitDepth >= 24 && sampleRate >= 96_000) ||
                     sampleRate >= 96_000 ||
                     (bitDepth >= 24 && bitrate >= 1_800_000) ||
                     bitrate >= 1_800_000
-                if (isHiRes) {
-                    "Hi-Res Lossless"
-                } else {
-                    "Lossless"
+                val baseLabel = if (isHiRes) "Hi-Res" else "Lossless"
+                buildString {
+                    append(baseLabel)
+                    if (bitDepthStr != null && freqStr != null) {
+                        append("  / ")
+                    } else if (bitDepthStr != null) {
+                        append(" ")
+                    } else if (freqStr != null) {
+                        append(" ")
+                    }
+                    if (bitrateStr != null) {
+                        append(" • ")
+                    }
                 }
             }
-            combined.contains("opus") || combined.contains("webm") -> "OPUS"
-            combined.contains("mp4a") || combined.contains("aac") || combined.contains("mp4") || combined.contains("m4a") -> "AAC"
-            combined.contains("mp3") || combined.contains("mpeg") -> "MP3"
-            combined.contains("vorbis") || combined.contains("ogg") -> "OGG"
+            combined.contains("opus") || combined.contains("webm") -> {
+                buildString {
+                    append("OPUS")
+                    if (bitrateStr != null) append(" ")
+                    if (bitDepthStr != null) append(" • ")
+                }
+            }
+            combined.contains("mp4a") || combined.contains("aac") || combined.contains("mp4") || combined.contains("m4a") -> {
+                buildString {
+                    append("AAC")
+                    if (bitrateStr != null) append(" ")
+                    if (bitDepthStr != null) append(" • ")
+                }
+            }
+            combined.contains("mp3") || combined.contains("mpeg") -> {
+                buildString {
+                    append("MP3")
+                    if (bitrateStr != null) append(" ")
+                    if (bitDepthStr != null) append(" • ")
+                }
+            }
+            combined.contains("vorbis") || combined.contains("ogg") -> {
+                buildString {
+                    append("OGG")
+                    if (bitrateStr != null) append(" ")
+                    if (bitDepthStr != null) append(" • ")
+                }
+            }
             else -> {
                 val fallback = currentFormat?.codecs?.takeIf { it.isNotBlank() }
                     ?: exoAudioFormat?.sampleMimeType?.substringAfter("/")?.takeIf { it.isNotBlank() }
                     ?: currentFormat?.mimeType?.substringAfter("/")?.substringBefore(";")?.takeIf { it.isNotBlank() }
-                fallback?.uppercase(Locale.ROOT) ?: "OPUS"
+                val name = fallback?.uppercase(Locale.ROOT) ?: "OPUS"
+                buildString {
+                    append(name)
+                    if (bitrateStr != null) append(" ")
+                    if (bitDepthStr != null) append(" • ")
+                }
             }
         }
     }

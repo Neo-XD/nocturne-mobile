@@ -1,4 +1,7 @@
 package com.nocturne.music.ui.player
+import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import com.nocturne.music.ui.component.DotMatrixGlyph
+import com.nocturne.music.ui.component.DotMatrixIcon
 
 import android.content.BroadcastReceiver
 import android.content.Intent
@@ -124,6 +127,7 @@ fun PlayerV2(
     val isMuted by playerConnection.isMuted.collectAsState()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsState()
 
     // Cast state - mirrors Player.kt lines 366-378
     val castHandler = remember(playerConnection) {
@@ -288,7 +292,7 @@ fun PlayerV2(
                         duration = d
                     }
                 }
-                delay(100)
+                delay(250)
             }
         } else if (!isCasting) {
             if (!effectiveIsPlaying) {
@@ -299,7 +303,7 @@ fun PlayerV2(
                 }
             } else {
                 while (isActive) {
-                    delay(100)
+                    delay(250)
                     if (sliderPosition == null) {
                         val rawDuration = playerConnection.player.duration
                         position = playerConnection.player.currentPosition.coerceAtLeast(0L)
@@ -861,6 +865,7 @@ fun PlayerV2(
                                 playingAudioFormatLabel.contains("HI-RES", ignoreCase = true)
                             DotMatrixBadge(
                                 text = playingAudioFormatLabel,
+                                showLed = false,
                                 active = true,
                                 ledColor = if (isLossless) NothingRed else adaptivePrimary,
                                 containerColor = adaptivePrimary.copy(alpha = 0.12f),
@@ -879,6 +884,7 @@ fun PlayerV2(
                 
                     Spacer(modifier = Modifier.height(16.dp))
                 
+                    val isNothingTheme = LocalIsNothingTheme.current
                     // Naked Transparent Playback Controls
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -897,7 +903,11 @@ fun PlayerV2(
                                 .size(64.dp)
                                 .alpha(if (isListenTogetherGuest || !canSkipPrevious) 0.4f else 1f)
                         ) {
-                            Icon(painter = painterResource(R.drawable.apple_skip_previous), contentDescription = "Previous", tint = adaptivePrimary, modifier = Modifier.size(48.dp))
+                            if (isNothingTheme) {
+                                DotMatrixIcon(glyph = DotMatrixGlyph.PREVIOUS, tint = adaptivePrimary, size = 36.dp)
+                            } else {
+                                Icon(painter = painterResource(R.drawable.apple_skip_previous), contentDescription = "Previous", tint = adaptivePrimary, modifier = Modifier.size(48.dp))
+                            }
                         }
                 
                         IconButton(
@@ -917,6 +927,13 @@ fun PlayerV2(
                                     modifier = Modifier.size(64.dp),
                                     tint = adaptivePrimary
                                 )
+                            } else if (isNothingTheme) {
+                                val glyph = when {
+                                    playbackState == androidx.media3.common.Player.STATE_ENDED -> DotMatrixGlyph.REPLAY
+                                    effectiveIsPlaying -> DotMatrixGlyph.PAUSE
+                                    else -> DotMatrixGlyph.PLAY
+                                }
+                                DotMatrixIcon(glyph = glyph, tint = adaptivePrimary, size = 52.dp)
                             } else {
                                 Icon(
                                     painter = painterResource(if (effectiveIsPlaying) R.drawable.pause_applemusic else R.drawable.play_applemusic),
@@ -939,7 +956,11 @@ fun PlayerV2(
                                 .size(64.dp)
                                 .alpha(if (isListenTogetherGuest || !canSkipNext) 0.4f else 1f)
                         ) {
-                            Icon(painter = painterResource(R.drawable.apple_skip_next), contentDescription = "Next", tint = adaptivePrimary, modifier = Modifier.size(48.dp))
+                            if (isNothingTheme) {
+                                DotMatrixIcon(glyph = DotMatrixGlyph.NEXT, tint = adaptivePrimary, size = 36.dp)
+                            } else {
+                                Icon(painter = painterResource(R.drawable.apple_skip_next), contentDescription = "Next", tint = adaptivePrimary, modifier = Modifier.size(48.dp))
+                            }
                         }
                     }
                     

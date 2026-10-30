@@ -15,6 +15,8 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
@@ -38,6 +40,8 @@ import com.nocturne.music.constants.ThemeCategory
 import com.nocturne.music.constants.ThemeCategoryKey
 import com.nocturne.music.constants.NocturneThemePreset
 import com.nocturne.music.constants.NocturneThemePresetKey
+
+val LocalIsNothingTheme = staticCompositionLocalOf { false }
 
 val DefaultThemeColor = Color(0xFFED5564)
 
@@ -207,12 +211,16 @@ fun NocturneTheme(
         }
     }
 
+    val isNothingTheme = (themeCategory == ThemeCategory.NOCTURNE_UI) && (nocturnePreset == NocturneThemePreset.NOTHING || nocturnePreset == NocturneThemePreset.NOTHING_MONO)
+
+    CompositionLocalProvider(LocalIsNothingTheme provides isNothingTheme) {
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         typography = typography,
         motionScheme = MotionScheme.expressive(),
         content = content
     )
+    }
 }
 
 @Composable

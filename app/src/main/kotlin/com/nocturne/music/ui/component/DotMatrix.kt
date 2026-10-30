@@ -153,6 +153,7 @@ fun DotMatrixBadge(
     modifier: Modifier = Modifier,
     active: Boolean = true,
     pulsing: Boolean = false,
+    showLed: Boolean = true,
     ledColor: Color = NothingRed,
     containerColor: Color = Color(0xFF141416),
     contentColor: Color = Color.White,
@@ -169,12 +170,14 @@ fun DotMatrixBadge(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            NothingLedDot(
-                active = active,
-                pulsing = pulsing,
-                color = ledColor,
-                size = 5.dp,
-            )
+            if (showLed) {
+                NothingLedDot(
+                    active = active,
+                    pulsing = pulsing,
+                    color = ledColor,
+                    size = 5.dp,
+                )
+            }
             Text(
                 text = text.uppercase(),
                 color = contentColor,
@@ -237,6 +240,97 @@ fun DotMatrixHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 22.dp, top = 2.dp),
             )
+        }
+    }
+}
+
+/**
+ * Types of player glyphs rendered using Nothing's LED dot matrix grid.
+ */
+enum class DotMatrixGlyph {
+    PLAY,
+    PAUSE,
+    NEXT,
+    PREVIOUS,
+    REPLAY
+}
+
+/**
+ * Renders an LED dot-matrix icon for playback controls (Play, Pause, Next, Prev, Replay).
+ */
+@Composable
+fun DotMatrixIcon(
+    glyph: DotMatrixGlyph,
+    modifier: Modifier = Modifier,
+    tint: Color = Color.White,
+    size: Dp = 32.dp,
+) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(size)) {
+        val grid: Array<IntArray> = when (glyph) {
+            DotMatrixGlyph.PLAY -> arrayOf(
+                intArrayOf(1, 0, 0, 0, 0, 0, 0),
+                intArrayOf(1, 1, 0, 0, 0, 0, 0),
+                intArrayOf(1, 1, 1, 0, 0, 0, 0),
+                intArrayOf(1, 1, 1, 1, 1, 0, 0),
+                intArrayOf(1, 1, 1, 0, 0, 0, 0),
+                intArrayOf(1, 1, 0, 0, 0, 0, 0),
+                intArrayOf(1, 0, 0, 0, 0, 0, 0),
+            )
+            DotMatrixGlyph.PAUSE -> arrayOf(
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+                intArrayOf(0, 1, 1, 0, 1, 1, 0),
+            )
+            DotMatrixGlyph.NEXT -> arrayOf(
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(1, 1, 0, 0, 0, 0, 1),
+                intArrayOf(1, 1, 1, 0, 0, 0, 1),
+                intArrayOf(1, 1, 1, 1, 1, 0, 1),
+                intArrayOf(1, 1, 1, 0, 0, 0, 1),
+                intArrayOf(1, 1, 0, 0, 0, 0, 1),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+            )
+            DotMatrixGlyph.PREVIOUS -> arrayOf(
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(1, 0, 0, 0, 0, 1, 1),
+                intArrayOf(1, 0, 0, 0, 1, 1, 1),
+                intArrayOf(1, 0, 1, 1, 1, 1, 1),
+                intArrayOf(1, 0, 0, 0, 1, 1, 1),
+                intArrayOf(1, 0, 0, 0, 0, 1, 1),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+            )
+            DotMatrixGlyph.REPLAY -> arrayOf(
+                intArrayOf(0, 1, 1, 1, 1, 0, 0),
+                intArrayOf(1, 0, 0, 0, 0, 1, 0),
+                intArrayOf(1, 0, 0, 0, 0, 0, 1),
+                intArrayOf(1, 0, 1, 1, 0, 0, 1),
+                intArrayOf(1, 0, 0, 1, 0, 1, 0),
+                intArrayOf(0, 1, 0, 0, 1, 0, 0),
+                intArrayOf(0, 0, 1, 1, 0, 0, 0),
+            )
+        }
+
+        val cols = 7
+        val rows = 7
+        val cellSize = this.size.minDimension / cols
+        val dotRadius = (cellSize * 0.38f).coerceAtLeast(1.5f)
+        val startX = (this.size.width - (cols * cellSize)) / 2f + cellSize / 2f
+        val startY = (this.size.height - (rows * cellSize)) / 2f + cellSize / 2f
+
+        for (r in 0 until rows) {
+            for (col in 0 until cols) {
+                if (grid[r][col] == 1) {
+                    drawCircle(
+                        color = tint,
+                        radius = dotRadius,
+                        center = Offset(startX + col * cellSize, startY + r * cellSize),
+                    )
+                }
+            }
         }
     }
 }

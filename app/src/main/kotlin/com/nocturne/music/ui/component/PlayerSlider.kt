@@ -23,6 +23,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
+import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerSliderTrack(
@@ -31,30 +35,86 @@ fun PlayerSliderTrack(
     colors: SliderColors = SliderDefaults.colors(),
     trackHeight: Dp = 10.dp
 ) {
+    val isNothingTheme = LocalIsNothingTheme.current
     val inactiveTrackColor = colors.inactiveTrackColor
     val activeTrackColor = colors.activeTrackColor
     val inactiveTickColor = colors.inactiveTickColor
     val activeTickColor = colors.activeTickColor
     val valueRange = sliderState.valueRange
+    val currentFraction = calcFraction(
+        valueRange.start,
+        valueRange.endInclusive,
+        sliderState.value.coerceIn(valueRange.start, valueRange.endInclusive)
+    )
     Canvas(
         modifier
             .fillMaxWidth()
             .height(trackHeight)
     ) {
-        drawTrack(
-            stepsToTickFractions(sliderState.steps),
-            0f,
-            calcFraction(
-                valueRange.start,
-                valueRange.endInclusive,
-                sliderState.value.coerceIn(valueRange.start, valueRange.endInclusive)
-            ),
-            inactiveTrackColor,
-            activeTrackColor,
-            inactiveTickColor,
-            activeTickColor,
-            trackHeight
-        )
+        if (isNothingTheme) {
+            drawDotMatrixTrack(
+                fraction = currentFraction,
+                activeColor = activeTrackColor,
+                inactiveColor = inactiveTrackColor,
+                trackHeight = trackHeight
+            )
+        } else {
+            drawTrack(
+                stepsToTickFractions(sliderState.steps),
+                0f,
+                currentFraction,
+                inactiveTrackColor,
+                activeTrackColor,
+                inactiveTickColor,
+                activeTickColor,
+                trackHeight
+            )
+        }
+    }
+}
+
+private fun DrawScope.drawDotMatrixTrack(
+    fraction: Float,
+    activeColor: Color,
+    inactiveColor: Color,
+    trackHeight: Dp
+) {
+    val isRtl = layoutDirection == LayoutDirection.Rtl
+    val dotRadius = (trackHeight.toPx() / 3f).coerceIn(2.5f.dp.toPx(), 4.5f.dp.toPx())
+    val strokeWidth = 1.5f.dp.toPx()
+    val dotDiameter = dotRadius * 2
+    val minSpacing = dotDiameter + 5.dp.toPx()
+    val availableWidth = size.width - dotDiameter
+    if (availableWidth <= 0f) return
+
+    val count = (availableWidth / minSpacing).toInt().coerceAtLeast(8)
+    val stepX = availableWidth / count
+
+    for (i in 0..count) {
+        val dotFraction = i.toFloat() / count
+        val effectiveDotFraction = if (isRtl) (1f - dotFraction) else dotFraction
+        val cx = dotRadius + i * stepX
+        val cy = center.y
+
+        val isPlayed = if (isRtl) (effectiveDotFraction >= (1f - fraction)) else (effectiveDotFraction <= fraction)
+
+        if (isPlayed) {
+            // Full (filled) dot for played parts
+            drawCircle(
+                color = activeColor,
+                radius = dotRadius,
+                center = Offset(cx, cy),
+                style = Fill
+            )
+        } else {
+            // Hollow (stroked) dot for unplayed parts
+            drawCircle(
+                color = inactiveColor.copy(alpha = 0.55f),
+                radius = dotRadius - strokeWidth / 2f,
+                center = Offset(cx, cy),
+                style = Stroke(width = strokeWidth)
+            )
+        }
     }
 }
 
