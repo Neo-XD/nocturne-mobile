@@ -175,6 +175,9 @@ enum class AudioQuality {
     AUTO,
     HIGH,
     LOW,
+    LOSSLESS,
+    HI_RES,
+    DOLBY_ATMOS,
 }
 
 val AudioOffload = booleanPreferencesKey("enableOffload")

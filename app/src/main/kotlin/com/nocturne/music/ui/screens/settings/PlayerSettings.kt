@@ -220,6 +220,9 @@ fun PlayerSettings(
                     AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
                     AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
                     AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
+                    AudioQuality.LOSSLESS -> "Lossless (16-bit / 44.1kHz FLAC)"
+                    AudioQuality.HI_RES -> "Hi-Res Lossless (Up to 24-bit / 192kHz)"
+                    AudioQuality.DOLBY_ATMOS -> "Dolby Atmos / Spatial Audio"
                 }
             }
         )
@@ -279,6 +282,9 @@ fun PlayerSettings(
                                 AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
                                 AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
                                 AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
+                                AudioQuality.LOSSLESS -> "Lossless (FLAC)"
+                                AudioQuality.HI_RES -> "Hi-Res Lossless"
+                                AudioQuality.DOLBY_ATMOS -> "Dolby Atmos"
                             }
                         )
                     },
