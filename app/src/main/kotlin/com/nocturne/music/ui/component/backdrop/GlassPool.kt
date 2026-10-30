@@ -209,10 +209,10 @@ private class GlassPoolNode(
         if (!effectsReady || rect.isEmpty) return@coverage
         val margin = requireDensity().run { CoverageMarginDp.dp.toPx() }
         // Off-screen sampler rects (hidden tab row, morph overshoot) grew the region to ~1.4x
-        // the screen width; the capture there is empty anyway, so clip to the pool's bounds.
+        // the screen width; the capture there is empty anyway, so clip to the pool's bounds with margin.
         val bounds = coordinates?.size ?: return@coverage
-        val want = rect.inflate(margin)
-            .intersect(Rect(0f, 0f, bounds.width.toFloat(), bounds.height.toFloat()))
+        val poolBounds = Rect(-margin, -margin, bounds.width.toFloat() + margin, bounds.height.toFloat() + margin)
+        val want = rect.inflate(margin).intersect(poolBounds)
         if (want.isEmpty) return@coverage
         val r = region
         if (!r.isEmpty && r.left <= want.left && r.top <= want.top &&

@@ -1178,11 +1178,99 @@ class MainActivity : ComponentActivity() {
                         } else {
                             if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface
                         },
-                        topBar = {
+                        topBar = {},
+                        bottomBar = {},
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
+                    ) { _ ->
+                        Box(Modifier.fillMaxSize()) {
+                        Row(Modifier.fillMaxSize()) {
+                            if (showRail && currentRoute != "wrapped" && currentRoute != "update") {
+                                AppNavigationRail(
+                                    navigationItems = navigationItems,
+                                    currentRoute = currentRoute,
+                                    onItemClick = onNavItemClick,
+                                    pureBlack = pureBlack,
+                                    floatingNav = floatingNav,
+                                    onSearchLongClick = onSearchLongClick
+                                )
+                            }
+                            Box(
+                                Modifier
+                                    .weight(1f)
+                                    .then(
+                                        if (enableFrostedGlass && isGlassAllowed()) {
+                                            Modifier
+
+                                                .layerBackdrop(
+                                                    appBackdrop,
+                                                    frozen = backdropFrozenProvider,
+                                                )
+
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                                    .nestedScroll(backdropFreezeConnection)
+                            ) {
+                                // NavHost with animations (Material 3 Expressive style)
+                                NavHost(
+                                    navController = navController,
+                                    startDestination = when (tabOpenedFromShortcut ?: defaultOpenTab) {
+                                        NavigationTab.HOME -> Screens.Home
+                                        NavigationTab.LIBRARY -> Screens.Library
+                                        else -> Screens.Home
+                                    }.route,
+                                    // Enter Transition - smoother with smaller offset and longer duration
+                                    enterTransition = {
+                                        val currentRouteIndex = navigationItems.indexOfFirst {
+                                            it.route == targetState.destination.route
+                                        }
+                                        val previousRouteIndex = navigationItems.indexOfFirst {
+                                            it.route == initialState.destination.route
+                                        }
+
+                                        fadeIn(tween(180))
+                                    },
+                                    exitTransition = { fadeOut(tween(140)) },
+                                    popEnterTransition = { fadeIn(tween(180)) },
+                                    popExitTransition = { fadeOut(tween(140)) },
+                                    modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
+                                ) {
+                                    navigationBuilder(
+                                        navController = navController,
+                                        scrollBehavior = topAppBarScrollBehavior,
+                                        activity = this@MainActivity,
+                                        snackbarHostState = snackbarHostState
+                                    )
+                                }
+                            }
+                        }
+
+                    // Single-pass Frosted Glass Pool + Floating Chrome Overlay
+                    Box(Modifier.fillMaxSize()) {
+                        if (pooledGlass != null) {
+                            // Draws nothing: it only keeps the shared blur current,
+                            // and must run after the content records and before the chrome samples it.
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .glassPool(
+                                        source = appBackdrop,
+                                        pooled = glassPoolBackdrop,
+                                        effects = poolEffects,
+                                        scale = GlassPoolScale,
+                                    )
+                            )
+                        }
+
+                        // Top Bar Overlay (runs after glassPool so it can sample frosted glass correctly)
                             AnimatedVisibility(
-                                visible = shouldShowTopBar,
+                                visible = shouldShowTopBar && playerBottomSheetState.isCollapsed && playerBottomSheetState.progress < 0.05f,
                                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
-                                exit = fadeOut(animationSpec = tween(durationMillis = 200))
+                                exit = fadeOut(animationSpec = tween(durationMillis = 200)),
+                                modifier = Modifier.align(Alignment.TopCenter)
                             ) {
                                 val (floatingTopBar) = rememberPreference(FloatingTopBarKey, defaultValue = true)
                                 val isGlassActive = enableFrostedGlass && isGlassAllowed()
@@ -1458,91 +1546,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
-                        },
-                        bottomBar = {},
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
-                    ) { _ ->
-                        Box(Modifier.fillMaxSize()) {
-                        Row(Modifier.fillMaxSize()) {
-                            if (showRail && currentRoute != "wrapped" && currentRoute != "update") {
-                                AppNavigationRail(
-                                    navigationItems = navigationItems,
-                                    currentRoute = currentRoute,
-                                    onItemClick = onNavItemClick,
-                                    pureBlack = pureBlack,
-                                    floatingNav = floatingNav,
-                                    onSearchLongClick = onSearchLongClick
-                                )
-                            }
-                            Box(
-                                Modifier
-                                    .weight(1f)
-                                    .then(
-                                        if (enableFrostedGlass && isGlassAllowed()) {
-                                            Modifier
 
-                                                .layerBackdrop(
-                                                    appBackdrop,
-                                                    frozen = backdropFrozenProvider,
-                                                )
-
-                                        } else {
-                                            Modifier
-                                        }
-                                    )
-                                    .nestedScroll(backdropFreezeConnection)
-                            ) {
-                                // NavHost with animations (Material 3 Expressive style)
-                                NavHost(
-                                    navController = navController,
-                                    startDestination = when (tabOpenedFromShortcut ?: defaultOpenTab) {
-                                        NavigationTab.HOME -> Screens.Home
-                                        NavigationTab.LIBRARY -> Screens.Library
-                                        else -> Screens.Home
-                                    }.route,
-                                    // Enter Transition - smoother with smaller offset and longer duration
-                                    enterTransition = {
-                                        val currentRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == targetState.destination.route
-                                        }
-                                        val previousRouteIndex = navigationItems.indexOfFirst {
-                                            it.route == initialState.destination.route
-                                        }
-
-                                        fadeIn(tween(180))
-                                    },
-                                    exitTransition = { fadeOut(tween(140)) },
-                                    popEnterTransition = { fadeIn(tween(180)) },
-                                    popExitTransition = { fadeOut(tween(140)) },
-                                    modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
-                                ) {
-                                    navigationBuilder(
-                                        navController = navController,
-                                        scrollBehavior = topAppBarScrollBehavior,
-                                        activity = this@MainActivity,
-                                        snackbarHostState = snackbarHostState
-                                    )
-                                }
-                            }
-                        }
-                    // Single-pass Frosted Glass Pool + Floating Chrome Overlay
-                    Box(Modifier.fillMaxSize()) {
-                        if (pooledGlass != null) {
-                            // Draws nothing: it only keeps the shared blur current,
-                            // and must run after the content records and before the chrome samples it.
-                            Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .glassPool(
-                                        source = appBackdrop,
-                                        pooled = glassPoolBackdrop,
-                                        effects = poolEffects,
-                                        scale = GlassPoolScale,
-                                    )
-                            )
-                        }
 
                         if (!showRail && currentRoute != "wrapped" && currentRoute != "update" && currentRoute != "listen_together/chat") {
                             Box(Modifier.fillMaxSize()) {
