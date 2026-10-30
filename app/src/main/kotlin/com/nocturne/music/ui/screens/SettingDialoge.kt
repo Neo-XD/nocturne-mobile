@@ -57,25 +57,6 @@ fun SettingDialoge(
     val accountName by homeViewModel.accountName.collectAsState()
     val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
 
-    val (useLoginForBrowse, onUseLoginForBrowseChange) = rememberPreference(UseLoginForBrowse, true)
-    val (ytmSync, onYtmSyncChange) = rememberPreference(YtmSyncKey, true)
-
-    val likedSongsFlow = remember(homeViewModel.database) {
-        homeViewModel.database.likedSongsCount()
-    }
-    val likedSongsCount by likedSongsFlow.collectAsState(initial = 0)
-
-    val playlistsFlow = remember(homeViewModel.database) {
-        homeViewModel.database.playlistsByNameAsc()
-    }
-    val playlists by playlistsFlow.collectAsState(initial = emptyList())
-    val playlistCount = playlists.size
-
-    val albumCountFlow = remember(homeViewModel.database) {
-        homeViewModel.database.albumsByNameAsc().map { it.size }
-    }
-    val albumCount by albumCountFlow.collectAsState(initial = 0)
-
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isTablet = configuration.screenWidthDp >= 600
 
@@ -154,14 +135,7 @@ fun SettingDialoge(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = 25.dp,
-                                topEnd = 25.dp,
-                                bottomStart = 2.dp,
-                                bottomEnd = 2.dp
-                            )
-                        )
+                        .clip(RoundedCornerShape(20.dp))
                         .background(color = secondaryColor)
                         .clickable(enabled = isLoggedIn) {
                             onNavigate("account")
@@ -246,121 +220,6 @@ fun SettingDialoge(
                             fontWeight = FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // Options List
-                Column(
-                    modifier = Modifier
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = 2.dp,
-                                topEnd = 2.dp,
-                                bottomStart = 25.dp,
-                                bottomEnd = 25.dp
-                            )
-                        )
-                        .background(color = secondaryColor)
-                ) {
-                    OptionItem(
-                        option = Option("Playlists", R.drawable.library_music_outlined),
-                        tintColor = onPrimaryColor,
-                        textColor = onSecondaryColor,
-                        trailingText = playlistCount.toString(),
-                        onClick = {
-                            onDismissRequest()
-                            if (isLoggedIn) onNavigate("account") else onNavigate("library")
-                        }
-                    )
-                    OptionItem(
-                        option = Option("Albums", R.drawable.album),
-                        tintColor = onPrimaryColor,
-                        textColor = onSecondaryColor,
-                        trailingText = albumCount.toString(),
-                        onClick = {
-                            onDismissRequest()
-                            if (isLoggedIn) onNavigate("account") else onNavigate("library")
-                        }
-                    )
-                    OptionItem(
-                        option = Option("Liked Songs", R.drawable.favorite_border),
-                        tintColor = onPrimaryColor,
-                        textColor = onSecondaryColor,
-                        trailingText = likedSongsCount.toString(),
-                        onClick = {
-                            onDismissRequest()
-                            onNavigate("auto_playlist/liked")
-                        }
-                    )
-
-                    if (playlists.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            playlists.take(3).forEach { pl ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable {
-                                            onDismissRequest()
-                                            onNavigate("local_playlist/${pl.playlist.id}")
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.queue_music),
-                                            contentDescription = null,
-                                            tint = onSecondaryColor.copy(alpha = 0.6f),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Text(
-                                            text = pl.playlist.name,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = onSecondaryColor,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    Text(
-                                        text = "${pl.songCount} songs",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = onSecondaryColor.copy(alpha = 0.5f)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (isLoggedIn) {
-                        SwitchOptionItem(
-                            title = "Use Account for Browsing",
-                            icon = R.drawable.add_circle,
-                            checked = useLoginForBrowse,
-                            onCheckedChange = {
-                                com.music.innertube.YouTube.useLoginForBrowse = it
-                                onUseLoginForBrowseChange(it)
-                            },
-                            tintColor = onPrimaryColor,
-                            textColor = onSecondaryColor
-                        )
-                        SwitchOptionItem(
-                            title = "YouTube Music Sync",
-                            icon = R.drawable.cached,
-                            checked = ytmSync,
-                            onCheckedChange = onYtmSyncChange,
-                            tintColor = onPrimaryColor,
-                            textColor = onSecondaryColor
                         )
                     }
                 }
