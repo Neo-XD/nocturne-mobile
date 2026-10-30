@@ -48,6 +48,10 @@ import com.nocturne.music.LocalListenTogetherManager
 import com.nocturne.music.LocalPlayerConnection
 import com.nocturne.music.R
 import com.nocturne.music.constants.*
+import com.nocturne.music.ui.component.DotMatrixGlyph
+import com.nocturne.music.ui.component.DotMatrixIcon
+import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import com.nocturne.music.ui.theme.LocalUseDotMatrixIcons
 import com.nocturne.music.listentogether.ListenTogetherManager
 import com.nocturne.music.models.MediaMetadata
 import com.nocturne.music.playback.CastConnectionHandler
@@ -323,6 +327,9 @@ fun AppleMiniPlayer(
                     Spacer(modifier = Modifier.width(8.dp))
                 }
 
+                val isNothingTheme = LocalIsNothingTheme.current
+                val useDotMatrixIcons = isNothingTheme && LocalUseDotMatrixIcons.current
+
                 // Play/Pause Button
                 Box(
                     contentAlignment = Alignment.Center,
@@ -340,19 +347,32 @@ fun AppleMiniPlayer(
                     val effectiveIsPlaying = rememberIsPlayingOnActiveTarget(playerConnection)
                     val isMuted by playerConnection.isMuted.collectAsState()
 
-                    Icon(
-                        painter = painterResource(
-                            when {
-                                isListenTogetherGuest -> if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                                playbackState == Player.STATE_ENDED -> R.drawable.replay
-                                effectiveIsPlaying -> R.drawable.pause_applemusic
-                                else -> R.drawable.play_applemusic
-                            }
-                        ),
-                        contentDescription = null,
-                        tint = onSurfaceColor,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (useDotMatrixIcons && !isListenTogetherGuest) {
+                        val glyph = when {
+                            playbackState == Player.STATE_ENDED -> DotMatrixGlyph.REPLAY
+                            effectiveIsPlaying -> DotMatrixGlyph.PAUSE
+                            else -> DotMatrixGlyph.PLAY
+                        }
+                        DotMatrixIcon(
+                            glyph = glyph,
+                            tint = onSurfaceColor,
+                            size = 28.dp
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(
+                                when {
+                                    isListenTogetherGuest -> if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                                    playbackState == Player.STATE_ENDED -> R.drawable.replay
+                                    effectiveIsPlaying -> R.drawable.pause_applemusic
+                                    else -> R.drawable.play_applemusic
+                                }
+                            ),
+                            contentDescription = null,
+                            tint = onSurfaceColor,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -367,12 +387,20 @@ fun AppleMiniPlayer(
                             playerConnection.seekToNext()
                         }
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.apple_skip_next),
-                        contentDescription = "Next",
-                        tint = if (canSkipNext && !isListenTogetherGuest) onSurfaceColor else onSurfaceColor.copy(alpha = 0.3f),
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (useDotMatrixIcons) {
+                        DotMatrixIcon(
+                            glyph = DotMatrixGlyph.NEXT,
+                            tint = if (canSkipNext && !isListenTogetherGuest) onSurfaceColor else onSurfaceColor.copy(alpha = 0.3f),
+                            size = 28.dp
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.apple_skip_next),
+                            contentDescription = "Next",
+                            tint = if (canSkipNext && !isListenTogetherGuest) onSurfaceColor else onSurfaceColor.copy(alpha = 0.3f),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
         }

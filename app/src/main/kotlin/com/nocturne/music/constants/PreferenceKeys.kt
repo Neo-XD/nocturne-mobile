@@ -50,6 +50,7 @@ val StoredGoogleAccountsKey = stringPreferencesKey("stored_google_accounts")
 
 enum class ThemeCategory {
     NOCTURNE_UI,
+    NOTHING,
     MATERIAL_3_EXPRESSIVE
 }
 

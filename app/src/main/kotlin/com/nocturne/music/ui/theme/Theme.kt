@@ -193,26 +193,33 @@ fun NocturneTheme(
     }
 
     val colorScheme = remember(themeCategory, nocturnePreset, darkTheme, pureBlack, themeColor) {
-        if (themeCategory == ThemeCategory.NOCTURNE_UI) {
-            buildNocturneDesktopColorScheme(nocturnePreset, darkTheme, pureBlack)
-        } else {
-            // Material 3 Expressive
-            val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            val base = if (useSystemDynamicColor) {
-                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            } else {
-                com.materialkolor.dynamicColorScheme(
-                    seedColor = themeColor,
-                    isDark = darkTheme,
-                    specVersion = ColorSpec.SpecVersion.SPEC_2025,
-                    style = if (themeColor.toArgb() == 0xFF000000.toInt()) PaletteStyle.Monochrome else PaletteStyle.TonalSpot
-                )
+        when (themeCategory) {
+            ThemeCategory.NOCTURNE_UI -> {
+                buildNocturneDesktopColorScheme(nocturnePreset, darkTheme, pureBlack)
             }
-            if (darkTheme && pureBlack) base.pureBlack(true) else base
+            ThemeCategory.NOTHING -> {
+                val presetToUse = if (nocturnePreset == NocturneThemePreset.NOTHING_MONO) NocturneThemePreset.NOTHING_MONO else NocturneThemePreset.NOTHING
+                buildNocturneDesktopColorScheme(presetToUse, darkTheme, pureBlack)
+            }
+            ThemeCategory.MATERIAL_3_EXPRESSIVE -> {
+                // Material 3 Expressive
+                val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                val base = if (useSystemDynamicColor) {
+                    if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                } else {
+                    com.materialkolor.dynamicColorScheme(
+                        seedColor = themeColor,
+                        isDark = darkTheme,
+                        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+                        style = if (themeColor.toArgb() == 0xFF000000.toInt()) PaletteStyle.Monochrome else PaletteStyle.TonalSpot
+                    )
+                }
+                if (darkTheme && pureBlack) base.pureBlack(true) else base
+            }
         }
     }
 
-    val isNothingTheme = (themeCategory == ThemeCategory.NOCTURNE_UI) && (nocturnePreset == NocturneThemePreset.NOTHING || nocturnePreset == NocturneThemePreset.NOTHING_MONO)
+    val isNothingTheme = (themeCategory == ThemeCategory.NOTHING) || ((themeCategory == ThemeCategory.NOCTURNE_UI) && (nocturnePreset == NocturneThemePreset.NOTHING || nocturnePreset == NocturneThemePreset.NOTHING_MONO))
 
     val (useDotMatrixIcons) = rememberPreference(com.nocturne.music.constants.NothingDotMatrixIconsKey, defaultValue = true)
     CompositionLocalProvider(

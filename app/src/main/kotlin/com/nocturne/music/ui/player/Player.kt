@@ -1657,6 +1657,9 @@ fun BottomSheetPlayer(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
+                val isNothingTheme = LocalIsNothingTheme.current
+                val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
+
                 if (useNewPlayerDesign) {
                     val shareShape = CircleShape; val oldShareShape = RoundedCornerShape(
                         topStart = 50.dp, bottomStart = 50.dp,
@@ -1784,13 +1787,22 @@ fun BottomSheetPlayer(
                                     ),
                                     modifier = Modifier.size(42.dp),
                                 ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.more_horiz),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                    if (useDotMatrixIcons) {
+                                        DotMatrixIcon(
+                                            glyph = DotMatrixGlyph.MORE_VERT,
+                                            tint = iconButtonColor,
+                                            size = 24.dp
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(R.drawable.more_horiz),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             } else {
+                                val isLiked = currentSong?.song?.liked == true
                                 FilledIconButton(
                                     onClick = playerConnection::toggleLike,
                                     shape = favShape,
@@ -1800,15 +1812,21 @@ fun BottomSheetPlayer(
                                     ),
                                     modifier = Modifier.size(42.dp),
                                 ) {
-                                    Icon(
-                                        painter = painterResource(
-                                            if (currentSong?.song?.liked == true)
-                                                R.drawable.favorite
-                                            else R.drawable.favorite_border
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
+                                    if (useDotMatrixIcons) {
+                                        DotMatrixIcon(
+                                            glyph = if (isLiked) DotMatrixGlyph.FAVORITE else DotMatrixGlyph.FAVORITE_BORDER,
+                                            tint = if (isLiked) com.nocturne.music.ui.component.NothingRed else iconButtonColor,
+                                            size = 24.dp
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(
+                                                if (isLiked) R.drawable.favorite else R.drawable.favorite_border
+                                            ),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1856,14 +1874,23 @@ fun BottomSheetPlayer(
                                         }
                                     },
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.more_vert),
-                                    contentDescription = null,
-                                    tint = textButtonColor,
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                        .size(24.dp)
-                                )
+                                if (useDotMatrixIcons) {
+                                    DotMatrixIcon(
+                                        glyph = DotMatrixGlyph.MORE_VERT,
+                                        tint = textButtonColor,
+                                        size = 24.dp,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                } else {
+                                    Icon(
+                                        painter = painterResource(R.drawable.more_vert),
+                                        contentDescription = null,
+                                        tint = textButtonColor,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(24.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -1896,16 +1923,26 @@ fun BottomSheetPlayer(
                                         }
                                     },
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.more_horiz),
-                                    contentDescription = null,
-                                    tint = textButtonColor,
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                        .size(24.dp),
-                                )
+                                if (useDotMatrixIcons) {
+                                    DotMatrixIcon(
+                                        glyph = DotMatrixGlyph.MORE_VERT,
+                                        tint = textButtonColor,
+                                        size = 24.dp,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                } else {
+                                    Icon(
+                                        painter = painterResource(R.drawable.more_horiz),
+                                        contentDescription = null,
+                                        tint = textButtonColor,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(24.dp),
+                                    )
+                                }
                             }
                         } else {
+                            val isLiked = currentSong?.song?.liked == true
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
@@ -1913,18 +1950,27 @@ fun BottomSheetPlayer(
                                     .background(textButtonColor.copy(alpha = 0.2f))
                                     .clickable(onClick = playerConnection::toggleLike),
                             ) {
-                                Icon(
-                                    painter = painterResource(
-                                        if (currentSong?.song?.liked == true)
-                                            R.drawable.favorite
-                                        else R.drawable.favorite_border
-                                    ),
-                                    contentDescription = null,
-                                    tint = textButtonColor,
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                        .size(24.dp),
-                                )
+                                if (useDotMatrixIcons) {
+                                    DotMatrixIcon(
+                                        glyph = if (isLiked) DotMatrixGlyph.FAVORITE else DotMatrixGlyph.FAVORITE_BORDER,
+                                        tint = if (isLiked) com.nocturne.music.ui.component.NothingRed else textButtonColor,
+                                        size = 24.dp,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                } else {
+                                    Icon(
+                                        painter = painterResource(
+                                            if (isLiked)
+                                                R.drawable.favorite
+                                            else R.drawable.favorite_border
+                                        ),
+                                        contentDescription = null,
+                                        tint = textButtonColor,
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .size(24.dp),
+                                    )
+                                }
                             }
                         }
                     }

@@ -547,7 +547,8 @@ fun PlayerV2(
                                         )
                                     ) {
                                         val isLiked = currentSong?.song?.liked == true
-
+                                        val isNothingTheme = LocalIsNothingTheme.current
+                                        val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
 
                                         Box(
                                             modifier = Modifier
@@ -558,11 +559,19 @@ fun PlayerV2(
                                         IconButton(
                                             onClick = playerConnection::toggleLike
                                         ) {
-                                            Icon(
-                                                painter = painterResource(if (isLiked) R.drawable.star_filled_liked else R.drawable.star_like),
-                                                contentDescription = "Like",
-                                                tint = adaptivePrimary,
-                                            )
+                                            if (useDotMatrixIcons) {
+                                                DotMatrixIcon(
+                                                    glyph = if (isLiked) DotMatrixGlyph.FAVORITE else DotMatrixGlyph.FAVORITE_BORDER,
+                                                    tint = if (isLiked) com.nocturne.music.ui.component.NothingRed else adaptivePrimary,
+                                                    size = 24.dp
+                                                )
+                                            } else {
+                                                Icon(
+                                                    painter = painterResource(if (isLiked) R.drawable.star_filled_liked else R.drawable.star_like),
+                                                    contentDescription = "Like",
+                                                    tint = adaptivePrimary,
+                                                )
+                                            }
                                         }
                                         }
                                         
@@ -593,11 +602,19 @@ fun PlayerV2(
                                                 }
                                             }
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.MoreHoriz,
-                                                contentDescription = "Options",
-                                                tint = adaptivePrimary,
-                                            )
+                                            if (useDotMatrixIcons) {
+                                                DotMatrixIcon(
+                                                    glyph = DotMatrixGlyph.MORE_VERT,
+                                                    tint = adaptivePrimary,
+                                                    size = 24.dp
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Default.MoreHoriz,
+                                                    contentDescription = "Options",
+                                                    tint = adaptivePrimary,
+                                                )
+                                            }
                                         }
                                         }
                                     }

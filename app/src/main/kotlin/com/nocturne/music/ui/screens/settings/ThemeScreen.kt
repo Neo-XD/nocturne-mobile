@@ -369,7 +369,8 @@ fun ThemeControls(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 val categories = listOf(
-                    ThemeCategory.NOCTURNE_UI to stringResource(R.string.theme_category_nocturne_ui),
+                    ThemeCategory.NOCTURNE_UI to "Desktop Themes",
+                    ThemeCategory.NOTHING to "Nothing OS",
                     ThemeCategory.MATERIAL_3_EXPRESSIVE to stringResource(R.string.theme_category_material3)
                 )
                 categories.forEach { (cat, title) ->
@@ -466,31 +467,60 @@ fun ThemeControls(
         }
 
         // Category-specific presets or palettes
-        if (themeCategory == ThemeCategory.NOCTURNE_UI) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.nocturne_desktop_presets),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+        when (themeCategory) {
+            ThemeCategory.NOCTURNE_UI -> {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.nocturne_desktop_presets),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                    contentPadding = PaddingValues(horizontal = 4.dp)
-                ) {
-                    items(NocturneThemePreset.values()) { preset ->
-                        val isSelected = nocturnePreset == preset
-                        NocturnePresetItem(
-                            preset = preset,
-                            isSelected = isSelected,
-                            pureBlack = pureBlack,
-                            darkTheme = effectiveDark,
-                            onClick = { onNocturnePresetChange(preset.name) }
-                        )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        val desktopPresets = NocturneThemePreset.values().filter {
+                            it != NocturneThemePreset.NOTHING && it != NocturneThemePreset.NOTHING_MONO
+                        }
+                        items(desktopPresets) { preset ->
+                            val isSelected = nocturnePreset == preset
+                            NocturnePresetItem(
+                                preset = preset,
+                                isSelected = isSelected,
+                                pureBlack = pureBlack,
+                                darkTheme = effectiveDark,
+                                onClick = { onNocturnePresetChange(preset.name) }
+                            )
+                        }
                     }
                 }
+            }
+            ThemeCategory.NOTHING -> {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Nothing Presets",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                if (nocturnePreset == NocturneThemePreset.NOTHING || nocturnePreset == NocturneThemePreset.NOTHING_MONO) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        val nothingPresets = listOf(NocturneThemePreset.NOTHING, NocturneThemePreset.NOTHING_MONO)
+                        items(nothingPresets) { preset ->
+                            val isSelected = nocturnePreset == preset
+                            NocturnePresetItem(
+                                preset = preset,
+                                isSelected = isSelected,
+                                pureBlack = pureBlack,
+                                darkTheme = effectiveDark,
+                                onClick = { onNocturnePresetChange(preset.name) }
+                            )
+                        }
+                    }
+
                     val (useDotMatrixIcons, onUseDotMatrixIconsChange) = rememberPreference(NothingDotMatrixIconsKey, defaultValue = true)
                     Row(
                         modifier = Modifier
@@ -520,34 +550,35 @@ fun ThemeControls(
                     }
                 }
             }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.color_palette),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            ThemeCategory.MATERIAL_3_EXPRESSIVE -> {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.color_palette),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                    contentPadding = PaddingValues(horizontal = 4.dp)
-                ) {
-                    items(PaletteColors) { palette ->
-                        val isDynamicPalette = palette.seedColor == Color.Transparent
-                        val isSelected = if (isDynamicPalette) {
-                            selectedThemeColor == DefaultThemeColor
-                        } else {
-                            selectedThemeColor == palette.seedColor
-                        }
-
-                        PaletteItem(
-                            palette = palette,
-                            isSelected = isSelected,
-                            onClick = {
-                                val colorToSave = if (isDynamicPalette) DefaultThemeColor else palette.seedColor
-                                onSelectedThemeColorChange(colorToSave)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        items(PaletteColors) { palette ->
+                            val isDynamicPalette = palette.seedColor == Color.Transparent
+                            val isSelected = if (isDynamicPalette) {
+                                selectedThemeColor == DefaultThemeColor
+                            } else {
+                                selectedThemeColor == palette.seedColor
                             }
-                        )
+
+                            PaletteItem(
+                                palette = palette,
+                                isSelected = isSelected,
+                                onClick = {
+                                    val colorToSave = if (isDynamicPalette) DefaultThemeColor else palette.seedColor
+                                    onSelectedThemeColorChange(colorToSave)
+                                }
+                            )
+                        }
                     }
                 }
             }

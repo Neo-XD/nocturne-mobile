@@ -50,6 +50,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import com.nocturne.music.ui.component.DotMatrixGlyph
+import com.nocturne.music.ui.component.DotMatrixIcon
+import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import com.nocturne.music.ui.theme.LocalUseDotMatrixIcons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nocturne.music.ui.component.GlassyWarpBackground
@@ -566,6 +570,8 @@ private fun NewMiniPlayerPlayButton(
             }
     ) {
         // Thumbnail with play/pause overlay
+        val isNothingTheme = LocalIsNothingTheme.current
+        val useDotMatrixIcons = isNothingTheme && LocalUseDotMatrixIcons.current
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -596,16 +602,29 @@ private fun NewMiniPlayerPlayButton(
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.4f), CircleShape)
                 )
-                Icon(
-                    painter = painterResource(
-                        if (isListenTogetherGuest) {
-                            if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                        } else if (playbackState == Player.STATE_ENDED) R.drawable.replay else R.drawable.play
-                    ),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
+                if (useDotMatrixIcons && !isListenTogetherGuest) {
+                    val glyph = when {
+                        playbackState == Player.STATE_ENDED -> DotMatrixGlyph.REPLAY
+                        effectiveIsPlaying -> DotMatrixGlyph.PAUSE
+                        else -> DotMatrixGlyph.PLAY
+                    }
+                    DotMatrixIcon(
+                        glyph = glyph,
+                        tint = Color.White,
+                        size = 20.dp
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(
+                            if (isListenTogetherGuest) {
+                                if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                            } else if (playbackState == Player.STATE_ENDED) R.drawable.replay else R.drawable.play
+                        ),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
@@ -1068,6 +1087,9 @@ private fun LegacyMiniPlayer(
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
                 .padding(end = 12.dp),
         ) {
+            val isNothingTheme = LocalIsNothingTheme.current
+            val useDotMatrixIcons = isNothingTheme && LocalUseDotMatrixIcons.current
+
             Box(Modifier.weight(1f)) {
                 mediaMetadata?.let {
                     LegacyMiniMediaInfo(
@@ -1090,7 +1112,15 @@ private fun LegacyMiniPlayer(
                     enabled = canSkipNext && !isListenTogetherGuest,
                     onClick = if (isListenTogetherGuest) ({}) else ({ playerConnection.seekToNext() }),
             ) {
-                Icon(painter = painterResource(R.drawable.skip_next), contentDescription = null)
+                if (useDotMatrixIcons) {
+                    DotMatrixIcon(
+                        glyph = DotMatrixGlyph.NEXT,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        size = 24.dp
+                    )
+                } else {
+                    Icon(painter = painterResource(R.drawable.skip_next), contentDescription = null)
+                }
             }
         }
 
@@ -1129,6 +1159,9 @@ private fun LegacyPlayPauseButton(
     val isMuted by playerConnection.isMuted.collectAsState()
 
 
+    val isNothingTheme = LocalIsNothingTheme.current
+    val useDotMatrixIcons = isNothingTheme && LocalUseDotMatrixIcons.current
+
     IconButton(
         onClick = {
             if (isListenTogetherGuest) {
@@ -1138,17 +1171,30 @@ private fun LegacyPlayPauseButton(
             playerConnection.togglePlayPause()
         },
     ) {
-        Icon(
-            painter = painterResource(
-                when {
-                    isListenTogetherGuest -> if (isMuted) R.drawable.volume_off else R.drawable.volume_up
-                    playbackState == Player.STATE_ENDED -> R.drawable.replay
-                    effectiveIsPlaying -> R.drawable.pause
-                    else -> R.drawable.play
-                }
-            ),
-            contentDescription = null,
-        )
+        if (useDotMatrixIcons && !isListenTogetherGuest) {
+            val glyph = when {
+                playbackState == Player.STATE_ENDED -> DotMatrixGlyph.REPLAY
+                effectiveIsPlaying -> DotMatrixGlyph.PAUSE
+                else -> DotMatrixGlyph.PLAY
+            }
+            DotMatrixIcon(
+                glyph = glyph,
+                tint = MaterialTheme.colorScheme.onSurface,
+                size = 24.dp
+            )
+        } else {
+            Icon(
+                painter = painterResource(
+                    when {
+                        isListenTogetherGuest -> if (isMuted) R.drawable.volume_off else R.drawable.volume_up
+                        playbackState == Player.STATE_ENDED -> R.drawable.replay
+                        effectiveIsPlaying -> R.drawable.pause
+                        else -> R.drawable.play
+                    }
+                ),
+                contentDescription = null,
+            )
+        }
     }
 }
 
@@ -1250,6 +1296,9 @@ private fun FavoriteButton(
     val librarySong by database.song(songId).collectAsState(initial = null)
     val isLiked = librarySong?.song?.liked == true
     
+    val isNothingTheme = LocalIsNothingTheme.current
+    val useDotMatrixIcons = isNothingTheme && LocalUseDotMatrixIcons.current
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -1266,12 +1315,20 @@ private fun FavoriteButton(
             )
             .clickable { playerConnection.service.toggleLike() }
     ) {
-        Icon(
-            painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
-            contentDescription = null,
-            tint = if (isLiked) errorColor else onSurfaceColor.copy(alpha = 0.7f),
-            modifier = Modifier.size(20.dp)
-        )
+        if (useDotMatrixIcons) {
+            DotMatrixIcon(
+                glyph = if (isLiked) DotMatrixGlyph.FAVORITE else DotMatrixGlyph.FAVORITE_BORDER,
+                tint = if (isLiked) com.nocturne.music.ui.component.NothingRed else onSurfaceColor.copy(alpha = 0.7f),
+                size = 20.dp
+            )
+        } else {
+            Icon(
+                painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
+                contentDescription = null,
+                tint = if (isLiked) errorColor else onSurfaceColor.copy(alpha = 0.7f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 @Composable

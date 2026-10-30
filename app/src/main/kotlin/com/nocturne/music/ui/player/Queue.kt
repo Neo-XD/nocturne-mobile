@@ -341,6 +341,8 @@ fun Queue(
             Box(Modifier.fillMaxSize().background(Color.Unspecified))
         },
         collapsedContent = {
+            val isNothingTheme = LocalIsNothingTheme.current
+            val useDotMatrixIcons = isNothingTheme && LocalUseDotMatrixIcons.current
             if (useNewPlayerDesign) {
                 // New design
                 Row(
@@ -496,12 +498,20 @@ fun Queue(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.more_vert),
-                            contentDescription = null,
-                            modifier = Modifier.size(iconSize),
-                            tint = iconButtonColor
-                        )
+                        if (useDotMatrixIcons) {
+                            DotMatrixIcon(
+                                glyph = DotMatrixGlyph.MORE_VERT,
+                                tint = iconButtonColor,
+                                size = iconSize
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(id = R.drawable.more_vert),
+                                contentDescription = null,
+                                modifier = Modifier.size(iconSize),
+                                tint = iconButtonColor
+                            )
+                        }
                     }
                 }
             } else {
@@ -521,12 +531,20 @@ fun Queue(
                         onClick = { state.expandSoft() },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.apple_queue),
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = TextBackgroundColor
-                        )
+                        if (useDotMatrixIcons) {
+                            DotMatrixIcon(
+                                glyph = DotMatrixGlyph.QUEUE,
+                                tint = TextBackgroundColor,
+                                size = 28.dp
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(id = R.drawable.apple_queue),
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = TextBackgroundColor
+                            )
+                        }
                     }
 
                     IconButton(
@@ -535,14 +553,22 @@ fun Queue(
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            painter = painterResource(
-                                if (isBluetoothConnected) R.drawable.headset_applemusic else R.drawable.speaker_apple
-                            ),
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = TextBackgroundColor
-                        )
+                        if (useDotMatrixIcons) {
+                            DotMatrixIcon(
+                                glyph = DotMatrixGlyph.DEVICE,
+                                tint = TextBackgroundColor,
+                                size = 28.dp
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(
+                                    if (isBluetoothConnected) R.drawable.headset_applemusic else R.drawable.speaker_apple
+                                ),
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = TextBackgroundColor
+                            )
+                        }
                     }
 
                     IconButton(
@@ -551,12 +577,20 @@ fun Queue(
                         },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.apple_music_me),
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = TextBackgroundColor
-                        )
+                        if (useDotMatrixIcons) {
+                            DotMatrixIcon(
+                                glyph = DotMatrixGlyph.LYRICS,
+                                tint = TextBackgroundColor,
+                                size = 28.dp
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(id = R.drawable.apple_music_me),
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = TextBackgroundColor
+                            )
+                        }
                     }
                 }
             }
