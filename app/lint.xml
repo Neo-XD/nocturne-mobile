@@ -15,4 +15,9 @@
 
     <!-- False positive when querying context.getString inside onClick callbacks in Compose -->
     <issue id="LocalContextGetResourceValueCall" severity="ignore" />
+
+    <!-- Project-wide opt-in for Media3 UnstableApi used across the playback engine -->
+    <issue id="UnsafeOptInUsageError">
+        <option name="opt-in" value="androidx.media3.common.util.UnstableApi" />
+    </issue>
 </lint>

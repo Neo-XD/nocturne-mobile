@@ -5,6 +5,7 @@
 
 package com.nocturne.music.ui.screens.settings
 
+import java.util.Locale
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -542,7 +543,7 @@ fun PlayerThemeCustomizerScreen(
         // 3. Saturation Multiplier Slider
         ControlSliderCard(
             title = "Color Saturation",
-            valueText = String.format("%.1fx", saturation),
+            valueText = String.format(Locale.ROOT, "%.1fx", saturation),
             value = saturation,
             range = 0.8f..2.5f,
             onValueChange = onSaturationChange,

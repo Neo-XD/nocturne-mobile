@@ -928,23 +928,6 @@ fun BottomSheetPlayer(
                                                 scaleY = 1.25f
                                             }
                                     )
-                                    if (false)
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(thumbnailUrl)
-                                            .size(256, 256) // high enough resolution for good source detail
-                                            .allowHardware(false)
-                                            .build(),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .graphicsLayer {
-                                                scaleX = 1.25f
-                                                scaleY = 1.25f
-                                            }
-                                            .blur(65.dp)
-                                    )
 
                                     // 2. The overlay component rendering the Haze blur effect
                                     Box(
@@ -3195,6 +3178,7 @@ private fun BackgroundVideoView(
     )
 }
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun rememberPlayingAudioFormatLabel(
     playerConnection: com.nocturne.music.playback.PlayerConnection,

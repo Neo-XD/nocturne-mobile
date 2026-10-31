@@ -13,6 +13,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.DatabaseProvider
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.CacheDataSource
@@ -63,6 +64,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Singleton
 class DownloadUtil
 @Inject
@@ -330,6 +332,7 @@ constructor(
         downloads.value = result
     }
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     fun getDownload(songId: String): Flow<Download?> = downloads.map { it[songId] }
 
     fun release() {

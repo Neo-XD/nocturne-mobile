@@ -115,11 +115,11 @@ fun Modifier.dotMatrixBorder(
  */
 @Composable
 fun NothingLedDot(
+    modifier: Modifier = Modifier,
     active: Boolean = true,
     pulsing: Boolean = false,
     color: Color = NothingRed,
     size: Dp = 6.dp,
-    modifier: Modifier = Modifier,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "nothing_led")
     val alpha by if (pulsing && active) {
