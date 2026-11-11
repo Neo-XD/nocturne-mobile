@@ -1,7 +1,7 @@
 /**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
- * Community Streaming Addons Manager
+ * Community Streaming Addons Manager with BitChord TrackMatcher & Parallel Resolution
  */
 
 package com.nocturne.music.addons
@@ -9,21 +9,27 @@ package com.nocturne.music.addons
 import android.content.Context
 import android.content.SharedPreferences
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.util.Locale
-import kotlin.math.abs
+import java.util.Collections
+import java.util.LinkedHashMap
 
 object AddonManager {
 
     private const val PREFS_NAME = "streaming_addons_prefs"
     private const val KEY_ADDONS = "addons_list"
     private const val KEY_GLOBAL_ENABLED = "addons_global_enabled"
+    private const val QUERY_TIMEOUT_MS = 4500L
+    private const val MAX_CACHED_RESOLUTIONS = 100
 
     private lateinit var prefs: SharedPreferences
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -34,9 +40,18 @@ object AddonManager {
     private val _globalEnabled = MutableStateFlow(true)
     val globalEnabled: StateFlow<Boolean> = _globalEnabled.asStateFlow()
 
+    /** Fast in-memory cache of resolved stream objects to eliminate network lookups on repeats */
+    private val resolutionCache = Collections.synchronizedMap(
+        object : LinkedHashMap<String, AddonResolvedStream>(64, 0.75f, true) {
+            override fun removeEldestEntry(eldest: Map.Entry<String, AddonResolvedStream>) = size > MAX_CACHED_RESOLUTIONS
+        }
+    )
+
     fun init(context: Context) {
         if (::prefs.isInitialized) return
-        prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val appCtx = context.applicationContext
+        AddonAuth.init(appCtx)
+        prefs = appCtx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         _globalEnabled.value = prefs.getBoolean(KEY_GLOBAL_ENABLED, true)
         loadConfigs()
     }
@@ -110,113 +125,108 @@ object AddonManager {
 
     /**
      * Resolves a lossless stream for a track by querying enabled community addons.
-     * Returns null if no match or error, enabling graceful fallback to default streams.
+     * Uses BitChord's [TrackMatcher] target scoring and queries addons in parallel.
      */
     suspend fun resolveLosslessStream(
         title: String,
         artist: String,
         durationSec: Int? = null,
+        album: String? = null,
     ): AddonResolvedStream? = withContext(Dispatchers.IO) {
         if (!hasEnabledAddons() || title.isBlank()) return@withContext null
 
-        val activeAddons = _configs.value.filter { it.enabled }
-        val cleanTitle = cleanSearchTerm(title)
-        val cleanArtist = cleanSearchTerm(artist)
-        val query = if (cleanArtist.isNotBlank()) "$cleanArtist $cleanTitle" else cleanTitle
-
-        for (addonConfig in activeAddons) {
-            try {
-                val client = AddonClient(addonConfig.baseUrl)
-                val tracks = client.search(query).getOrNull() ?: continue
-                if (tracks.isEmpty()) continue
-
-                // Find candidate matching title and duration
-                val candidate = findBestCandidate(tracks, cleanTitle, cleanArtist, durationSec) ?: continue
-
-                // Check if candidate already contains streamURL
-                val streamUrl = candidate.streamURL
-                val streamInfo = if (!streamUrl.isNullOrBlank()) {
-                    AddonStream(
-                        url = streamUrl,
-                        format = candidate.format,
-                        audioQuality = candidate.audioQuality,
-                    )
-                } else {
-                    client.stream(candidate.id).getOrNull() ?: continue
-                }
-
-                if (streamInfo.url.isBlank()) continue
-
-                val mime = when {
-                    streamInfo.format.contains("flac", ignoreCase = true) || streamInfo.url.contains(".flac", ignoreCase = true) -> "audio/flac"
-                    streamInfo.format.contains("wav", ignoreCase = true) -> "audio/wav"
-                    streamInfo.format.contains("alac", ignoreCase = true) -> "audio/alac"
-                    streamInfo.format.contains("aac", ignoreCase = true) -> "audio/aac"
-                    streamInfo.format.contains("opus", ignoreCase = true) -> "audio/opus"
-                    else -> "audio/flac"
-                }
-
-                val bitrate = streamInfo.bitrate?.takeIf { it > 0 } ?: if (mime == "audio/flac") 921600 else 320000
-
-                Timber.tag("AddonManager").i("Resolved stream for '$title' from addon '${addonConfig.displayName}': $mime, $bitrate bps")
-
-                return@withContext AddonResolvedStream(
-                    url = streamInfo.url,
-                    format = streamInfo.format.ifBlank { "flac" },
-                    mimeType = mime,
-                    bitrate = bitrate,
-                    sampleRate = streamInfo.sampleRate,
-                    bitDepth = streamInfo.bitDepth,
-                    headers = streamInfo.headers,
-                    sourceName = addonConfig.displayName,
-                    trackId = candidate.id,
-                )
-            } catch (e: Exception) {
-                Timber.tag("AddonManager").w(e, "Error resolving from addon ${addonConfig.name}")
-            }
+        val cacheKey = "$title|$artist|${durationSec ?: 0}|$album"
+        resolutionCache[cacheKey]?.let { cached ->
+            Timber.tag("AddonManager").d("Reusing in-memory resolved addon stream for '$title'")
+            return@withContext cached
         }
 
-        null
-    }
+        val target = TrackMatcher.Target(
+            title = title,
+            artist = artist,
+            durationSec = durationSec,
+            album = album,
+        )
 
-    private fun findBestCandidate(
-        tracks: List<AddonTrack>,
-        targetTitle: String,
-        targetArtist: String,
-        targetDurationSec: Int?,
-    ): AddonTrack? {
-        val normTargetTitle = targetTitle.lowercase(Locale.ROOT)
-        val normTargetArtist = targetArtist.lowercase(Locale.ROOT)
+        val activeAddons = _configs.value.filter { it.enabled }
+        if (activeAddons.isEmpty()) return@withContext null
 
-        // 1. Prioritize lossless tracks with close duration
-        return tracks.sortedWith(
-            compareByDescending<AddonTrack> { it.isLossless }
-                .thenBy { track ->
-                    if (targetDurationSec != null && track.durationSec != null) {
-                        abs(track.durationSec!! - targetDurationSec)
-                    } else {
-                        10
+        val queries = TrackMatcher.queries(target)
+        if (queries.isEmpty()) return@withContext null
+
+        coroutineScope {
+            // Query each enabled addon concurrently
+            val deferreds = activeAddons.map { addonConfig ->
+                async(Dispatchers.IO) {
+                    withTimeoutOrNull(QUERY_TIMEOUT_MS) {
+                        try {
+                            val client = AddonClient(addonConfig.baseUrl, addonConfig.pickedQuality)
+                            for (q in queries) {
+                                val tracks = client.search(q).getOrNull().orEmpty()
+                                if (tracks.isEmpty()) continue
+
+                                val bestCandidate = TrackMatcher.best(tracks, target) ?: continue
+
+                                val streamUrl = bestCandidate.streamURL
+                                val streamInfo = if (!streamUrl.isNullOrBlank()) {
+                                    AddonStream(
+                                        url = streamUrl,
+                                        format = bestCandidate.format,
+                                        audioQuality = bestCandidate.audioQuality,
+                                    )
+                                } else {
+                                    client.stream(bestCandidate.id).getOrNull()
+                                } ?: continue
+
+                                if (streamInfo.url.isBlank()) continue
+
+                                val mime = when {
+                                    streamInfo.format.contains("flac", ignoreCase = true) || streamInfo.url.contains(".flac", ignoreCase = true) -> "audio/flac"
+                                    streamInfo.format.contains("wav", ignoreCase = true) -> "audio/wav"
+                                    streamInfo.format.contains("alac", ignoreCase = true) -> "audio/alac"
+                                    streamInfo.format.contains("aac", ignoreCase = true) -> "audio/aac"
+                                    streamInfo.format.contains("opus", ignoreCase = true) -> "audio/opus"
+                                    else -> "audio/flac"
+                                }
+
+                                val bitrate = streamInfo.bitrate?.toInt()?.takeIf { it > 0 } ?: if (mime == "audio/flac") 921600 else 320000
+
+                                val resolved = AddonResolvedStream(
+                                    url = streamInfo.url,
+                                    format = streamInfo.format.ifBlank { "flac" },
+                                    mimeType = mime,
+                                    bitrate = bitrate,
+                                    sampleRate = streamInfo.sampleRate?.toInt(),
+                                    bitDepth = streamInfo.bitDepth?.toInt(),
+                                    headers = streamInfo.headers,
+                                    sourceName = addonConfig.displayName,
+                                    trackId = bestCandidate.id,
+                                )
+                                Timber.tag("AddonManager").i("Resolved lossless stream for '${target.title}' from addon '${addonConfig.displayName}'")
+                                return@withTimeoutOrNull resolved
+                            }
+                            null
+                        } catch (e: Exception) {
+                            Timber.tag("AddonManager").w(e, "Error resolving from addon ${addonConfig.name}")
+                            null
+                        }
                     }
                 }
-        ).firstOrNull { track ->
-            val normTrackTitle = track.title.lowercase(Locale.ROOT)
-            val durationMatch = if (targetDurationSec != null && track.durationSec != null) {
-                abs(track.durationSec!! - targetDurationSec) <= 8 // Within 8 seconds
-            } else {
-                true
             }
 
-            val titleMatch = normTrackTitle.contains(normTargetTitle) || normTargetTitle.contains(normTrackTitle)
-            durationMatch && titleMatch
-        } ?: tracks.firstOrNull()
+            // Return first successful match
+            for (deferred in deferreds) {
+                val result = deferred.await()
+                if (result != null) {
+                    resolutionCache[cacheKey] = result
+                    return@coroutineScope result
+                }
+            }
+            null
+        }
     }
 
-    private fun cleanSearchTerm(term: String): String {
-        return term
-            .replace(Regex("""\(feat\..*?\)""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\(ft\..*?\)""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\[.*?\]"""), "")
-            .replace(Regex("""\(Official.*?\)""", RegexOption.IGNORE_CASE), "")
-            .trim()
+    fun clearCache() {
+        resolutionCache.clear()
     }
 }

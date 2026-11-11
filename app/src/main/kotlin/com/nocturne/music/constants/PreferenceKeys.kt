@@ -35,6 +35,8 @@ val GlassLensHeightKey = floatPreferencesKey("glass_lens_height")
 val GlassChromaticAberrationKey = booleanPreferencesKey("glass_chromatic_aberration")
 val GlassDepthEffectKey = booleanPreferencesKey("glass_depth_effect")
 val GlassSurfaceOpacityKey = floatPreferencesKey("glass_surface_opacity")
+val GlassPerformanceKey = booleanPreferencesKey("glass_performance")
+val ProgressiveBlurKey = booleanPreferencesKey("progressive_blur")
 val HasPromptedSignInKey = booleanPreferencesKey("has_prompted_sign_in")
 
 val ThemeCategoryKey = stringPreferencesKey("theme_category")
@@ -51,13 +53,16 @@ val StoredGoogleAccountsKey = stringPreferencesKey("stored_google_accounts")
 enum class ThemeCategory {
     NOCTURNE_UI,
     NOTHING,
+    APPLE_MUSIC_ISH,
     MATERIAL_3_EXPRESSIVE
 }
 
 val NocturneThemePresetKey = stringPreferencesKey("nocturne_theme_preset")
+val ThemeIsMonochromeKey = booleanPreferencesKey("theme_is_monochrome")
 val NothingDotMatrixIconsKey = booleanPreferencesKey("nothing_dot_matrix_icons")
 
 enum class NocturneThemePreset(val label: String, val accentHex: Long) {
+    APPLE_MUSIC("Apple Music", 0xFFFA2D48),
     NOTHING("Nothing Dot", 0xFFD71921),
     NOTHING_MONO("Nothing Mono", 0xFFFFFFFF),
     MONOCHROME("Monochrome", 0xFFFFFFFF),

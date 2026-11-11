@@ -41,6 +41,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import com.nocturne.music.ui.theme.LocalIsAppleMusicTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
@@ -492,12 +493,13 @@ fun Thumbnail(
                         Modifier.fillMaxSize()
                     }
                 ) {
+                    val isAppleMusicTheme = LocalIsAppleMusicTheme.current
                     // Calculate dimensions once per size change, considering landscape mode
-                    val dimensions = remember(maxWidth, maxHeight, isLandscape, thumbnailCornerRadius) {
+                    val dimensions = remember(maxWidth, maxHeight, isLandscape, thumbnailCornerRadius, isAppleMusicTheme) {
                         calculateThumbnailDimensions(
                             containerWidth = maxWidth,
                             containerHeight = maxHeight,
-                            cornerRadius = thumbnailCornerRadius.dp,
+                            cornerRadius = if (isAppleMusicTheme) 24.dp else thumbnailCornerRadius.dp,
                             isLandscape = isLandscape
                         )
                     }

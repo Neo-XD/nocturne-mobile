@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Convx / Nocturne Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -30,8 +30,10 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
 import com.nocturne.music.constants.EnableFrostedGlassKey
 import com.nocturne.music.constants.GlassBlurRadiusKey
+import com.nocturne.music.constants.GlassPerformanceKey
 import com.nocturne.music.constants.GlassChromaticAberrationKey
 import com.nocturne.music.constants.GlassDepthEffectKey
 import com.nocturne.music.constants.GlassHighlightOpacityKey
@@ -82,6 +84,7 @@ data class GlassEffectConfig(
     /** Which rendering style every glass surface uses. */
     val style: GlassStyle = GlassStyle.LIQUID,
     val surfaceOpacity: Float = 0.50f,
+    val glassPerformance: Boolean = false,
     val textColor: Color = Color.Unspecified,
     val playerEnabled: Boolean = true,
     val miniPlayerEnabled: Boolean = true,
@@ -122,6 +125,53 @@ internal const val LENS_MAX_DP = 48f
 internal const val PLAYER_BLUR_MULTIPLIER = 4f
 internal const val MIN_GLASS_RESOLUTION_SCALE = 0.30f
 internal const val FULL_QUALITY_BLUR_DP = 2.5f
+private const val FROST_BLUR_RADIUS_DP = 16f
+private const val FROST_RESOLUTION_SCALE = 0.25f
+
+val GLASS_EDGE_WIDTH = 0.5.dp
+val GLASS_EDGE_COLOR = Color.White.copy(alpha = 0.10f)
+
+@Composable
+fun glassContentColor(): Color =
+    if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) Color.Black else Color.White
+
+@Composable
+fun glassIndicatorColor(): Color =
+    if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+        Color.White.copy(alpha = 0.5f)
+    } else {
+        Color.White.copy(alpha = 0.14f)
+    }
+
+@Composable
+fun Modifier.lightweightLiquidGlass(
+    shape: CornerBasedShape,
+    fallbackColor: Color,
+): Modifier {
+    val config = LocalGlassEffectConfig.current
+    val useGlass = config.globalEnabled && isGlassSupported()
+    val glassTint = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) {
+        Color(0xFFFAFAFA)
+    } else {
+        Color(0xFF121212)
+    }
+
+    return clip(shape)
+        .background(
+            color = if (useGlass) glassTint.copy(alpha = 0.4f) else fallbackColor,
+            shape = shape,
+        )
+        .border(GLASS_EDGE_WIDTH, GLASS_EDGE_COLOR, shape)
+}
+
+@Composable
+fun Modifier.liquidGlassRim(shape: CornerBasedShape): Modifier {
+    val config = LocalGlassEffectConfig.current
+    if (!config.globalEnabled || !isGlassSupported()) return this
+    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+    val rimColor = GlassTintTokens.pluckColor(isDark).copy(alpha = 0.4f)
+    return border(GLASS_EDGE_WIDTH, rimColor, shape)
+}
 
 fun glassResolutionScale(blurRadiusDp: Float): Float {
     val t = (blurRadiusDp / FULL_QUALITY_BLUR_DP).coerceIn(0f, 1f)
@@ -195,6 +245,7 @@ fun rememberGlassEffectConfig(): GlassEffectConfig {
     val (chromaticAberration) = rememberPreference(GlassChromaticAberrationKey, defaultValue = false)
     val (depthEffect) = rememberPreference(GlassDepthEffectKey, defaultValue = false)
     val (surfaceOpacity) = rememberPreference(GlassSurfaceOpacityKey, defaultValue = 0.50f)
+    val (glassPerformance) = rememberPreference(GlassPerformanceKey, defaultValue = false)
 
     return remember(
         enabled,
@@ -205,7 +256,8 @@ fun rememberGlassEffectConfig(): GlassEffectConfig {
         lensHeight,
         chromaticAberration,
         depthEffect,
-        surfaceOpacity
+        surfaceOpacity,
+        glassPerformance
     ) {
         GlassEffectConfig(
             globalEnabled = enabled,
@@ -217,7 +269,8 @@ fun rememberGlassEffectConfig(): GlassEffectConfig {
             chromaticAberration = chromaticAberration,
             depthEffect = depthEffect,
             surfaceOpacity = surfaceOpacity,
-            style = GlassStyle.LIQUID
+            glassPerformance = glassPerformance,
+            style = if (glassPerformance) GlassStyle.BLUR else GlassStyle.LIQUID
         )
     }
 }
@@ -251,14 +304,17 @@ fun Modifier.liquidGlass(
     }
 
     val pool = LocalPooledGlass.current
-    val usePool = pool != null &&
+    val isPerformance = config.glassPerformance
+    val usePool = !isPerformance && pool != null &&
         blurRadiusDp == pool.blurRadiusDp &&
         config.vibrancy == pool.vibrancy &&
         !config.chromaticAberration
     val backdrop = if (usePool) pool.backdrop else LocalAppBackdrop.current
     val density = LocalDensity.current
-    val resolutionScale = if (usePool) 1f else backdropScale.coerceIn(0.05f, 1f)
-    val blurPx = with(density) { blurRadiusDp.dp.toPx() } * resolutionScale
+    val effectiveResolutionScale = if (isPerformance) FROST_RESOLUTION_SCALE else (if (usePool) 1f else backdropScale.coerceIn(0.05f, 1f))
+    val effectiveBlurRadiusDp = if (isPerformance) FROST_BLUR_RADIUS_DP else blurRadiusDp
+    val resolutionScale = effectiveResolutionScale
+    val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() } * resolutionScale
     val saturation = glassSaturation(config.vibrancy)
     val lensHeightPx = with(density) { (config.lensHeight * LENS_MAX_DP).dp.toPx() } * resolutionScale
     val lensAmountPx = with(density) { (config.lensAmount * LENS_MAX_DP).dp.toPx() } * resolutionScale
@@ -293,7 +349,7 @@ fun Modifier.liquidGlass(
 
     val animatedHighlightAngle = HighlightAngleFrozen
     val shapeBlock: () -> Shape = remember(shape) { { shape } }
-    val plainBlur = config.style == GlassStyle.BLUR
+    val plainBlur = config.style == GlassStyle.BLUR || isPerformance
 
     val effectsBlock: BackdropEffectScope.() -> Unit = remember(
         saturation,

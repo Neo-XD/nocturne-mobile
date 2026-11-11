@@ -40,22 +40,30 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import com.nocturne.music.constants.NothingDotMatrixIconsKey
+import com.nocturne.music.constants.ThemeIsMonochromeKey
+import com.nocturne.music.constants.UseAppleMiniPlayerKey
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -144,10 +152,10 @@ fun ThemeScreen(
 
     val (themeCategoryStr, onThemeCategoryChange) = rememberPreference(
         ThemeCategoryKey,
-        defaultValue = ThemeCategory.NOCTURNE_UI.name
+        defaultValue = ThemeCategory.APPLE_MUSIC_ISH.name
     )
     val themeCategory = remember(themeCategoryStr) {
-        runCatching { ThemeCategory.valueOf(themeCategoryStr) }.getOrDefault(ThemeCategory.NOCTURNE_UI)
+        runCatching { ThemeCategory.valueOf(themeCategoryStr) }.getOrDefault(ThemeCategory.APPLE_MUSIC_ISH)
     }
 
     val (nocturnePresetStr, onNocturnePresetChange) = rememberPreference(
@@ -158,12 +166,18 @@ fun ThemeScreen(
         NocturneThemePreset.fromName(nocturnePresetStr)
     }
 
+    val (isMonochrome, onMonochromeChange) = rememberPreference(
+        ThemeIsMonochromeKey,
+        defaultValue = false
+    )
+
     val selectedThemeColor = Color(selectedThemeColorInt)
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // Helper function to handle color selection with dynamic theme toggle
     val handleColorSelection: (Color) -> Unit = { color ->
+        onMonochromeChange(false)
         onSelectedThemeColorChange(color.toArgb())
         val isDynamicColor = color == DefaultThemeColor
         onDynamicThemeChange(isDynamicColor)
@@ -181,7 +195,9 @@ fun ThemeScreen(
             themeCategory = themeCategory,
             onThemeCategoryChange = onThemeCategoryChange,
             nocturnePreset = nocturnePreset,
-            onNocturnePresetChange = onNocturnePresetChange
+            onNocturnePresetChange = onNocturnePresetChange,
+            isMonochrome = isMonochrome,
+            onMonochromeChange = onMonochromeChange
         )
     } else {
         PortraitThemeLayout(
@@ -195,7 +211,9 @@ fun ThemeScreen(
             themeCategory = themeCategory,
             onThemeCategoryChange = onThemeCategoryChange,
             nocturnePreset = nocturnePreset,
-            onNocturnePresetChange = onNocturnePresetChange
+            onNocturnePresetChange = onNocturnePresetChange,
+            isMonochrome = isMonochrome,
+            onMonochromeChange = onMonochromeChange
         )
     }
 
@@ -224,7 +242,9 @@ fun PortraitThemeLayout(
     themeCategory: ThemeCategory,
     onThemeCategoryChange: (String) -> Unit,
     nocturnePreset: NocturneThemePreset,
-    onNocturnePresetChange: (String) -> Unit
+    onNocturnePresetChange: (String) -> Unit,
+    isMonochrome: Boolean,
+    onMonochromeChange: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -242,7 +262,8 @@ fun PortraitThemeLayout(
                 .height(160.dp),
             darkMode = darkMode,
             pureBlack = pureBlack,
-            themeColor = selectedThemeColor
+            themeColor = selectedThemeColor,
+            isMonochrome = isMonochrome
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -257,7 +278,9 @@ fun PortraitThemeLayout(
             themeCategory = themeCategory,
             onThemeCategoryChange = onThemeCategoryChange,
             nocturnePreset = nocturnePreset,
-            onNocturnePresetChange = onNocturnePresetChange
+            onNocturnePresetChange = onNocturnePresetChange,
+            isMonochrome = isMonochrome,
+            onMonochromeChange = onMonochromeChange
         )
 
         Spacer(modifier = Modifier.height(120.dp))
@@ -276,7 +299,9 @@ fun LandscapeThemeLayout(
     themeCategory: ThemeCategory,
     onThemeCategoryChange: (String) -> Unit,
     nocturnePreset: NocturneThemePreset,
-    onNocturnePresetChange: (String) -> Unit
+    onNocturnePresetChange: (String) -> Unit,
+    isMonochrome: Boolean,
+    onMonochromeChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -297,7 +322,8 @@ fun LandscapeThemeLayout(
                     .height(140.dp),
                 darkMode = darkMode,
                 pureBlack = pureBlack,
-                themeColor = selectedThemeColor
+                themeColor = selectedThemeColor,
+                isMonochrome = isMonochrome
             )
         }
 
@@ -318,7 +344,9 @@ fun LandscapeThemeLayout(
                 themeCategory = themeCategory,
                 onThemeCategoryChange = onThemeCategoryChange,
                 nocturnePreset = nocturnePreset,
-                onNocturnePresetChange = onNocturnePresetChange
+                onNocturnePresetChange = onNocturnePresetChange,
+                isMonochrome = isMonochrome,
+                onMonochromeChange = onMonochromeChange
             )
 
             Spacer(modifier = Modifier.height(80.dp))
@@ -337,13 +365,28 @@ fun ThemeControls(
     themeCategory: ThemeCategory,
     onThemeCategoryChange: (String) -> Unit,
     nocturnePreset: NocturneThemePreset,
-    onNocturnePresetChange: (String) -> Unit
+    onNocturnePresetChange: (String) -> Unit,
+    isMonochrome: Boolean,
+    onMonochromeChange: (Boolean) -> Unit
 ) {
     val isSystemDark = isSystemInDarkTheme()
     val effectiveDark = when (darkMode) {
         DarkMode.AUTO -> isSystemDark
         DarkMode.ON -> true
         DarkMode.OFF -> false
+    }
+
+    var showColorPickerDialog by remember { mutableStateOf(false) }
+
+    if (showColorPickerDialog) {
+        CustomColorPickerDialog(
+            initialColor = if (selectedThemeColor == Color.Transparent || isMonochrome) DefaultThemeColor else selectedThemeColor,
+            onDismissRequest = { showColorPickerDialog = false },
+            onColorSelected = { color ->
+                onMonochromeChange(false)
+                onSelectedThemeColorChange(color)
+            }
+        )
     }
 
     Column(
@@ -369,9 +412,10 @@ fun ThemeControls(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 val categories = listOf(
-                    ThemeCategory.NOCTURNE_UI to "Desktop Themes",
-                    ThemeCategory.NOTHING to "Nothing OS",
-                    ThemeCategory.MATERIAL_3_EXPRESSIVE to stringResource(R.string.theme_category_material3)
+                    ThemeCategory.NOCTURNE_UI to "Desktop",
+                    ThemeCategory.NOTHING to "Nothing",
+                    ThemeCategory.APPLE_MUSIC_ISH to "Apple Music-ish",
+                    ThemeCategory.MATERIAL_3_EXPRESSIVE to "Material 3"
                 )
                 categories.forEach { (cat, title) ->
                     val isCatSelected = themeCategory == cat
@@ -466,7 +510,159 @@ fun ThemeControls(
             }
         }
 
-        // Category-specific presets or palettes
+        // Accent Color & Palette (Universal across all themes)
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = stringResource(R.string.color_palette),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            // Monochrome & Custom Color Cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Monochrome Card
+                val isMonochromeSelected = isMonochrome
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            if (isMonochromeSelected) MaterialTheme.colorScheme.surfaceVariant
+                            else MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                        .border(
+                            width = if (isMonochromeSelected) 2.dp else 1.dp,
+                            color = if (isMonochromeSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .clickable {
+                            onMonochromeChange(true)
+                            onSelectedThemeColorChange(Color(0xFF000000))
+                            onNocturnePresetChange(NocturneThemePreset.MONOCHROME.name)
+                        }
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(if (effectiveDark) Color.White else Color.Black),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isMonochromeSelected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.check),
+                                    contentDescription = null,
+                                    tint = if (effectiveDark) Color.Black else Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                        Column {
+                            Text(
+                                text = "Monochrome",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Pure B&W",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // Custom Color Card
+                val isCustomColor = !isMonochrome && selectedThemeColor != DefaultThemeColor
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            if (isCustomColor) MaterialTheme.colorScheme.surfaceVariant
+                            else MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                        .border(
+                            width = if (isCustomColor) 2.dp else 1.dp,
+                            color = if (isCustomColor) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .clickable {
+                            showColorPickerDialog = true
+                        }
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(if (isCustomColor) selectedThemeColor else MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.edit),
+                                contentDescription = null,
+                                tint = if ((if (isCustomColor) selectedThemeColor else MaterialTheme.colorScheme.primary).luminance() > 0.6f) Color.Black else Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Custom Color",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (isCustomColor) "#%06X".format(0xFFFFFF and selectedThemeColor.toArgb()) else "Pick color",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Quick Swatches Row
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(PaletteColors) { palette ->
+                    val isDynamicPalette = palette.seedColor == Color.Transparent
+                    val isSelected = !isMonochrome && if (isDynamicPalette) {
+                        selectedThemeColor == DefaultThemeColor
+                    } else {
+                        selectedThemeColor == palette.seedColor
+                    }
+
+                    PaletteItem(
+                        palette = palette,
+                        isSelected = isSelected,
+                        onClick = {
+                            onMonochromeChange(false)
+                            val colorToSave = if (isDynamicPalette) DefaultThemeColor else palette.seedColor
+                            onSelectedThemeColorChange(colorToSave)
+                        }
+                    )
+                }
+            }
+        }
+
+        // Category-specific options
         when (themeCategory) {
             ThemeCategory.NOCTURNE_UI -> {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -498,29 +694,6 @@ fun ThemeControls(
             }
             ThemeCategory.NOTHING -> {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = "Nothing Presets",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                        contentPadding = PaddingValues(horizontal = 4.dp)
-                    ) {
-                        val nothingPresets = listOf(NocturneThemePreset.NOTHING, NocturneThemePreset.NOTHING_MONO)
-                        items(nothingPresets) { preset ->
-                            val isSelected = nocturnePreset == preset
-                            NocturnePresetItem(
-                                preset = preset,
-                                isSelected = isSelected,
-                                pureBlack = pureBlack,
-                                darkTheme = effectiveDark,
-                                onClick = { onNocturnePresetChange(preset.name) }
-                            )
-                        }
-                    }
-
                     val (useDotMatrixIcons, onUseDotMatrixIconsChange) = rememberPreference(NothingDotMatrixIconsKey, defaultValue = true)
                     Row(
                         modifier = Modifier
@@ -550,38 +723,44 @@ fun ThemeControls(
                     }
                 }
             }
-            ThemeCategory.MATERIAL_3_EXPRESSIVE -> {
+            ThemeCategory.APPLE_MUSIC_ISH -> {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = stringResource(R.string.color_palette),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    val (useAppleMiniPlayer, onUseAppleMiniPlayerChange) = rememberPreference(UseAppleMiniPlayerKey, defaultValue = true)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onUseAppleMiniPlayerChange(!useAppleMiniPlayer) }
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        items(PaletteColors) { palette ->
-                            val isDynamicPalette = palette.seedColor == Color.Transparent
-                            val isSelected = if (isDynamicPalette) {
-                                selectedThemeColor == DefaultThemeColor
-                            } else {
-                                selectedThemeColor == palette.seedColor
-                            }
-
-                            PaletteItem(
-                                palette = palette,
-                                isSelected = isSelected,
-                                onClick = {
-                                    val colorToSave = if (isDynamicPalette) DefaultThemeColor else palette.seedColor
-                                    onSelectedThemeColorChange(colorToSave)
-                                }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Apple MiniPlayer",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Floating squircle pill miniplayer with liquid glass specular highlight",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Switch(
+                            checked = useAppleMiniPlayer,
+                            onCheckedChange = onUseAppleMiniPlayerChange
+                        )
                     }
+
+                    Text(
+                        text = "BitChord Apple Music design: Liquid glass blur, continuous rounded cards, and immersive frosted player layout.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
+            ThemeCategory.MATERIAL_3_EXPRESSIVE -> {}
         }
     }
 }
@@ -982,7 +1161,8 @@ fun ThemePreviewCard(
     modifier: Modifier = Modifier,
     darkMode: DarkMode,
     pureBlack: Boolean,
-    themeColor: Color
+    themeColor: Color,
+    isMonochrome: Boolean = false
 ) {
     val isSystemDark = isSystemInDarkTheme()
     val useDark = when (darkMode) {
@@ -994,7 +1174,7 @@ fun ThemePreviewCard(
     vivimusicTheme(
         darkTheme = useDark,
         pureBlack = pureBlack,
-        themeColor = themeColor
+        themeColor = if (isMonochrome) Color(0xFF000000) else themeColor
     ) {
         Card(
             modifier = modifier,
@@ -1082,4 +1262,152 @@ fun ThemePreviewCard(
         }
     }
 }
+
+@Composable
+fun CustomColorPickerDialog(
+    initialColor: Color,
+    onDismissRequest: () -> Unit,
+    onColorSelected: (Color) -> Unit
+) {
+    var hexText by remember {
+        val argb = initialColor.toArgb()
+        val hex = String.format("%06X", 0xFFFFFF and argb)
+        mutableStateOf(hex)
+    }
+
+    val parsedColor: Color? = remember(hexText) {
+        val clean = hexText.trim().removePrefix("#")
+        if (clean.length == 6) {
+            runCatching {
+                val colorLong = clean.toLong(16) or 0xFF000000L
+                Color(colorLong.toInt())
+            }.getOrNull()
+        } else null
+    }
+
+    val quickColors = remember {
+        listOf(
+            Color(0xFFFA2D48), // Apple Red
+            Color(0xFFD71921), // Nothing Red
+            Color(0xFFEC5464), // Crimson
+            Color(0xFFD81B60), // Rose
+            Color(0xFF8E24AA), // Purple
+            Color(0xFF5E35B1), // Deep Purple
+            Color(0xFF3949AB), // Indigo
+            Color(0xFF1E88E5), // Blue
+            Color(0xFF039BE5), // Sky Blue
+            Color(0xFF00ACC1), // Cyan
+            Color(0xFF00897B), // Teal
+            Color(0xFF10B981), // Emerald
+            Color(0xFF43A047), // Green
+            Color(0xFF7CB342), // Light Green
+            Color(0xFFC0CA33), // Lime
+            Color(0xFFFDD835), // Yellow
+            Color(0xFFFFB300), // Amber
+            Color(0xFFFB8C00), // Orange
+            Color(0xFFF4511E), // Deep Orange
+            Color(0xFFFF2A85), // Neon Pink
+            Color(0xFFCBA6F7), // Catppuccin
+            Color(0xFFA07855), // Caffeine
+            Color(0xFF6D4C41), // Brown
+            Color(0xFF546E7A)  // Blue Grey
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Text(
+                text = "Custom Accent Color",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val activePreview = parsedColor ?: initialColor
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(activePreview)
+                        .border(2.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.check),
+                        contentDescription = null,
+                        tint = if (activePreview.luminance() > 0.6f) Color.Black else Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = hexText,
+                    onValueChange = { input: String ->
+                        val filtered = input.filter { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' || it == '#' }.take(7)
+                        hexText = filtered
+                    },
+                    label = { Text("Hex Color (#RRGGBB)") },
+                    singleLine = true,
+                    isError = parsedColor == null && hexText.isNotEmpty(),
+                    prefix = { Text("#") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Text(
+                    text = "Quick Palette",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(quickColors) { color ->
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .border(
+                                    width = if (parsedColor == color) 2.dp else 1.dp,
+                                    color = if (parsedColor == color) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable {
+                                    val hex = String.format("%06X", 0xFFFFFF and color.toArgb())
+                                    hexText = hex
+                                }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    parsedColor?.let {
+                        onColorSelected(it)
+                        onDismissRequest()
+                    }
+                },
+                enabled = parsedColor != null
+            ) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 

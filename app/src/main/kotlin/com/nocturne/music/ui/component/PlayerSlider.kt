@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.nocturne.music.ui.theme.LocalIsNothingTheme
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,34 +90,56 @@ private fun DrawScope.drawDotMatrixTrack(
 
     val count = (availableWidth / minSpacing).toInt().coerceAtLeast(8)
     val stepX = availableWidth / count
-    val currentDotIndex = (fraction.coerceIn(0f, 1f) * count).toInt().coerceIn(0, count)
+    val progressInDots = fraction.coerceIn(0f, 1f) * count
 
     for (i in 0..count) {
-        val dotFraction = i.toFloat() / count
-        val effectiveDotFraction = if (isRtl) (1f - dotFraction) else dotFraction
+        val effectiveI = if (isRtl) (count - i) else i
         val cx = dotRadius + i * stepX
         val cy = center.y
 
-        val isPlayed = if (isRtl) (effectiveDotFraction >= (1f - fraction)) else (effectiveDotFraction <= fraction)
-        val isCurrent = if (isRtl) (i == (count - currentDotIndex)) else (i == currentDotIndex)
-        val currentRadius = if (isCurrent) (dotRadius * 1.5f).coerceAtMost(stepX * 0.48f) else dotRadius
+        val fillProgress = (progressInDots - effectiveI).coerceIn(0f, 1f)
+        val isCurrent = progressInDots >= effectiveI && progressInDots < (effectiveI + 1f)
+        val currentRadius = if (isCurrent) {
+            (dotRadius * (1f + 0.35f * fillProgress)).coerceAtMost(stepX * 0.48f)
+        } else if (fillProgress >= 1f) {
+            dotRadius
+        } else {
+            dotRadius
+        }
 
-        if (isPlayed) {
-            // Full (filled) dot for played parts (slightly larger at current position)
+        // Always draw the hollow outline base for the dot
+        drawCircle(
+            color = inactiveColor.copy(alpha = 0.45f),
+            radius = (currentRadius - strokeWidth / 2f).coerceAtLeast(1f),
+            center = Offset(cx, cy),
+            style = Stroke(width = strokeWidth)
+        )
+
+        // Progressively fill the dot as playback or volume advances
+        if (fillProgress >= 1f) {
             drawCircle(
                 color = activeColor,
                 radius = currentRadius,
                 center = Offset(cx, cy),
                 style = Fill
             )
-        } else {
-            // Hollow (stroked) dot for unplayed parts
-            drawCircle(
-                color = inactiveColor.copy(alpha = 0.55f),
-                radius = (currentRadius - strokeWidth / 2f).coerceAtLeast(1f),
-                center = Offset(cx, cy),
-                style = Stroke(width = strokeWidth)
-            )
+        } else if (fillProgress > 0f) {
+            val fillWidth = (2 * currentRadius) * fillProgress
+            val left = if (isRtl) (cx + currentRadius - fillWidth) else (cx - currentRadius)
+            val right = if (isRtl) (cx + currentRadius) else (cx - currentRadius + fillWidth)
+            clipRect(
+                left = left,
+                top = cy - currentRadius - 1f,
+                right = right,
+                bottom = cy + currentRadius + 1f
+            ) {
+                drawCircle(
+                    color = activeColor,
+                    radius = currentRadius,
+                    center = Offset(cx, cy),
+                    style = Fill
+                )
+            }
         }
     }
 }

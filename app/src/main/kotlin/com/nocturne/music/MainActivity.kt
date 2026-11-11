@@ -211,6 +211,8 @@ import com.nocturne.music.ui.component.rememberNocturneGlassBorderBrush
 import com.nocturne.music.constants.StopMusicOnTaskClearKey
 import com.nocturne.music.constants.UseNewMiniPlayerDesignKey
 import com.nocturne.music.constants.UseAppleMiniPlayerKey
+import com.nocturne.music.constants.ThemeCategory
+import com.nocturne.music.constants.ThemeCategoryKey
 import com.nocturne.music.db.MusicDatabase
 import com.nocturne.music.db.entities.SearchHistory
 import com.nocturne.music.extensions.toEnum
@@ -637,6 +639,11 @@ class MainActivity : ComponentActivity() {
                 val (useNewMiniPlayerDesign) = rememberPreference(UseNewMiniPlayerDesignKey, defaultValue = true)
                 val (useAppleMiniPlayer) = rememberPreference(UseAppleMiniPlayerKey, defaultValue = false)
                 val (enableFrostedGlass) = rememberPreference(EnableFrostedGlassKey, defaultValue = true)
+                val (themeCategoryStr) = rememberPreference(ThemeCategoryKey, defaultValue = ThemeCategory.APPLE_MUSIC_ISH.name)
+                val isAppleMusicTheme = themeCategoryStr == ThemeCategory.APPLE_MUSIC_ISH.name
+                val effectiveFloatingNav = floatingNav || isAppleMusicTheme
+                val effectiveUseAppleMiniPlayer = useAppleMiniPlayer || isAppleMusicTheme
+                val effectiveEnableFrostedGlass = enableFrostedGlass || isAppleMusicTheme
 
 
                 val unusedDynamicBg = false
@@ -847,7 +854,7 @@ class MainActivity : ComponentActivity() {
                     collapsedBound = bottomInset +
                         (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
                         extraSnackbarHeight +
-                        (if (useNewMiniPlayerDesign || useAppleMiniPlayer) MiniPlayerBottomSpacing else 0.dp) +
+                        (if (useNewMiniPlayerDesign || effectiveUseAppleMiniPlayer) MiniPlayerBottomSpacing else 0.dp) +
                         MiniPlayerHeight,
                     expandedBound = maxHeight,
                 )
@@ -1250,7 +1257,7 @@ class MainActivity : ComponentActivity() {
 
                         // Top Bar Overlay (runs after glassPool so it can sample frosted glass correctly)
                             AnimatedVisibility(
-                                visible = shouldShowTopBar && playerBottomSheetState.isCollapsed && playerBottomSheetState.progress < 0.05f,
+                                visible = shouldShowTopBar && (playerBottomSheetState.isCollapsed || playerBottomSheetState.isDismissed) && playerBottomSheetState.progress < 0.05f,
                                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                                 exit = fadeOut(animationSpec = tween(durationMillis = 200)),
                                 modifier = Modifier.align(Alignment.TopCenter)
@@ -1573,9 +1580,9 @@ class MainActivity : ComponentActivity() {
                                     pureBlack = pureBlack,
                                     slimNav = slimNav,
                                     onSearchLongClick = onSearchLongClick,
-                                    floatingNav = floatingNav,
+                                    floatingNav = effectiveFloatingNav,
                                     bottomInset = bottomInset,
-                                    enableFrostedGlass = enableFrostedGlass,
+                                    enableFrostedGlass = effectiveEnableFrostedGlass,
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .height(bottomInset + navPadding)
@@ -1601,7 +1608,7 @@ class MainActivity : ComponentActivity() {
                                         .height(bottomInsetDp)
                                         .graphicsLayer {
                                             val progress = playerBottomSheetState.progress
-                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || floatingNav || enableFrostedGlass) 0f else 1f
+                                            alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || effectiveFloatingNav || effectiveEnableFrostedGlass) 0f else 1f
                                         }
                                         .background(baseBg)
                                 )
@@ -1622,7 +1629,7 @@ class MainActivity : ComponentActivity() {
                                     .height(bottomInsetDp)
                                     .graphicsLayer {
                                         val progress = playerBottomSheetState.progress
-                                        alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || enableFrostedGlass) 0f else 1f
+                                        alpha = if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar) || effectiveFloatingNav || effectiveEnableFrostedGlass) 0f else 1f
                                     }
                                     .background(baseBg)
                             )

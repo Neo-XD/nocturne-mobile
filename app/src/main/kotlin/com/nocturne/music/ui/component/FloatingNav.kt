@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,7 +40,9 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +67,12 @@ import dev.chrisbanes.haze.hazeEffect
 import com.nocturne.music.ui.component.LocalHazeState
 import com.nocturne.music.ui.component.rememberNocturneHazeStyle
 
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import com.nocturne.music.ui.theme.LocalIsAppleMusicTheme
+
 @Composable
 fun FloatingNavigationBar(
     navigationItems: List<Screens>,
@@ -81,6 +90,21 @@ fun FloatingNavigationBar(
     val (frostedGlass) = rememberPreference(EnableFrostedGlassKey, true)
     val glassConfig = LocalGlassEffectConfig.current
     val isGlassActive = frostedGlass && isGlassAllowed()
+
+    val isAppleMusicTheme = LocalIsAppleMusicTheme.current
+    if (isAppleMusicTheme) {
+        ModernUnifiedFloatingBottomBar(
+            navigationItems = navigationItems,
+            currentRoute = currentRoute,
+            onItemClick = onItemClick,
+            modifier = modifier,
+            isGlassActive = isGlassActive,
+            glassConfig = glassConfig,
+            containerColor = containerColor,
+            bottomInset = bottomInset,
+        )
+        return
+    }
 
     // Left items are all main screens EXCEPT Search
     val leftItems = remember(navigationItems) {
@@ -289,5 +313,121 @@ private fun FloatingNavItem(
         }
     }
 }
+
+@Composable
+private fun ModernUnifiedFloatingBottomBar(
+    navigationItems: List<Screens>,
+    currentRoute: String?,
+    onItemClick: (Screens, Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    isGlassActive: Boolean,
+    glassConfig: GlassEffectConfig,
+    containerColor: Color,
+    bottomInset: Dp,
+) {
+    val pillShape = RoundedCornerShape(percent = 50)
+    val density = LocalDensity.current
+    var rowSize by remember { mutableStateOf(IntSize.Zero) }
+    val n = navigationItems.size
+    val selectedIndex = remember(currentRoute, navigationItems) {
+        val idx = navigationItems.indexOfFirst { screen ->
+            isRouteSelected(currentRoute, screen.route, navigationItems)
+        }
+        if (idx >= 0) idx else 0
+    }
+
+    val rowWidth = rowSize.component1().toFloat()
+    val gapPx = with(density) { 6.dp.toPx() }
+    val tabWidthPx = if (rowWidth > 0f && n > 0) {
+        (rowWidth - gapPx * (n - 1)) / n
+    } else 0f
+    val tabStepPx = if (rowWidth > 0f && n > 0) {
+        (rowWidth + gapPx) / n
+    } else 0f
+
+    val animatedPillOffset by animateFloatAsState(
+        targetValue = if (tabStepPx > 0f) selectedIndex * tabStepPx else 0f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
+        label = "pillOffset"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = bottomInset + 12.dp)
+            .height(58.dp)
+            .clip(pillShape)
+            .then(
+                if (isGlassActive) {
+                    Modifier.liquidGlass(
+                        config = glassConfig,
+                        shape = pillShape,
+                        applyEdgeEffects = true
+                    )
+                } else {
+                    Modifier
+                        .shadow(elevation = 8.dp, shape = pillShape)
+                        .background(containerColor, shape = pillShape)
+                        .border(0.5.dp, Color.White.copy(alpha = 0.12f), pillShape)
+                }
+            )
+            .padding(4.dp)
+    ) {
+        if (tabWidthPx > 0f) {
+            Box(
+                modifier = Modifier
+                    .width(with(density) { tabWidthPx.toDp() })
+                    .fillMaxHeight()
+                    .graphicsLayer {
+                        translationX = animatedPillOffset
+                    }
+                    .clip(pillShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .onSizeChanged { rowSize = it },
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            navigationItems.forEachIndexed { index, screen ->
+                val isSelected = index == selectedIndex
+                val scale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.08f else 1f,
+                    animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMediumLow),
+                    label = "tabScale"
+                )
+                val iconRes = if (isSelected) screen.iconIdActive else screen.iconIdInactive
+                val tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(pillShape)
+                        .clickable { onItemClick(screen, isSelected) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = stringResource(screen.titleId),
+                        tint = tint,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                            }
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -623,6 +623,16 @@ class HomeViewModel @Inject constructor(
         // Update combined YT items once all network data has settled
         allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() +
                 homePage.value?.sections?.flatMap { it.items }.orEmpty()
+
+        // Cache network results for instant subsequent page renders
+        homePage.value?.let { com.nocturne.music.utils.HomeCache.homePage = it }
+        explorePage.value?.let { com.nocturne.music.utils.HomeCache.explorePage = it }
+        dailyDiscover.value?.let { com.nocturne.music.utils.HomeCache.dailyDiscover = it }
+        communityPlaylists.value?.let { com.nocturne.music.utils.HomeCache.communityPlaylists = it }
+        similarRecommendations.value?.let { com.nocturne.music.utils.HomeCache.similarRecommendations = it }
+        coversAndRemixes.value?.let { com.nocturne.music.utils.HomeCache.coversAndRemixes = it }
+        accountPlaylists.value?.let { com.nocturne.music.utils.HomeCache.accountPlaylists = it }
+        com.nocturne.music.utils.HomeCache.updateTimestamp()
     }
 
     private suspend fun load() {
@@ -631,6 +641,24 @@ class HomeViewModel @Inject constructor(
         // Phase 1: Local DB only - UI renders immediately after this
         loadLocalDataPhase()
         isLoading.value = false
+
+        // Phase 1.5: Immediate hydration from HomeCache (0ms delay for Home & Explore)
+        if (com.nocturne.music.utils.HomeCache.hasData()) {
+            homePage.value = com.nocturne.music.utils.HomeCache.homePage
+            explorePage.value = com.nocturne.music.utils.HomeCache.explorePage
+            dailyDiscover.value = com.nocturne.music.utils.HomeCache.dailyDiscover
+            communityPlaylists.value = com.nocturne.music.utils.HomeCache.communityPlaylists
+            similarRecommendations.value = com.nocturne.music.utils.HomeCache.similarRecommendations
+            coversAndRemixes.value = com.nocturne.music.utils.HomeCache.coversAndRemixes
+            accountPlaylists.value = com.nocturne.music.utils.HomeCache.accountPlaylists
+            allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() +
+                    homePage.value?.sections?.flatMap { it.items }.orEmpty()
+        }
+
+        // If cache is fresh and this isn't a manual pull-to-refresh, avoid heavy network requests
+        if (!isRefreshing.value && !com.nocturne.music.utils.HomeCache.isStale()) {
+            return
+        }
 
         // Phase 2: All network sections in parallel - streams in progressively
         loadNetworkDataPhase()

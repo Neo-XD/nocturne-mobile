@@ -9,6 +9,8 @@ import android.graphics.Bitmap
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
@@ -40,26 +42,99 @@ import com.nocturne.music.constants.ThemeCategory
 import com.nocturne.music.constants.ThemeCategoryKey
 import com.nocturne.music.constants.NocturneThemePreset
 import com.nocturne.music.constants.NocturneThemePresetKey
+import com.nocturne.music.constants.ThemeIsMonochromeKey
 
 val LocalIsNothingTheme = staticCompositionLocalOf { false }
+val LocalIsAppleMusicTheme = staticCompositionLocalOf { false }
 val LocalUseDotMatrixIcons = staticCompositionLocalOf { true }
+
+fun buildAppleMusicColorScheme(
+    darkTheme: Boolean,
+    pureBlack: Boolean,
+    accentColor: Color = Color(0xFFFA2D48),
+    isMonochrome: Boolean = false
+): ColorScheme {
+    val accent = if (isMonochrome) {
+        if (darkTheme) Color.White else Color.Black
+    } else {
+        accentColor
+    }
+    val onAccent = if (isMonochrome) {
+        if (darkTheme) Color.Black else Color.White
+    } else {
+        if (accent.luminance() > 0.65f) Color.Black else Color.White
+    }
+    return if (darkTheme) {
+        val bg = if (pureBlack) Color.Black else Color(0xFF000000)
+        darkColorScheme(
+            primary = accent,
+            onPrimary = onAccent,
+            primaryContainer = accent.copy(alpha = 0.22f),
+            onPrimaryContainer = Color.White,
+            secondary = accent,
+            onSecondary = onAccent,
+            secondaryContainer = Color(0xFF2C2C2E),
+            onSecondaryContainer = Color.White,
+            tertiary = accent,
+            background = bg,
+            onBackground = Color.White,
+            surface = if (pureBlack) Color.Black else Color(0xFF0D0D0F),
+            onSurface = Color.White,
+            surfaceVariant = Color(0xFF1C1C1E),
+            onSurfaceVariant = Color(0xFF8E8E93),
+            surfaceContainer = Color(0xFF161618),
+            surfaceContainerHigh = Color(0xFF1C1C1E),
+            surfaceContainerHighest = Color(0xFF2C2C2E),
+            outline = Color(0xFF2C2C2E),
+            outlineVariant = Color(0xFF3A3A3C),
+        )
+    } else {
+        lightColorScheme(
+            primary = accent,
+            onPrimary = onAccent,
+            primaryContainer = accent.copy(alpha = 0.12f),
+            onPrimaryContainer = Color.Black,
+            secondary = accent,
+            onSecondary = onAccent,
+            secondaryContainer = Color(0xFFE5E5EA),
+            onSecondaryContainer = Color.Black,
+            tertiary = accent,
+            background = Color.White,
+            onBackground = Color.Black,
+            surface = Color(0xFFF7F7F9),
+            onSurface = Color.Black,
+            surfaceVariant = Color(0xFFF2F2F7),
+            onSurfaceVariant = Color(0xFF6E6E73),
+            surfaceContainer = Color(0xFFF2F2F7),
+            surfaceContainerHigh = Color(0xFFE5E5EA),
+            surfaceContainerHighest = Color(0xFFD1D1D6),
+            outline = Color(0xFFE5E5EA),
+            outlineVariant = Color(0xFFC7C7CC),
+        )
+    }
+}
 
 val DefaultThemeColor = Color(0xFFED5564)
 
 fun buildNocturneDesktopColorScheme(
     preset: NocturneThemePreset,
     darkTheme: Boolean,
-    pureBlack: Boolean
+    pureBlack: Boolean,
+    customAccent: Color? = null,
+    isMonochrome: Boolean = false
 ): ColorScheme {
     val isNothing = preset == NocturneThemePreset.NOTHING || preset == NocturneThemePreset.NOTHING_MONO
-    val accent = when (preset) {
-        NocturneThemePreset.MONOCHROME, NocturneThemePreset.NOTHING_MONO -> if (darkTheme) Color.White else Color.Black
-        NocturneThemePreset.NOTHING -> Color(0xFFD71921)
+    val accent = when {
+        isMonochrome -> if (darkTheme) Color.White else Color.Black
+        customAccent != null -> customAccent
+        preset == NocturneThemePreset.MONOCHROME || preset == NocturneThemePreset.NOTHING_MONO -> if (darkTheme) Color.White else Color.Black
+        preset == NocturneThemePreset.NOTHING -> Color(0xFFD71921)
         else -> Color(preset.accentHex)
     }
-    val onAccent = when (preset) {
-        NocturneThemePreset.MONOCHROME, NocturneThemePreset.NOTHING_MONO -> if (darkTheme) Color.Black else Color.White
-        NocturneThemePreset.LIME, NocturneThemePreset.TEAL -> Color(0xFF131314)
+    val onAccent = when {
+        isMonochrome -> if (darkTheme) Color.Black else Color.White
+        preset == NocturneThemePreset.MONOCHROME || preset == NocturneThemePreset.NOTHING_MONO -> if (darkTheme) Color.Black else Color.White
+        accent.luminance() > 0.6f -> Color(0xFF131314)
         else -> Color.White
     }
 
@@ -174,6 +249,11 @@ fun NocturneTheme(
     val nocturnePreset = remember(nocturnePresetStr) {
         NocturneThemePreset.fromName(nocturnePresetStr)
     }
+    val (isMonochromePref) = rememberPreference(ThemeIsMonochromeKey, defaultValue = false)
+    val isMonochrome = isMonochromePref ||
+        nocturnePreset == NocturneThemePreset.MONOCHROME ||
+        nocturnePreset == NocturneThemePreset.NOTHING_MONO ||
+        (themeColor.toArgb() == 0xFF000000.toInt())
 
     val brandFont = remember(selectedFontValue, themeCategory) {
         val font = AppFont.fromValue(selectedFontValue)
@@ -192,29 +272,58 @@ fun NocturneTheme(
         getTypography(brandFont = brandFont, plainFont = brandFont)
     }
 
-    val colorScheme = remember(themeCategory, nocturnePreset, darkTheme, pureBlack, themeColor) {
+    val colorScheme = remember(themeCategory, nocturnePreset, darkTheme, pureBlack, themeColor, isMonochrome) {
         when (themeCategory) {
             ThemeCategory.NOCTURNE_UI -> {
-                buildNocturneDesktopColorScheme(nocturnePreset, darkTheme, pureBlack)
+                buildNocturneDesktopColorScheme(
+                    preset = nocturnePreset,
+                    darkTheme = darkTheme,
+                    pureBlack = pureBlack,
+                    customAccent = if (isMonochrome) null else if (themeColor != DefaultThemeColor) themeColor else null,
+                    isMonochrome = isMonochrome
+                )
             }
             ThemeCategory.NOTHING -> {
-                val presetToUse = if (nocturnePreset == NocturneThemePreset.NOTHING_MONO) NocturneThemePreset.NOTHING_MONO else NocturneThemePreset.NOTHING
-                buildNocturneDesktopColorScheme(presetToUse, darkTheme, pureBlack)
+                val presetToUse = if (isMonochrome || nocturnePreset == NocturneThemePreset.NOTHING_MONO) NocturneThemePreset.NOTHING_MONO else NocturneThemePreset.NOTHING
+                buildNocturneDesktopColorScheme(
+                    preset = presetToUse,
+                    darkTheme = darkTheme,
+                    pureBlack = pureBlack,
+                    customAccent = if (isMonochrome) null else if (themeColor != DefaultThemeColor) themeColor else null,
+                    isMonochrome = isMonochrome
+                )
+            }
+            ThemeCategory.APPLE_MUSIC_ISH -> {
+                buildAppleMusicColorScheme(
+                    darkTheme = darkTheme,
+                    pureBlack = pureBlack,
+                    accentColor = if (themeColor != DefaultThemeColor) themeColor else Color(0xFFFA2D48),
+                    isMonochrome = isMonochrome
+                )
             }
             ThemeCategory.MATERIAL_3_EXPRESSIVE -> {
-                // Material 3 Expressive
-                val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                val base = if (useSystemDynamicColor) {
-                    if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-                } else {
-                    com.materialkolor.dynamicColorScheme(
-                        seedColor = themeColor,
+                if (isMonochrome) {
+                    val base = com.materialkolor.dynamicColorScheme(
+                        seedColor = Color(0xFF000000),
                         isDark = darkTheme,
                         specVersion = ColorSpec.SpecVersion.SPEC_2025,
-                        style = if (themeColor.toArgb() == 0xFF000000.toInt()) PaletteStyle.Monochrome else PaletteStyle.TonalSpot
+                        style = PaletteStyle.Monochrome
                     )
+                    if (darkTheme && pureBlack) base.pureBlack(true) else base
+                } else {
+                    val useSystemDynamicColor = (themeColor == DefaultThemeColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                    val base = if (useSystemDynamicColor) {
+                        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                    } else {
+                        com.materialkolor.dynamicColorScheme(
+                            seedColor = themeColor,
+                            isDark = darkTheme,
+                            specVersion = ColorSpec.SpecVersion.SPEC_2025,
+                            style = PaletteStyle.TonalSpot
+                        )
+                    }
+                    if (darkTheme && pureBlack) base.pureBlack(true) else base
                 }
-                if (darkTheme && pureBlack) base.pureBlack(true) else base
             }
         }
     }
@@ -222,9 +331,11 @@ fun NocturneTheme(
     val isNothingTheme = (themeCategory == ThemeCategory.NOTHING) || ((themeCategory == ThemeCategory.NOCTURNE_UI) && (nocturnePreset == NocturneThemePreset.NOTHING || nocturnePreset == NocturneThemePreset.NOTHING_MONO))
 
     val (useDotMatrixIcons) = rememberPreference(com.nocturne.music.constants.NothingDotMatrixIconsKey, defaultValue = true)
+    val isAppleMusicTheme = themeCategory == ThemeCategory.APPLE_MUSIC_ISH
     CompositionLocalProvider(
         LocalIsNothingTheme provides isNothingTheme,
-        LocalUseDotMatrixIcons provides useDotMatrixIcons
+        LocalIsAppleMusicTheme provides isAppleMusicTheme,
+        LocalUseDotMatrixIcons provides (isNothingTheme && useDotMatrixIcons)
     ) {
     MaterialExpressiveTheme(
         colorScheme = colorScheme,

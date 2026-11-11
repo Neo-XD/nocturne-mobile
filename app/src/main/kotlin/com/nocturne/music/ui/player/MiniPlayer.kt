@@ -53,6 +53,7 @@ import androidx.compose.material3.IconButton
 import com.nocturne.music.ui.component.DotMatrixGlyph
 import com.nocturne.music.ui.component.DotMatrixIcon
 import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import com.nocturne.music.ui.theme.LocalIsAppleMusicTheme
 import com.nocturne.music.ui.theme.LocalUseDotMatrixIcons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -187,11 +188,12 @@ fun MiniPlayer(
 ) {
     val useNewMiniPlayerDesign by rememberPreference(UseNewMiniPlayerDesignKey, true)
     val useAppleMiniPlayer by rememberPreference(UseAppleMiniPlayerKey, false)
+    val isAppleMusicTheme = LocalIsAppleMusicTheme.current
     
     // Create stable progress state - doesn't cause recomposition on position changes
     val progressState = remember { ProgressState(positionState, durationState) }
 
-    if (useAppleMiniPlayer) {
+    if (useAppleMiniPlayer || isAppleMusicTheme) {
         HybridMiniPlayer(
             progressState = progressState,
             modifier = modifier
@@ -767,12 +769,12 @@ private fun HybridMiniPlayer(
     val onSurfaceColor = if (isDynamicBackground) Color.White else MaterialTheme.colorScheme.onSurface
     val errorColor = MaterialTheme.colorScheme.error
     val glassBorderBrush = rememberNocturneGlassBorderBrush()
-    val pillShape = RoundedCornerShape(20.dp)
+    val pillShape = RoundedCornerShape(percent = 50)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(MiniPlayerHeight)
+            .height(58.dp)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
             .padding(horizontal = 12.dp)
             .let { base ->
@@ -804,7 +806,7 @@ private fun HybridMiniPlayer(
         NocturneGlassBox(
             modifier = Modifier
                 .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
-                .height(72.dp)
+                .height(58.dp)
                 .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) },
             shape = pillShape,
             backgroundColor = backgroundColor,
@@ -826,13 +828,13 @@ private fun HybridMiniPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 10.dp, vertical = 8.dp)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                // ── Apple-style large album art ──────────────────────────
-                val artShape = RoundedCornerShape(12.dp)
+                // ── Apple / BitChord squircle album art ───────────────────
+                val artShape = RoundedCornerShape(8.dp)
                 Box(
                     modifier = Modifier
-                        .size(52.dp)
+                        .size(42.dp)
                         .clip(artShape)
                 ) {
                     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)))
@@ -856,7 +858,7 @@ private fun HybridMiniPlayer(
                     modifier = Modifier.weight(1f)
                 )
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 // ── Play/pause with circular progress ────────────────────
                 NewMiniPlayerPlayButton(
@@ -871,52 +873,20 @@ private fun HybridMiniPlayer(
                     listenTogetherManager = listenTogetherManager
                 )
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
-                // ── Apple-style output control ───────────────────────────
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(primaryColor.copy(alpha = 0.10f))
-                        .clickable { showAudioDeviceBottomSheet = true }
+                // ── Next track button ────────────────────────────────────
+                IconButton(
+                    onClick = {
+                        if (canSkipNext) playerConnection.seekToNextMediaItem()
+                    },
+                    modifier = Modifier.size(38.dp)
                 ) {
                     Icon(
-                        imageVector = if (isBluetoothConnected) Icons.Default.Headphones else Icons.Default.Speaker,
-                        contentDescription = stringResource(R.string.audio_devices),
-                        tint = primaryColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(2.dp))
-
-                // Shuffle button
-                val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsState()
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .clickable { playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled }
-                ) {
-                    Icon(
-                        painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
-                        contentDescription = stringResource(R.string.action_shuffle_on),
-                        tint = if (shuffleModeEnabled) primaryColor else onSurfaceColor.copy(alpha = 0.7f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(2.dp))
-                // ── Like button ──────────────────────────────────────────
-                mediaMetadata?.let {
-                    FavoriteButton(
-                        songId = it.id,
-                        onSurfaceColor = onSurfaceColor,
-                        errorColor = errorColor,
-                        outlineColor = outlineColor
+                        painter = painterResource(R.drawable.skip_next),
+                        contentDescription = null,
+                        tint = onSurfaceColor,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }

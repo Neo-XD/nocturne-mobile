@@ -578,6 +578,31 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
+    val (themeCategoryStr) = rememberPreference(com.nocturne.music.constants.ThemeCategoryKey, defaultValue = com.nocturne.music.constants.ThemeCategory.APPLE_MUSIC_ISH.name)
+    val isAppleMusicTheme = themeCategoryStr == com.nocturne.music.constants.ThemeCategory.APPLE_MUSIC_ISH.name
+
+    if (isAppleMusicTheme) {
+        com.nocturne.music.ui.screens.modern.ModernHomeScreen(
+            navController = navController,
+            snackbarHostState = snackbarHostState,
+            viewModel = viewModel,
+        )
+    } else {
+        LegacyHomeScreen(
+            navController = navController,
+            snackbarHostState = snackbarHostState,
+            viewModel = viewModel,
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun LegacyHomeScreen(
+    navController: NavController,
+    snackbarHostState: SnackbarHostState,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
     val menuState = LocalMenuState.current
     val bottomSheetPageState = LocalBottomSheetPageState.current
     val database = LocalDatabase.current

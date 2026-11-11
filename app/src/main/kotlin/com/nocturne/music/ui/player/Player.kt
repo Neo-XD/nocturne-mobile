@@ -5,6 +5,7 @@
 
 package com.nocturne.music.ui.player
 import com.nocturne.music.ui.theme.LocalIsNothingTheme
+import com.nocturne.music.ui.theme.LocalIsAppleMusicTheme
 import com.nocturne.music.ui.component.DotMatrixGlyph
 import com.nocturne.music.ui.component.DotMatrixIcon
 import androidx.compose.material3.IconButton
@@ -284,14 +285,16 @@ fun BottomSheetPlayer(
     )
     */; val (hidePlayerThumbnail, onHidePlayerThumbnailChange) = rememberPreference(HidePlayerThumbnailKey, false)
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
-    val playerBackground by rememberEnumPreference(
-        key = PlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.BLUR) /*
-        defaultValue = PlayerBackgroundStyle.GRADIENT
-    )
-    */; val playerButtonsStyle by rememberEnumPreference(
+    val storedPlayerBackground by rememberEnumPreference(
+        key = PlayerBackgroundStyleKey, defaultValue = PlayerBackgroundStyle.BLUR)
+    val isAppleMusicTheme = LocalIsAppleMusicTheme.current
+    val effectiveUseNewPlayerDesign = useNewPlayerDesign || isAppleMusicTheme
+    val playerBackground = if (isAppleMusicTheme) PlayerBackgroundStyle.APPLE_MUSIC else storedPlayerBackground
+    val storedPlayerButtonsStyle by rememberEnumPreference(
         key = PlayerButtonsStyleKey,
         defaultValue = PlayerButtonsStyle.DEFAULT
     )
+    val playerButtonsStyle = if (isAppleMusicTheme) PlayerButtonsStyle.DEFAULT else storedPlayerButtonsStyle
 
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
@@ -1143,47 +1146,28 @@ fun BottomSheetPlayer(
                         }
                     }
                     PlayerBackgroundStyle.APPLE_MUSIC -> {
-                        AnimatedContent(
-                            targetState = effectiveMediaMetadata?.thumbnailUrl,
-                            transitionSpec = {
-                                fadeIn(tween(1200)).togetherWith(fadeOut(tween(1200)))
-                            },
-                            label = "appleMusicBackground"
-                        ) { thumbnailUrl ->
-                            if (thumbnailUrl != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .graphicsLayer { alpha = backgroundAlpha }
-                                ) {
-                                    // Layer 1: Full-Screen Blurred Background (Pre-blurred CPU StackBlur + LRU Cache)
-                                     BlurredBackdropImage(
-                                         model = thumbnailUrl,
-                                         screenBlurRadiusDp = 150f,
-                                         decodeSize = 48,
-                                         modifier = Modifier.fillMaxSize()
-                                     )
-                                     if (false)
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(thumbnailUrl)
-                                            .size(128, 128) // Downsample significantly for performance
-                                            .allowHardware(false)
-                                            .build(),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .blur(150.dp)
-                                    )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { alpha = backgroundAlpha }
+                        ) {
+                            // Layer 1: Full-Screen Blurred Background (Pre-blurred CPU StackBlur + LRU Cache, zero flicker double buffered)
+                            BlurredBackdropImage(
+                                model = effectiveMediaMetadata?.thumbnailUrl,
+                                screenBlurRadiusDp = 150f,
+                                decodeSize = 48,
+                                modifier = Modifier.fillMaxSize()
+                            )
 
-                                    // Layer 2: Clear Artwork (Limited to top 60% of screen)
-                                    // Fades out when lyrics are shown to provide a full-screen blur
-                                    val clearArtworkAlpha by animateFloatAsState(
-                                        targetValue = if (showInlineLyrics) 0f else 1f,
-                                        animationSpec = tween(500),
-                                        label = "clearArtworkAlpha"
-                                    )
+                            val thumbnailUrl = effectiveMediaMetadata?.thumbnailUrl
+                            if (thumbnailUrl != null) {
+                                // Layer 2: Clear Artwork (Limited to top 60% of screen)
+                                // Fades out when lyrics are shown to provide a full-screen blur
+                                val clearArtworkAlpha by animateFloatAsState(
+                                    targetValue = if (showInlineLyrics) 0f else 1f,
+                                    animationSpec = tween(500),
+                                    label = "clearArtworkAlpha"
+                                )
                                     
                                     Box(
                                         modifier = Modifier
@@ -1243,7 +1227,6 @@ fun BottomSheetPlayer(
                                 }
                             }
                         }
-                    }
                     PlayerBackgroundStyle.LIVE_MESH -> {
                         val infiniteTransition = rememberInfiniteTransition(label = "liveMeshRotation")
                         
@@ -1414,7 +1397,13 @@ fun BottomSheetPlayer(
         },
     ) {
         val usePlayerV2 by rememberPreference(UsePlayerV2Key, false)
-        if (usePlayerV2) {
+        if (isAppleMusicTheme) {
+            com.nocturne.music.ui.player.applemusic.AppleMusicPlayer(
+                state = state,
+                navController = navController,
+                modifier = modifier
+            )
+        } else if (usePlayerV2) {
              PlayerV2(state, navController, modifier)
         } else {
             val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
@@ -1643,7 +1632,7 @@ fun BottomSheetPlayer(
                 val isNothingTheme = LocalIsNothingTheme.current
                 val useDotMatrixIcons = isNothingTheme && com.nocturne.music.ui.theme.LocalUseDotMatrixIcons.current
 
-                if (useNewPlayerDesign) {
+                if (effectiveUseNewPlayerDesign) {
                     val shareShape = CircleShape; val oldShareShape = RoundedCornerShape(
                         topStart = 50.dp, bottomStart = 50.dp,
                         topEnd = 3.dp, bottomEnd = 3.dp
@@ -1960,7 +1949,7 @@ fun BottomSheetPlayer(
                 }
             }
 
-            Spacer(Modifier.height(if (useNewPlayerDesign) 24.dp else 8.dp))
+            Spacer(Modifier.height(if (effectiveUseNewPlayerDesign) 24.dp else 8.dp))
 
             val maxDuration = if (duration > 0) duration.toFloat() else 1f
             val currentPositionVal = (sliderPosition ?: effectivePosition).toFloat().coerceIn(0f, maxDuration)
@@ -1993,7 +1982,7 @@ fun BottomSheetPlayer(
                         },
                         enabled = !isListenTogetherGuest,
                         colors = PlayerSliderColors.getSliderColors(
-                            activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                            activeColor = if (effectiveUseNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
                             playerBackground = playerBackground,
                             useDarkTheme = useDarkTheme
                         ),
@@ -2025,7 +2014,7 @@ fun BottomSheetPlayer(
                             },
                             modifier = Modifier.padding(horizontal = PlayerHorizontalPadding),
                             colors = PlayerSliderColors.getSliderColors(
-                                activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                                activeColor = if (effectiveUseNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
                                 playerBackground = playerBackground,
                                 useDarkTheme = useDarkTheme
                             ),
@@ -2053,7 +2042,7 @@ fun BottomSheetPlayer(
                                 sliderPosition = null
                             },
                             colors = PlayerSliderColors.getSliderColors(
-                                activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                                activeColor = if (effectiveUseNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
                                 playerBackground = playerBackground,
                                 useDarkTheme = useDarkTheme
                             ),
@@ -2067,7 +2056,7 @@ fun BottomSheetPlayer(
                     val trackInteractionSource = remember { MutableInteractionSource() }
                     val isTrackDragged by trackInteractionSource.collectIsDraggedAsState()
                     val isTrackPressed by trackInteractionSource.collectIsPressedAsState()
-                    val isTrackActive = (isTrackDragged || isTrackPressed) && !useNewPlayerDesign
+                    val isTrackActive = (isTrackDragged || isTrackPressed) && !effectiveUseNewPlayerDesign
 
                     val trackHeight by animateDpAsState(
                         targetValue = if (isTrackActive) 16.dp else 10.dp,
@@ -2110,7 +2099,7 @@ fun BottomSheetPlayer(
                                 sliderState = sliderState,
                                 trackHeight = trackHeight,
                                 colors = PlayerSliderColors.getSliderColors(
-                                    activeColor = if (useNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
+                                    activeColor = if (effectiveUseNewPlayerDesign) textButtonColor else textButtonColor.copy(alpha = 0.7f),
                                     playerBackground = playerBackground,
                                     useDarkTheme = useDarkTheme
                                 )
@@ -2261,7 +2250,7 @@ fun BottomSheetPlayer(
                 )
             }
 
-            Spacer(Modifier.height(if (useNewPlayerDesign) 24.dp else 8.dp))
+            Spacer(Modifier.height(if (effectiveUseNewPlayerDesign) 24.dp else 8.dp))
 
             AnimatedVisibility(
                 visible = !isFullScreen,
@@ -2269,7 +2258,7 @@ fun BottomSheetPlayer(
                 exit = shrinkVertically(shrinkTowards = Alignment.Top) + slideOutVertically(targetOffsetY = { it }) + fadeOut()
             ) {
                 Column {
-                    if (useNewPlayerDesign) {
+                    if (effectiveUseNewPlayerDesign) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
@@ -2687,7 +2676,7 @@ fun BottomSheetPlayer(
 
                         val isAnyDeviceOrRemote = isRemoteDesktop || bluetoothDeviceName != null
                         AnimatedVisibility(
-                            visible = !useNewPlayerDesign && isAnyDeviceOrRemote,
+                            visible = !effectiveUseNewPlayerDesign && isAnyDeviceOrRemote,
                             enter = fadeIn(tween(400)) + expandVertically(tween(400)),
                             exit = fadeOut(tween(400)) + shrinkVertically(tween(400)),
                             label = "BluetoothInfoVisibility"
@@ -2864,7 +2853,7 @@ fun BottomSheetPlayer(
                         controlsContent(it)
                     }
 
-                    Spacer(Modifier.height(if (useNewPlayerDesign) 30.dp else 8.dp))
+                    Spacer(Modifier.height(if (effectiveUseNewPlayerDesign) 30.dp else 8.dp))
                 }
             }
         }

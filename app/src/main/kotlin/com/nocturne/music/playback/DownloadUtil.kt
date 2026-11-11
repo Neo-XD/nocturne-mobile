@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -134,6 +134,56 @@ constructor(
                     .withRequestHeaders(dataSpec.httpRequestHeaders + cachedStream.requestHeaders)
             }
             val cacheGeneration = songUrlCache.generation(mediaId)
+
+            // 1. Check Community Streaming Addons for lossless download resolution
+            if (com.nocturne.music.addons.AddonManager.hasEnabledAddons()) {
+                val songObj = database.getSongByIdBlocking(mediaId)
+                if (songObj != null) {
+                    val addonStream = runBlocking(Dispatchers.IO) {
+                        com.nocturne.music.addons.AddonManager.resolveLosslessStream(
+                            title = songObj.song.title,
+                            artist = songObj.artists.joinToString { it.name },
+                            durationSec = songObj.song.duration,
+                            album = songObj.song.albumName,
+                        )
+                    }
+                    if (addonStream != null) {
+                        var addonLength: Long? = null
+                        try {
+                            val client = OkHttpClient.Builder().build()
+                            val req = okhttp3.Request.Builder()
+                                .head()
+                                .url(addonStream.url)
+                                .apply { addonStream.headers.forEach { (k, v) -> header(k, v) } }
+                                .build()
+                            client.newCall(req).execute().use { resp ->
+                                addonLength = resp.header("Content-Length")?.toLongOrNull()
+                            }
+                        } catch (_: Exception) {}
+
+                        database.query {
+                            upsert(
+                                FormatEntity(
+                                    id = mediaId,
+                                    itag = 999,
+                                    mimeType = addonStream.mimeType,
+                                    codecs = addonStream.format,
+                                    bitrate = addonStream.bitrate,
+                                    sampleRate = addonStream.sampleRate ?: 44100,
+                                    contentLength = addonLength ?: 0L,
+                                    loudnessDb = null,
+                                    perceptualLoudnessDb = null,
+                                    playbackUrl = addonStream.url
+                                )
+                            )
+                        }
+                        val addonHeaders = dataSpec.httpRequestHeaders + addonStream.headers
+                        return@Factory dataSpec
+                            .withUri(addonStream.url.toUri())
+                            .withRequestHeaders(addonHeaders)
+                    }
+                }
+            }
 
             val playbackData = runBlocking(Dispatchers.IO) {
                 val song = database.getSongByIdBlocking(mediaId)?.song

@@ -106,6 +106,8 @@ import com.nocturne.music.LocalDatabase
 import com.nocturne.music.LocalDownloadUtil
 import com.nocturne.music.LocalPlayerConnection
 import com.nocturne.music.R
+import androidx.compose.foundation.border
+import com.nocturne.music.ui.theme.LocalIsAppleMusicTheme
 import com.nocturne.music.constants.CropAlbumArtKey
 import com.nocturne.music.constants.ExpressiveSongAlbumImageKey
 import com.nocturne.music.constants.GridItemSize
@@ -1463,13 +1465,18 @@ fun ItemThumbnail(
     thumbnailRatio: Float = 1f
 ) {
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
+    val isAppleMusic = LocalIsAppleMusicTheme.current
+    val isCircle = shape == CircleShape
+    val itemShape = if (isAppleMusic && !isCircle) ContinuousCornerShape(22.dp, GLASS_CORNER_SMOOTHING) else shape
+    val appleMusicBorder = if (isAppleMusic && !isCircle) Modifier.border(0.5.dp, Color(0x33FFFFFF), itemShape) else Modifier
     
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .fillMaxSize()
             .aspectRatio(thumbnailRatio)
-            .clip(shape)
+            .then(appleMusicBorder)
+            .clip(itemShape)
     ) {
         if (albumIndex == null) {
             AsyncImage(
@@ -1483,7 +1490,7 @@ fun ItemThumbnail(
                 contentScale = if (cropAlbumArt) ContentScale.Crop else ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(shape)
+                    .clip(itemShape)
             )
         }
 

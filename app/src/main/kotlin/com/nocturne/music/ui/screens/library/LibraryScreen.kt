@@ -17,11 +17,26 @@ import androidx.navigation.NavController
 import com.nocturne.music.R
 import com.nocturne.music.constants.ChipSortTypeKey
 import com.nocturne.music.constants.LibraryFilter
+import com.nocturne.music.constants.ThemeCategory
+import com.nocturne.music.constants.ThemeCategoryKey
 import com.nocturne.music.ui.component.ChipsRow
 import com.nocturne.music.utils.rememberEnumPreference
+import com.nocturne.music.utils.rememberPreference
 
 @Composable
 fun LibraryScreen(navController: NavController) {
+    val (themeCategoryStr) = rememberPreference(ThemeCategoryKey, defaultValue = ThemeCategory.APPLE_MUSIC_ISH.name)
+    val isAppleMusicTheme = themeCategoryStr == ThemeCategory.APPLE_MUSIC_ISH.name
+
+    if (isAppleMusicTheme) {
+        com.nocturne.music.ui.screens.modern.ModernLibraryScreen(navController = navController)
+    } else {
+        LegacyLibraryScreen(navController = navController)
+    }
+}
+
+@Composable
+fun LegacyLibraryScreen(navController: NavController) {
     var filterType by rememberEnumPreference(ChipSortTypeKey, LibraryFilter.LIBRARY)
 
     val filterContent = @Composable {

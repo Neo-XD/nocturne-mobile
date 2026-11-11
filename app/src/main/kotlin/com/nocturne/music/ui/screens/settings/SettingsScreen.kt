@@ -20,6 +20,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.nocturne.music.constants.EnableFrostedGlassKey
+import com.nocturne.music.utils.rememberPreference
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import kotlin.math.roundToInt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -62,6 +70,7 @@ fun SettingsScreen(
 
     val autoUpdateSetting = remember { getAutoUpdateCheckSetting(context) }
     var isUpdateAvailable by remember { mutableStateOf(getUpdateAvailableState(context)) }
+    val (enableFrostedGlass, onEnableFrostedGlassChange) = rememberPreference(key = EnableFrostedGlassKey, defaultValue = true)
 
     DisposableEffect(context) {
         val sharedPrefs = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
@@ -128,6 +137,22 @@ fun SettingsScreen(
                     title = { Text("Player Appearance") },
                     description = { Text("Theme customizer, player background, slider style, and navigation bar") },
                     onClick = { navController.navigate("settings/appearance/player_customizer") },
+                    isExpressive = true,
+                    descriptionBelow = true
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.tune),
+                    title = { Text("Liquid Glass") },
+                    description = {
+                        Text(if (enableFrostedGlass) "Active • BitChord pooled real-time refraction & frosted blur" else "Disabled")
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = enableFrostedGlass,
+                            onCheckedChange = onEnableFrostedGlassChange
+                        )
+                    },
+                    onClick = { onEnableFrostedGlassChange(!enableFrostedGlass) },
                     isExpressive = true,
                     descriptionBelow = true
                 ),

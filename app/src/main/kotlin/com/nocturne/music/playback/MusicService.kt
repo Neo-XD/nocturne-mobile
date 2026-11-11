@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Nocturne Music Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  */
@@ -2965,11 +2965,40 @@ class MusicService :
             if (com.nocturne.music.addons.AddonManager.hasEnabledAddons()) {
                 val addonStream = runBlocking(Dispatchers.IO) {
                     val songObj = database.getSongByIdBlocking(mediaId)
+                    val title: String?
+                    val artist: String?
+                    val durationSec: Int?
+                    val album: String?
+
                     if (songObj != null) {
+                        title = songObj.song.title
+                        artist = songObj.artists.joinToString { it.name }
+                        durationSec = songObj.song.duration
+                        album = songObj.song.albumName
+                    } else {
+                        val meta = currentMediaMetadata.value?.takeIf { it.id == mediaId }
+                        if (meta != null) {
+                            title = meta.title
+                            artist = meta.artists.joinToString { it.name }
+                            durationSec = meta.duration
+                            album = meta.album?.title
+                        } else {
+                            val mediaItem = (0 until player.mediaItemCount)
+                                .map { player.getMediaItemAt(it) }
+                                .firstOrNull { it.mediaId == mediaId }
+                            title = mediaItem?.mediaMetadata?.title?.toString()
+                            artist = mediaItem?.mediaMetadata?.artist?.toString()
+                            durationSec = null
+                            album = mediaItem?.mediaMetadata?.albumTitle?.toString()
+                        }
+                    }
+
+                    if (!title.isNullOrBlank()) {
                         com.nocturne.music.addons.AddonManager.resolveLosslessStream(
-                            title = songObj.song.title,
-                            artist = songObj.artists.joinToString { it.name },
-                            durationSec = songObj.song.duration
+                            title = title,
+                            artist = artist.orEmpty(),
+                            durationSec = durationSec,
+                            album = album,
                         )
                     } else null
                 }
