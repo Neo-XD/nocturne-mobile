@@ -35,7 +35,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.music.bitchord"
+        applicationId = "com.nocturne.music"
         // Wear OS 3, the oldest a Galaxy Watch 4 ever shipped with.
         minSdk = 30
         targetSdk = 36
@@ -53,12 +53,12 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            applicationId = "com.dev.bitchord"
-            resValue("string", "app_name", "BitChord Dev")
+            applicationId = "com.nocturne.music"
+            resValue("string", "app_name", "Nocturne Dev")
         }
         create("prod") {
             dimension = "env"
-            resValue("string", "app_name", "BitChord")
+            resValue("string", "app_name", "Nocturne")
         }
     }
 
