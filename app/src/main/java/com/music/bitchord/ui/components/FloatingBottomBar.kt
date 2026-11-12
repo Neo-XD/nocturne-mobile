@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -25,6 +29,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -192,6 +197,13 @@ fun FloatingBottomBar(
     // their target leaves the tap itself instant rather than eased.
     val glassSpec: AnimationSpec<Float> = if (reduceAnimation) snap() else GlassSpring
 
+    val hasStandalone = tabs.size >= 4
+    val standaloneIndex = if (hasStandalone) tabs.lastIndex else -1
+    val mainTabs = if (hasStandalone) tabs.subList(0, standaloneIndex) else tabs
+    val standaloneTab = if (hasStandalone) tabs[standaloneIndex] else null
+    val lastMainIndex = mainTabs.lastIndex
+    val isStandaloneSelected = hasStandalone && selectedIndex == standaloneIndex
+
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val haptics = rememberHaptics()
     val density = LocalDensity.current
@@ -199,7 +211,7 @@ fun FloatingBottomBar(
 
     var rowSize by remember { mutableStateOf(IntSize.Zero) }
     val gapPx = with(density) { 6.dp.toPx() }
-    val n = tabs.size
+    val n = mainTabs.size
 
     // With weight(1f) + spacedBy(gap):
     //   tabWidth = (rowWidth - gap*(n-1)) / n
@@ -215,11 +227,12 @@ fun FloatingBottomBar(
     // reads everything that can change under it through these. Read plainly,
     // each would stay what it was on the first touch.
     val currentTabStepPx by rememberUpdatedState(tabStepPx)
-    val currentLastIndex by rememberUpdatedState(tabs.lastIndex)
+    val currentLastMainIndex by rememberUpdatedState(lastMainIndex)
     val currentOnTabSelected by rememberUpdatedState(onTabSelected)
 
+    val activeMainIndex = if (selectedIndex in 0..lastMainIndex) selectedIndex else 0
     val pillTargetPx = if (tabStepPx > 0f) {
-        selectedIndex * tabStepPx + dragOffset
+        activeMainIndex * tabStepPx + dragOffset
     } else 0f
 
     val animatedPillOffset by animateFloatAsState(
@@ -233,11 +246,17 @@ fun FloatingBottomBar(
     // it. The stretch below is a function of this and nothing else, which is
     // what keeps it honest — the shape can only be deformed while it is
     // actually behind where it is going.
-    val lag = if (tabStepPx > 0f) {
+    val lag = if (tabStepPx > 0f && !isStandaloneSelected) {
         (abs(pillTargetPx - animatedPillOffset) / tabStepPx).coerceIn(0f, 1f)
     } else {
         0f
     }
+
+    val pillAlpha by animateFloatAsState(
+        targetValue = if (!isStandaloneSelected) 1f else 0f,
+        animationSpec = tween(150),
+        label = "pillAlpha",
+    )
 
     var lastHapticTab by remember { mutableIntStateOf(selectedIndex) }
 
@@ -246,112 +265,187 @@ fun FloatingBottomBar(
         lastHapticTab = selectedIndex
     }
 
-    Box(
+    val glassTint = glassContentColor()
+    val adaptiveTint = if (useGlass) glassTint else null
+
+    Row(
         modifier = modifier
             .windowInsetsPadding(floatingBarInsets)
             .padding(horizontal = NAV_BAR_GUTTER)
             .padding(bottom = NAV_BAR_LIFT)
             .fillMaxWidth()
-            .clip(pillShape)
-            .then(
-                if (reduceDynamicBlur) {
-                    Modifier.background(container)
-                } else if (useGlass) {
-                    Modifier.liquidGlass(shape = pillShape)
-                } else {
-                    Modifier.optimizedHazeEffect(
-                        state = hazeState,
-                        style = HazeMaterials.regular(container),
-                    )
-                },
-            )
-            .border(GLASS_EDGE_WIDTH, GLASS_EDGE_COLOR, pillShape)
-            .padding(horizontal = PILL_INSET, vertical = PILL_INSET),
+            .height(IntrinsicSize.Max),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (tabWidthPx > 0f) {
-            Box(
+        // Main tabs pill
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clip(pillShape)
+                .then(
+                    if (reduceDynamicBlur) {
+                        Modifier.background(container)
+                    } else if (useGlass) {
+                        Modifier.liquidGlass(shape = pillShape)
+                    } else {
+                        Modifier.optimizedHazeEffect(
+                            state = hazeState,
+                            style = HazeMaterials.regular(container),
+                        )
+                    },
+                )
+                .border(GLASS_EDGE_WIDTH, GLASS_EDGE_COLOR, pillShape)
+                .padding(horizontal = PILL_INSET, vertical = PILL_INSET),
+        ) {
+            if (tabWidthPx > 0f && pillAlpha > 0f) {
+                Box(
+                    modifier = Modifier
+                        .width(with(density) { tabWidthPx.toDp() })
+                        .height(with(density) { rowSize.height.toDp() })
+                        .graphicsLayer {
+                            alpha = pillAlpha
+                            translationX = animatedPillOffset
+                            // Around its own centre, so the indicator draws out
+                            // both ways rather than growing a tail off one edge —
+                            // a leading edge that ran ahead of the glyph it is
+                            // meant to be behind would read as two things moving,
+                            // not one thing stretching.
+                            scaleX = 1f + lag * STRETCH
+                            scaleY = 1f - lag * STRETCH * SQUASH
+                        }
+                        .clip(pillShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                )
+            }
+
+            Row(
                 modifier = Modifier
-                    .width(with(density) { tabWidthPx.toDp() })
-                    .height(with(density) { rowSize.height.toDp() })
-                    .graphicsLayer {
-                        translationX = animatedPillOffset
-                        // Around its own centre, so the indicator draws out
-                        // both ways rather than growing a tail off one edge —
-                        // a leading edge that ran ahead of the glyph it is
-                        // meant to be behind would read as two things moving,
-                        // not one thing stretching.
-                        scaleX = 1f + lag * STRETCH
-                        scaleY = 1f - lag * STRETCH * SQUASH
-                    }
-                    .clip(pillShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
-            )
+                    .fillMaxWidth()
+                    .onSizeChanged { rowSize = it }
+                    .pointerInput(Unit) {
+                        var totalDrag = 0f
+                        var dragStartIndex = currentSelectedIndex
+                        detectHorizontalDragGestures(
+                            onDragStart = {
+                                totalDrag = 0f
+                                dragStartIndex = currentSelectedIndex.coerceIn(0, currentLastMainIndex)
+                            },
+                            onDragCancel = { dragOffset = 0f },
+                            onDragEnd = {
+                                val step = currentTabStepPx
+                                if (step > 0f) {
+                                    val absoluteIndexFloat = (dragStartIndex + totalDrag / step)
+                                        .coerceIn(0f, currentLastMainIndex.toFloat())
+                                    val newIndex = absoluteIndexFloat.roundToInt()
+                                    if (newIndex != currentSelectedIndex) {
+                                        currentOnTabSelected(newIndex)
+                                    }
+                                }
+                                dragOffset = 0f
+                            },
+                            onHorizontalDrag = { _, delta ->
+                                val step = currentTabStepPx
+                                if (step <= 0f) return@detectHorizontalDragGestures
+                                totalDrag += delta
+                                val absoluteIndexFloat = (dragStartIndex + totalDrag / step)
+                                    .coerceIn(0f, currentLastMainIndex.toFloat())
+                                dragOffset = absoluteIndexFloat * step - currentSelectedIndex.coerceIn(0, currentLastMainIndex) * step
+
+                                val approxTab = absoluteIndexFloat.roundToInt()
+                                if (approxTab != lastHapticTab) {
+                                    haptics.play(Haptic.Tick)
+                                    lastHapticTab = approxTab
+                                }
+                            },
+                        )
+                    },
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                mainTabs.forEachIndexed { index, tab ->
+                    BottomBarItem(
+                        tab = tab,
+                        selected = index == selectedIndex,
+                        glassSpec = glassSpec,
+                        selectedTint = adaptiveTint,
+                        unselectedTint = adaptiveTint?.copy(alpha = 0.65f),
+                        onClick = { onTabSelected(index) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .onSizeChanged { rowSize = it }
-                .pointerInput(Unit) {
-                    // Every drag measures from the tab selected when it starts.
-                    // A stale index here measured them all from the tab the bar
-                    // first opened on: a drag right of it still landed, while
-                    // one to the left clamped back onto it and read as no change.
-                    var totalDrag = 0f
-                    var dragStartIndex = currentSelectedIndex
-                    detectHorizontalDragGestures(
-                        onDragStart = {
-                            totalDrag = 0f
-                            dragStartIndex = currentSelectedIndex
-                        },
-                        onDragCancel = { dragOffset = 0f },
-                        onDragEnd = {
-                            val step = currentTabStepPx
-                            if (step > 0f) {
-                                val absoluteIndexFloat = (dragStartIndex + totalDrag / step)
-                                    .coerceIn(0f, currentLastIndex.toFloat())
-                                val newIndex = absoluteIndexFloat.roundToInt()
-                                if (newIndex != currentSelectedIndex) {
-                                    currentOnTabSelected(newIndex)
-                                }
-                            }
-                            dragOffset = 0f
-                        },
-                        onHorizontalDrag = { _, delta ->
-                            val step = currentTabStepPx
-                            if (step <= 0f) return@detectHorizontalDragGestures
-                            totalDrag += delta
-                            val absoluteIndexFloat = (dragStartIndex + totalDrag / step)
-                                .coerceIn(0f, currentLastIndex.toFloat())
-                            dragOffset = absoluteIndexFloat * step - currentSelectedIndex * step
+        // Standalone Circle Blob for Search
+        if (standaloneTab != null) {
+            val searchScale by animateFloatAsState(
+                targetValue = if (isStandaloneSelected) 1.12f else 1f,
+                animationSpec = glassSpec,
+                label = "searchTabScale",
+            )
+            val searchIndicatorAlpha by animateFloatAsState(
+                targetValue = if (isStandaloneSelected) 1f else 0f,
+                animationSpec = tween(200),
+                label = "searchIndicatorAlpha",
+            )
+            val searchTint by animateColorAsState(
+                targetValue = if (isStandaloneSelected) {
+                    adaptiveTint ?: MaterialTheme.colorScheme.primary
+                } else {
+                    adaptiveTint?.copy(alpha = 0.65f) ?: MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                animationSpec = tween(200),
+                label = "searchTabTint",
+            )
 
-                            val approxTab = absoluteIndexFloat.roundToInt()
-                            if (approxTab != lastHapticTab) {
-                                haptics.play(Haptic.Tick)
-                                lastHapticTab = approxTab
-                            }
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .aspectRatio(1f)
+                    .clip(CircleShape)
+                    .then(
+                        if (reduceDynamicBlur) {
+                            Modifier.background(container)
+                        } else if (useGlass) {
+                            Modifier.liquidGlass(shape = CircleShape)
+                        } else {
+                            Modifier.optimizedHazeEffect(
+                                state = hazeState,
+                                style = HazeMaterials.regular(container),
+                            )
                         },
                     )
-                },
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // A real glass pill samples whatever artwork is behind it, not the
-            // theme's surface color, so a fixed onSurfaceVariant gray can lose
-            // contrast against it. Glass mode reads luminance off the surface
-            // color instead and picks pure black or white, same as the tint
-            // Echo's floating nav bar uses for its own liquid glass.
-            val glassTint = glassContentColor()
-            val adaptiveTint = if (useGlass) glassTint else null
-            tabs.forEachIndexed { index, tab ->
-                BottomBarItem(
-                    tab = tab,
-                    selected = index == selectedIndex,
-                    glassSpec = glassSpec,
-                    selectedTint = adaptiveTint,
-                    unselectedTint = adaptiveTint?.copy(alpha = 0.65f),
-                    onClick = { onTabSelected(index) },
-                    modifier = Modifier.weight(1f),
+                    .border(GLASS_EDGE_WIDTH, GLASS_EDGE_COLOR, CircleShape)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        if (!isStandaloneSelected) haptics.play(Haptic.Select)
+                        onTabSelected(standaloneIndex)
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                if (searchIndicatorAlpha > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .padding(PILL_INSET)
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f * searchIndicatorAlpha)),
+                    )
+                }
+                Icon(
+                    imageVector = standaloneTab.icon,
+                    contentDescription = standaloneTab.label,
+                    tint = searchTint,
+                    modifier = Modifier
+                        .size(TAB_ICON_SIZE)
+                        .graphicsLayer {
+                            scaleX = searchScale
+                            scaleY = searchScale
+                        },
                 )
             }
         }
