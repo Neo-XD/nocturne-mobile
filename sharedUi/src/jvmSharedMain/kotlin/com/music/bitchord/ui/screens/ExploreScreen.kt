@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,46 +83,62 @@ fun ExploreScreen(
                 contentPadding = contentPadding,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                if (showTitle) {
-                    item {
-                        Text(
-                            text = stringResource(Res.string.explore),
-                            style = MaterialTheme.typography.displayLarge,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            // 14dp under the title, the same gap Library leaves
-                            // above its first card (8dp title + 6dp Replay row).
-                            modifier = Modifier.padding(
-                                start = PAGE_GUTTER,
-                                end = PAGE_GUTTER,
-                                top = 8.dp,
-                                bottom = 14.dp,
-                            ),
-                        )
-                    }
-                }
-                when (state) {
-                    UiState.Loading -> item { ExploreSkeletonRows(columns) }
-                    is UiState.Error -> item {
-                        MessageState(state.message, actionLabel = stringResource(Res.string.retry), onAction = onRetry)
-                    }
-                    is UiState.Success -> {
-                        // Moods and genres read as one grid; the server's
-                        // grouping only decides the order.
-                        val rows = state.data.flatMap(MoodGenreSection::items)
-                            .distinctBy { it.browseId to it.params }
-                            .chunked(columns)
-                        items(rows, key = { row -> row.first().let { "${it.browseId}|${it.params}" } }) { row ->
-                            MoodGenreRow(row = row, columns = columns, onCategoryClick = onCategoryClick)
-                        }
-                    }
-                }
+                exploreContent(
+                    state = state,
+                    columns = columns,
+                    onCategoryClick = onCategoryClick,
+                    onRetry = onRetry,
+                    showHeading = showTitle,
+                )
+            }
+        }
+    }
+}
+
+fun LazyListScope.exploreContent(
+    state: UiState<List<MoodGenreSection>>,
+    columns: Int,
+    onCategoryClick: (MoodGenre) -> Unit,
+    onRetry: () -> Unit,
+    showHeading: Boolean = true,
+) {
+    if (showHeading) {
+        item(key = "explore:heading") {
+            Text(
+                text = stringResource(Res.string.explore),
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                // 14dp under the title, the same gap Library leaves
+                // above its first card (8dp title + 6dp Replay row).
+                modifier = Modifier.padding(
+                    start = PAGE_GUTTER,
+                    end = PAGE_GUTTER,
+                    top = 8.dp,
+                    bottom = 14.dp,
+                ),
+            )
+        }
+    }
+    when (state) {
+        UiState.Loading -> item(key = "explore:loading") { ExploreSkeletonRows(columns) }
+        is UiState.Error -> item(key = "explore:error") {
+            MessageState(state.message, actionLabel = stringResource(Res.string.retry), onAction = onRetry)
+        }
+        is UiState.Success -> {
+            // Moods and genres read as one grid; the server's
+            // grouping only decides the order.
+            val rows = state.data.flatMap(MoodGenreSection::items)
+                .distinctBy { it.browseId to it.params }
+                .chunked(columns)
+            items(rows, key = { row -> "mood_row_${row.first().let { "${it.browseId}|${it.params}" }}" }) { row ->
+                MoodGenreRow(row = row, columns = columns, onCategoryClick = onCategoryClick)
             }
         }
     }
 }
 
 @Composable
-private fun MoodGenreRow(
+internal fun MoodGenreRow(
     row: List<MoodGenre>,
     columns: Int,
     onCategoryClick: (MoodGenre) -> Unit,
@@ -145,7 +162,7 @@ private fun MoodGenreRow(
 }
 
 @Composable
-private fun MoodGenreCard(
+internal fun MoodGenreCard(
     item: MoodGenre,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -284,13 +301,13 @@ private val MOOD_MIN_CARD_WIDTH = 220.dp
 
 private const val MOOD_MAX_COLUMNS = 6
 
-private fun moodColumns(available: Dp): Int {
+internal fun moodColumns(available: Dp): Int {
     val row = available - PAGE_GUTTER * 2
     return ((row + MOOD_SPACING) / (MOOD_MIN_CARD_WIDTH + MOOD_SPACING)).toInt().coerceIn(2, MOOD_MAX_COLUMNS)
 }
 
 @Composable
-private fun ExploreSkeletonRows(columns: Int) {
+internal fun ExploreSkeletonRows(columns: Int) {
     Column(Modifier.padding(horizontal = PAGE_GUTTER)) {
         repeat(6) {
             Row(

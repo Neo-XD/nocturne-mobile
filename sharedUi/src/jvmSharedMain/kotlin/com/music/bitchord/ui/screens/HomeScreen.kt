@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -469,32 +470,36 @@ private fun HomeTitle(
     onFestiveLogoClick: (() -> Unit)? = null,
 ) {
     val style = MaterialTheme.typography.displayLarge
-    val logoHeight = with(LocalDensity.current) { (style.fontSize * LOGO_TO_FONT).toDp() }
+    val logoHeight = with(LocalDensity.current) { (style.fontSize * LOGO_TO_FONT).toDp().coerceIn(32.dp, 44.dp) }
     Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp)) {
-        val logoModifier = Modifier
-            .padding(bottom = 14.dp)
-            .height(logoHeight)
-            .aspectRatio(LOGO_ASPECT)
-        if (festiveLogo) {
-            GoldenLogo(
-                painter = painterResource(Res.drawable.ic_logo),
-                modifier = logoModifier,
-                onClick = onFestiveLogoClick,
-            )
-        } else {
-            Icon(
-                painter = painterResource(Res.drawable.ic_logo),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = logoModifier,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(bottom = 6.dp),
+        ) {
+            val logoModifier = Modifier
+                .size(logoHeight)
+            if (festiveLogo) {
+                GoldenLogo(
+                    painter = painterResource(Res.drawable.ic_logo),
+                    modifier = logoModifier,
+                    onClick = onFestiveLogoClick,
+                )
+            } else {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_logo),
+                    contentDescription = "Nocturne",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = logoModifier,
+                )
+            }
+            Text(
+                text = "Nocturne",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
-        // "Listen now" is hidden for now; the wordmark above stays.
-        // Text(
-        //     text = title,
-        //     style = style,
-        //     color = MaterialTheme.colorScheme.onBackground,
-        // )
     }
 }
 

@@ -70,6 +70,7 @@ import kotlin.math.roundToInt
 data class BottomTab(
     val label: String,
     val icon: ImageVector,
+    val avatarUrl: String? = null,
 )
 
 /**
@@ -197,7 +198,7 @@ fun FloatingBottomBar(
     // their target leaves the tap itself instant rather than eased.
     val glassSpec: AnimationSpec<Float> = if (reduceAnimation) snap() else GlassSpring
 
-    val hasStandalone = tabs.size >= 4
+    val hasStandalone = tabs.size >= 3
     val standaloneIndex = if (hasStandalone) tabs.lastIndex else -1
     val mainTabs = if (hasStandalone) tabs.subList(0, standaloneIndex) else tabs
     val standaloneTab = if (hasStandalone) tabs[standaloneIndex] else null
@@ -494,17 +495,32 @@ private fun BottomBarItem(
             }
             .padding(vertical = TAB_VERTICAL_PADDING),
     ) {
-        Icon(
-            imageVector = tab.icon,
-            contentDescription = tab.label,
-            tint = tint,
-            modifier = Modifier
-                .size(TAB_ICON_SIZE)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                },
-        )
+        if (tab.avatarUrl != null) {
+            coil3.compose.AsyncImage(
+                model = tab.avatarUrl,
+                contentDescription = tab.label,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier
+                    .size(TAB_ICON_SIZE)
+                    .clip(CircleShape)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
+            )
+        } else {
+            Icon(
+                imageVector = tab.icon,
+                contentDescription = tab.label,
+                tint = tint,
+                modifier = Modifier
+                    .size(TAB_ICON_SIZE)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
+            )
+        }
         Spacer(Modifier.height(TAB_ICON_LABEL_GAP))
         Text(
             text = tab.label,

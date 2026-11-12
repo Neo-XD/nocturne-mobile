@@ -66,6 +66,7 @@ fun AccountAndScrobblingScreen(
     val discordUsername by AppSettings.discordUsername.collectAsStateWithLifecycle()
     val discordRpcEnabled by AppSettings.discordRpcEnabled.collectAsStateWithLifecycle()
     val spotifyConnected by AppSettings.spotifySpdcToken.collectAsStateWithLifecycle()
+    val spotifyScrobbleEnabled by AppSettings.spotifyScrobbleEnabled.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -114,6 +115,19 @@ fun AccountAndScrobblingScreen(
                 onClick = onOpenSpotify,
             )
             if (spotifyConnected.isNotBlank()) {
+                RowDivider()
+                SettingsRow(
+                    icon = SfIcons.History,
+                    title = "Scrobble history to Spotify",
+                    subtitle = "Sync listening history to your connected Spotify account",
+                    trailing = {
+                        IosSwitch(
+                            checked = spotifyScrobbleEnabled,
+                            onCheckedChange = AppSettings::setSpotifyScrobbleEnabled,
+                        )
+                    },
+                    onClick = { AppSettings.setSpotifyScrobbleEnabled(!spotifyScrobbleEnabled) },
+                )
                 FullWidthDivider()
                 DestructiveRow(
                     label = stringResource(R.string.spotify_disconnect),

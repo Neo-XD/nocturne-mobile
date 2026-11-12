@@ -34,6 +34,65 @@ object LastFM {
     @Serializable
     data class LastFmError(val error: Int, val message: String)
 
+    @Serializable
+    data class LastFmImage(
+        @kotlinx.serialization.SerialName("#text") val url: String = "",
+        val size: String = "",
+    )
+
+    @Serializable
+    data class LastFmUser(
+        val name: String = "",
+        val playcount: String = "0",
+        val artist_count: String? = null,
+        val track_count: String? = null,
+        val album_count: String? = null,
+        val url: String = "",
+        val image: List<LastFmImage> = emptyList(),
+    )
+
+    @Serializable
+    data class LastFmUserInfoResponse(val user: LastFmUser)
+
+    @Serializable
+    data class LastFmTopArtistItem(
+        val name: String = "",
+        val playcount: String = "0",
+        val url: String = "",
+    )
+
+    @Serializable
+    data class LastFmTopArtistsContainer(val artist: List<LastFmTopArtistItem> = emptyList())
+
+    @Serializable
+    data class LastFmTopArtistsResponse(val topartists: LastFmTopArtistsContainer)
+
+    @Serializable
+    data class LastFmArtistRef(val name: String = "")
+
+    @Serializable
+    data class LastFmTopTrackItem(
+        val name: String = "",
+        val playcount: String = "0",
+        val artist: LastFmArtistRef = LastFmArtistRef(),
+        val url: String = "",
+    )
+
+    @Serializable
+    data class LastFmTopTracksContainer(val track: List<LastFmTopTrackItem> = emptyList())
+
+    @Serializable
+    data class LastFmTopTracksResponse(val toptracks: LastFmTopTracksContainer)
+
+    data class LastFmStats(
+        val username: String,
+        val totalScrobbles: Long,
+        val totalArtists: Long,
+        val totalTracks: Long,
+        val topArtists: List<LastFmTopArtistItem>,
+        val topTracks: List<LastFmTopTrackItem>,
+    )
+
     data class RuntimeConfig(
         val endpoint: String,
         val apiKey: String,
@@ -190,6 +249,35 @@ object LastFM {
                 },
         )
     }
+
+    suspend fun getUserStats(username: String): LastFmStats? = runCatching {
+        val info = postAndDecode<LastFmUserInfoResponse>(
+            method = "user.getInfo",
+            extra = mapOf("user" to username),
+        )
+        val artists = runCatching {
+            postAndDecode<LastFmTopArtistsResponse>(
+                method = "user.getTopArtists",
+                extra = mapOf("user" to username, "limit" to "5", "period" to "overall"),
+            ).topartists.artist
+        }.getOrDefault(emptyList())
+
+        val tracks = runCatching {
+            postAndDecode<LastFmTopTracksResponse>(
+                method = "user.getTopTracks",
+                extra = mapOf("user" to username, "limit" to "5", "period" to "overall"),
+            ).toptracks.track
+        }.getOrDefault(emptyList())
+
+        LastFmStats(
+            username = info.user.name.ifBlank { username },
+            totalScrobbles = info.user.playcount.toLongOrNull() ?: 0L,
+            totalArtists = info.user.artist_count?.toLongOrNull() ?: 0L,
+            totalTracks = info.user.track_count?.toLongOrNull() ?: 0L,
+            topArtists = artists,
+            topTracks = tracks,
+        )
+    }.getOrNull()
 
     fun initialize(
         apiKey: String,

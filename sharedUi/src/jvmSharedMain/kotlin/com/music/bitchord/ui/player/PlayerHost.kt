@@ -133,6 +133,10 @@ interface PlayerHost {
     /** Make the watch the speaker. */
     fun selectWatchOutput() = Unit
 
+    /** Nocturne Sync PC state */
+    val nocturneSync: StateFlow<NocturneSyncUi> get() = NoSync
+    fun toggleNocturneSync() = Unit
+
     /** The device picker the output drawer's Cast row opens, in the pipeline dialog's card. */
     @Composable
     fun CastDialog(hazeState: HazeState, onDismiss: () -> Unit) = Unit
@@ -200,6 +204,14 @@ internal fun MusicVideoSurface(
 ) = PlayerPlatform.host.MusicVideo(videoId, fit, onRenderedChanged, modifier)
 
 private val NoWatch = MutableStateFlow(WatchOutputUi())
+private val NoSync = MutableStateFlow(NocturneSyncUi())
+
+data class NocturneSyncUi(
+    val connected: Boolean = false,
+    val hostName: String = "",
+    val active: Boolean = false,
+    val status: String = "",
+)
 
 /** What the output drawer needs to draw the watch's row. */
 data class WatchOutputUi(

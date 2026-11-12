@@ -9,13 +9,26 @@ import androidx.compose.ui.unit.Dp
 import com.music.bitchord.sharedui.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import com.music.bitchord.ui.components.PullToRefresh
+import com.music.bitchord.ui.player.PlayerBackHandler
+import com.music.bitchord.data.model.MoodGenre
+import com.music.bitchord.data.model.MoodGenreSection
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.music.bitchord.ui.components.PillSegmentedControl
 import com.music.bitchord.ui.components.longPressMenuClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -89,6 +102,7 @@ import com.music.bitchord.ui.components.thumbnailBorder
 import com.music.bitchord.ui.components.songListSkeleton
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     query: String,
@@ -169,14 +183,30 @@ fun SearchScreen(
      * about the results, and the switcher would just push them down.
      */
     sourceSwitcher: (@Composable () -> Unit)? = null,
+    exploreState: UiState<List<MoodGenreSection>>? = null,
+    onExploreCategoryClick: (MoodGenre) -> Unit = {},
+    onExploreRetry: () -> Unit = {},
+    exploreRefreshing: Boolean = false,
+    onExploreRefresh: () -> Unit = {},
+    explorePullState: PullToRefreshState? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    var isSearchActive by rememberSaveable { mutableStateOf(false) }
+
+    PlayerBackHandler(enabled = isSearchActive || query.isNotEmpty()) {
+        isSearchActive = false
+        onQueryChange("")
+        focusManager.clearFocus()
+        keyboardController?.hide()
+    }
+
     // Tapping the search tab from the nav bar sets focusRequested;
     // respond by focusing the field and opening the keyboard.
     LaunchedEffect(focusRequested) {
         if (focusRequested && showField) {
+            isSearchActive = true
             focusRequester.requestFocus()
             keyboardController?.show()
             onFocusHandled()
@@ -207,117 +237,174 @@ fun SearchScreen(
             if (!loadingMore && total > 0 && lastVisible >= total - 4) onLoadMore()
         }
     }
-    Column(modifier = modifier.fillMaxSize()) {
-        // Search field and filter tabs stay fixed at the top, outside the
-        // scrolling list, so they're always reachable rather than scrolling
-        // away with the results or recent searches beneath them.
-        // The FrostedTopBar is visible on this tab (showing "Search"), so we
-        // clear it fully — status bar inset + bar height + breathing gap — so
-        // the search field sits cleanly below the bar instead of overlapping it.
-        Column(modifier = Modifier.padding(top = topPadding)) {
-            if (showField) {
-                SearchField(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    onSubmit = onSubmit,
-                    focusRequester = focusRequester,
-                    placeholder = if (searchingLibrary) {
-                        stringResource(Res.string.search_library_hint)
-                    } else if (searchingAddons) {
-                        stringResource(Res.string.search_addons_hint)
-                    } else {
-                        stringResource(Res.string.search_hint)
-                    },
-                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp),
-                )
-            }
-            if (sourceSwitcher != null) {
-                AnimatedVisibility(
-                    visible = query.isEmpty(),
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically(),
-                ) {
-                    Box(Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp)) {
-                        sourceSwitcher()
-                    }
-                }
-            }
-            // The filters only mean something once there is a result set to narrow;
-            // they stay up for an empty or failed search too, or picking a filter
-            // that finds nothing would take away the control needed to leave it.
-            // They are YouTube's categories, so the Library source has none.
-            // The same selector as the sources above it and a folder's tabs, so
-            // the app has one look for "pick one of these".
-            if (results != null && !suggesting && !searchingLibrary && !searchingAddons) {
-                PillSegmentedControl(
-                    options = SearchFilter.entries.map { it.label },
-                    selectedIndex = filter.ordinal,
-                    onSelect = { onFilterChange(SearchFilter.entries[it]) },
-                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
-                )
-            }
-        }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val columns = moodColumns(maxWidth)
+        val pullActive = explorePullState != null && !isSearchActive && query.isEmpty() && results == null
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding()),
-        ) {
-            when {
-                searchingLibrary || searchingAddons -> librarySearchResults(
-                    query = query.trim(),
-                    results = if (searchingAddons) addonResults else libraryResults,
-                    addons = searchingAddons,
-                    addonHistory = addonHistory,
-                    onAddonHistoryClick = onAddonHistoryClick,
-                    onAddonHistoryRemove = onAddonHistoryRemove,
-                    onAddonHistoryClear = onAddonHistoryClear,
-                    currentSong = currentSong,
-                    isPlaying = isPlaying,
-                    onSongClick = onLibrarySongClick,
-                    onSongLongPress = onSongLongPress,
-                    onSongSwipe = onSongSwipe,
-                    isBlocked = if (searchingAddons) isBlocked else { _ -> false },
-                    onBlockedSongClick = onBlockedSongClick,
-                )
-                suggesting -> {
-                    searchSuggestions(
-                        suggestions = suggestions,
-                        // Picking one is done typing, so the keyboard comes down
-                        // with it and the results get the whole screen.
-                        onClick = { term ->
-                            onSuggestionClick(term)
-                            focusManager.clearFocus()
-                        },
-                        onFill = onQueryChange,
-                    )
-                    if (showTypeahead) {
-                        searchTypeaheadDropdown(
-                            typeaheadResults = typeaheadResults,
-                            onSongClick = { song -> onTopResultPlay(song) },
-                            onSongLongPress = onTypeaheadLongPress,
-                            onBrowseClick = { item ->
-                                onBrowseClick(item)
-                            },
-                            currentSong = currentSong,
-                            isPlaying = isPlaying,
+        val screenBody = @Composable {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Search field and filter tabs stay fixed at the top, outside the
+                // scrolling list, so they're always reachable rather than scrolling
+                // away with the results or recent searches beneath them.
+                // The FrostedTopBar is visible on this tab (showing "Search"), so we
+                // clear it fully — status bar inset + bar height + breathing gap — so
+                // the search field sits cleanly below the bar instead of overlapping it.
+                Column(modifier = Modifier.padding(top = topPadding)) {
+                    if (showField) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SearchField(
+                                query = query,
+                                onQueryChange = onQueryChange,
+                                onSubmit = onSubmit,
+                                focusRequester = focusRequester,
+                                onFocusChanged = { focused ->
+                                    if (focused) isSearchActive = true
+                                },
+                                placeholder = if (searchingLibrary) {
+                                    stringResource(Res.string.search_library_hint)
+                                } else if (searchingAddons) {
+                                    stringResource(Res.string.search_addons_hint)
+                                } else {
+                                    stringResource(Res.string.search_hint)
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                            AnimatedVisibility(
+                                visible = isSearchActive || query.isNotEmpty(),
+                                enter = fadeIn() + expandHorizontally(),
+                                exit = fadeOut() + shrinkHorizontally(),
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.cancel),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier
+                                        .clickable {
+                                            isSearchActive = false
+                                            onQueryChange("")
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                        }
+                                        .padding(start = 12.dp),
+                                )
+                            }
+                        }
+                    }
+                    if (sourceSwitcher != null) {
+                        AnimatedVisibility(
+                            visible = query.isEmpty(),
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            Box(Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp)) {
+                                sourceSwitcher()
+                            }
+                        }
+                    }
+                    // The filters only mean something once there is a result set to narrow;
+                    // they stay up for an empty or failed search too, or picking a filter
+                    // that finds nothing would take away the control needed to leave it.
+                    // They are YouTube's categories, so the Library source has none.
+                    // The same selector as the sources above it and a folder's tabs, so
+                    // the app has one look for "pick one of these".
+                    if (results != null && !suggesting && !searchingLibrary && !searchingAddons) {
+                        PillSegmentedControl(
+                            options = SearchFilter.entries.map { it.label },
+                            selectedIndex = filter.ordinal,
+                            onSelect = { onFilterChange(SearchFilter.entries[it]) },
+                            modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
                         )
                     }
                 }
-                results == null -> if (history.isEmpty()) {
-                    item { MessageState(stringResource(Res.string.search_empty)) }
-                } else {
-                    recentSearches(
-                        history = history,
-                        currentSong = currentSong,
-                        isPlaying = isPlaying,
-                        onClick = onHistoryClick,
-                        onSongLongPress = onSongLongPress,
-                        onRemove = onHistoryRemove,
-                        onClear = onHistoryClear,
-                        onSongSwipe = onSongSwipe,
-                    )
-                }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding()),
+                ) {
+                    when {
+                        searchingLibrary || searchingAddons -> librarySearchResults(
+                            query = query.trim(),
+                            results = if (searchingAddons) addonResults else libraryResults,
+                            addons = searchingAddons,
+                            addonHistory = addonHistory,
+                            onAddonHistoryClick = onAddonHistoryClick,
+                            onAddonHistoryRemove = onAddonHistoryRemove,
+                            onAddonHistoryClear = onAddonHistoryClear,
+                            currentSong = currentSong,
+                            isPlaying = isPlaying,
+                            onSongClick = onLibrarySongClick,
+                            onSongLongPress = onSongLongPress,
+                            onSongSwipe = onSongSwipe,
+                            isBlocked = if (searchingAddons) isBlocked else { _ -> false },
+                            onBlockedSongClick = onBlockedSongClick,
+                        )
+                        suggesting -> {
+                            searchSuggestions(
+                                suggestions = suggestions,
+                                // Picking one is done typing, so the keyboard comes down
+                                // with it and the results get the whole screen.
+                                onClick = { term ->
+                                    onSuggestionClick(term)
+                                    focusManager.clearFocus()
+                                },
+                                onFill = onQueryChange,
+                            )
+                            if (showTypeahead) {
+                                searchTypeaheadDropdown(
+                                    typeaheadResults = typeaheadResults,
+                                    onSongClick = { song -> onTopResultPlay(song) },
+                                    onSongLongPress = onTypeaheadLongPress,
+                                    onBrowseClick = { item ->
+                                        onBrowseClick(item)
+                                    },
+                                    currentSong = currentSong,
+                                    isPlaying = isPlaying,
+                                )
+                            }
+                        }
+                        results == null && isSearchActive -> if (history.isEmpty()) {
+                            item { MessageState(stringResource(Res.string.search_empty)) }
+                        } else {
+                            recentSearches(
+                                history = history,
+                                currentSong = currentSong,
+                                isPlaying = isPlaying,
+                                onClick = onHistoryClick,
+                                onSongLongPress = onSongLongPress,
+                                onRemove = onHistoryRemove,
+                                onClear = onHistoryClear,
+                                onSongSwipe = onSongSwipe,
+                            )
+                        }
+                        results == null && exploreState != null -> {
+                            exploreContent(
+                                state = exploreState,
+                                columns = columns,
+                                onCategoryClick = onExploreCategoryClick,
+                                onRetry = onExploreRetry,
+                                showHeading = true,
+                            )
+                        }
+                        results == null -> if (history.isEmpty()) {
+                            item { MessageState(stringResource(Res.string.search_empty)) }
+                        } else {
+                            recentSearches(
+                                history = history,
+                                currentSong = currentSong,
+                                isPlaying = isPlaying,
+                                onClick = onHistoryClick,
+                                onSongLongPress = onSongLongPress,
+                                onRemove = onHistoryRemove,
+                                onClear = onHistoryClear,
+                                onSongSwipe = onSongSwipe,
+                            )
+                        }
                 results is UiState.Loading -> songListSkeleton(circular = filter == SearchFilter.ARTISTS)
                 results is UiState.Error -> item { MessageState(results.message) }
                 results is UiState.Success -> {
@@ -408,6 +495,21 @@ fun SearchScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+        if (pullActive && explorePullState != null) {
+            PullToRefresh(
+                refreshing = exploreRefreshing,
+                onRefresh = onExploreRefresh,
+                state = explorePullState,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                screenBody()
+            }
+        } else {
+            screenBody()
         }
     }
 }

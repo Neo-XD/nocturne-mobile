@@ -198,6 +198,7 @@ class BitChordApplication : Application(), SingletonImageLoader.Factory, Configu
         }
         // Initialize LastFM with saved settings if available
         initLastfm()
+        com.music.bitchord.sync.NocturneSyncManager.init(this)
         // The public "apps open right now" count; see Presence.
         com.music.bitchord.data.presence.AndroidPresence.install(this)
         backgroundInit.join()
@@ -291,18 +292,18 @@ class BitChordApplication : Application(), SingletonImageLoader.Factory, Configu
     }
 
     private fun initLastfm() {
-        val sessionKey = AppSettings.lastfmSessionKey.value
-        if (sessionKey.isBlank()) return
         val endpoint = AppSettings.lastfmEndpoint.value.ifBlank { LastFM.DEFAULT_API_ENDPOINT }
-        val apiKey = AppSettings.lastfmApiKey.value.trim()
-        val secret = AppSettings.lastfmSecret.value.trim()
-        if (apiKey.isBlank() || secret.isBlank()) return
-        LastFM.configure(
-            endpoint = endpoint,
-            apiKey = apiKey,
-            secret = secret,
-            sessionKey = sessionKey,
-        )
+        val apiKey = AppSettings.lastfmApiKey.value.trim().ifBlank { BuildConfig.LASTFM_API_KEY }
+        val secret = AppSettings.lastfmSecret.value.trim().ifBlank { BuildConfig.LASTFM_SECRET }
+        val sessionKey = AppSettings.lastfmSessionKey.value.ifBlank { null }
+        if (apiKey.isNotBlank() && secret.isNotBlank()) {
+            LastFM.configure(
+                endpoint = endpoint,
+                apiKey = apiKey,
+                secret = secret,
+                sessionKey = sessionKey,
+            )
+        }
     }
 
     companion object {

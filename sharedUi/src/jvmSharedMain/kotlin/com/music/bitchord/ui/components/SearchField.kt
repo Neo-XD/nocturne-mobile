@@ -4,6 +4,8 @@ import com.music.bitchord.sharedui.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -62,6 +64,7 @@ fun SearchField(
     /** What the empty field says it is for — the one part that changes per screen. */
     placeholder: String = stringResource(Res.string.search_hint),
     modifier: Modifier = Modifier,
+    onFocusChanged: ((Boolean) -> Unit)? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -105,7 +108,19 @@ fun SearchField(
                 .padding(6.dp),
         )
         Spacer(Modifier.width(4.dp))
-        Box(Modifier.weight(1f)) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
+                        onFocusChanged?.invoke(true)
+                    },
+                ),
+        ) {
             if (query.isEmpty()) {
                 Text(
                     text = placeholder,
@@ -119,7 +134,10 @@ fun SearchField(
             }
             BasicTextField(
                 value = query,
-                onValueChange = onQueryChange,
+                onValueChange = {
+                    onQueryChange(it)
+                    if (it.isNotEmpty()) onFocusChanged?.invoke(true)
+                },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     color = MaterialTheme.colorScheme.onBackground,
@@ -129,7 +147,10 @@ fun SearchField(
                 keyboardActions = KeyboardActions(onSearch = { submit() }),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester),
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { focusState ->
+                        onFocusChanged?.invoke(focusState.isFocused)
+                    },
             )
         }
         // Emptying the field is also how the recent searches are got back to,

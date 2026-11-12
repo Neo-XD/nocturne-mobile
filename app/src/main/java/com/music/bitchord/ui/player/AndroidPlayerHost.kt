@@ -160,6 +160,34 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
             .stateIn(scope, SharingStarted.Eagerly, WatchOutputUi())
     }
 
+    override val nocturneSync: StateFlow<NocturneSyncUi> by lazy {
+        combine(
+            com.music.bitchord.sync.NocturneSyncManager.connectionState,
+            com.music.bitchord.sync.NocturneSyncManager.statusMessage,
+            com.music.bitchord.sync.NocturneSyncManager.playbackTarget,
+        ) { conn, status, target ->
+            NocturneSyncUi(
+                connected = conn == com.music.bitchord.sync.NocturneSyncState.CONNECTED,
+                hostName = com.music.bitchord.sync.NocturneSyncManager.host.value,
+                active = target == com.music.bitchord.sync.NocturnePlaybackTarget.REMOTE_PC && conn == com.music.bitchord.sync.NocturneSyncState.CONNECTED,
+                status = status,
+            )
+        }.stateIn(scope, SharingStarted.Eagerly, NocturneSyncUi())
+    }
+
+    override fun toggleNocturneSync() {
+        if (com.music.bitchord.sync.NocturneSyncManager.connectionState.value == com.music.bitchord.sync.NocturneSyncState.CONNECTED) {
+            val next = if (com.music.bitchord.sync.NocturneSyncManager.playbackTarget.value == com.music.bitchord.sync.NocturnePlaybackTarget.REMOTE_PC) {
+                com.music.bitchord.sync.NocturnePlaybackTarget.LOCAL
+            } else {
+                com.music.bitchord.sync.NocturnePlaybackTarget.REMOTE_PC
+            }
+            com.music.bitchord.sync.NocturneSyncManager.setPlaybackTarget(next)
+        } else {
+            com.music.bitchord.sync.NocturneSyncManager.startConnect()
+        }
+    }
+
     override fun refreshWatchOutput() = WearBridge.refreshWatchOutput(app)
 
     override fun selectWatchOutput() {

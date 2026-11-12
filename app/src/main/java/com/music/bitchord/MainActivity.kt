@@ -348,6 +348,7 @@ import com.music.bitchord.ui.screens.LibraryGridPage
 import com.music.bitchord.ui.screens.LibraryScreen
 import com.music.bitchord.ui.screens.MoodGenrePlaylistsScreen
 import com.music.bitchord.ui.screens.SearchScreen
+import com.music.bitchord.ui.screens.YouScreen
 import com.music.bitchord.data.settings.SongSort
 import com.music.bitchord.ui.onboarding.OnboardingScreen
 import com.music.bitchord.ui.festive.DiwaliGate
@@ -548,9 +549,9 @@ private fun BitChordApp(
     // and the page is a sibling of the bar rather than a child.
     val navBarScroll = rememberFloatingTabBarScrollConnection()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    // Explore loads the first time it's shown, not at launch beside Home.
+    // Explore loads the first time Search (which now hosts Explore) is shown.
     LaunchedEffect(selectedTab) {
-        if (selectedTab == TAB_EXPLORE) viewModel.onExploreShown()
+        if (selectedTab == TAB_SEARCH) viewModel.onExploreShown()
     }
     /**
      * Whether the player's sheet is up. The player is always a full-screen
@@ -1226,10 +1227,12 @@ private fun BitChordApp(
     val libraryShowAllGridState = rememberLazyGridState()
     val moodsGridState = rememberLazyGridState()
     val searchListState = rememberLazyListState()
+    val youListState = rememberLazyListState()
     val currentListState = when (selectedTab) {
         TAB_HOME -> homeListState
-        TAB_EXPLORE -> if (selectedMoodGenre == null) exploreListState else moodGenreListState
         TAB_LIBRARY -> libraryListState
+        TAB_YOU -> youListState
+        TAB_SEARCH -> if (selectedMoodGenre == null) searchListState else moodGenreListState
         else -> searchListState
     }
 
@@ -1242,8 +1245,8 @@ private fun BitChordApp(
     val currentFeed = when {
         route != null || detail != null -> null
         selectedTab == TAB_HOME -> MainViewModel.Feed.HOME
-        selectedTab == TAB_EXPLORE -> MainViewModel.Feed.EXPLORE
         selectedTab == TAB_LIBRARY -> MainViewModel.Feed.LIBRARY
+        selectedTab == TAB_SEARCH && selectedMoodGenre == null -> MainViewModel.Feed.EXPLORE
         else -> null
     }
     // The lead shelf is listening history, so opening Home after playing
@@ -1344,11 +1347,13 @@ private fun BitChordApp(
     val queueLabel = stringResource(R.string.queue)
     val sharedLinkLabel = stringResource(R.string.shared_link)
     val openedFileLabel = stringResource(R.string.opened_file)
-    val tabs = remember(homeLabel, exploreLabel, libraryLabel, searchLabel) {
+    val youLabel = "You"
+    val userAvatarUrl = account?.thumbnailUrl
+    val tabs = remember(homeLabel, libraryLabel, youLabel, searchLabel, userAvatarUrl) {
         listOf(
             BottomTab(homeLabel, BitChordIcons.Home),
-            BottomTab(exploreLabel, BitChordIcons.TabExplore),
             BottomTab(libraryLabel, BitChordIcons.TabLibrary),
+            BottomTab(youLabel, Icons.Rounded.Person, avatarUrl = userAvatarUrl),
             BottomTab(searchLabel, BitChordIcons.TabSearch),
         )
     }
@@ -2465,7 +2470,7 @@ private fun BitChordApp(
     // which includes the Library tab, since the cards live at the top of it.
     // See [rememberReplayState].
     val replayOpen = route == AppRoute.Replay || replayStory != null || showReplayShare ||
-        (selectedTab == TAB_LIBRARY && detail == null && route == null)
+        ((selectedTab == TAB_YOU || selectedTab == TAB_LIBRARY) && detail == null && route == null)
     val (replay, setReplayPeriod) = rememberReplayState(replayOpen)
     val replayCards = remember(replay.summary) {
         replay.summary?.takeUnless { it.isEmpty }?.cards(context).orEmpty()
@@ -2746,7 +2751,7 @@ private fun BitChordApp(
                         replayLandingPage = ReplayStoryPage.INTRO
                         navigator.push(AppRoute.Replay)
                     }
-                    PlaybackSourceType.EXPLORE -> selectedTab = TAB_EXPLORE
+                    PlaybackSourceType.EXPLORE -> selectedTab = TAB_SEARCH
                     PlaybackSourceType.SHARED_LINK -> {
                         val id = sourceId ?: return@openSource
                         context.startActivity(
@@ -3437,7 +3442,7 @@ private fun BitChordApp(
                                     }
                                 },
                             )
-                            TAB_EXPLORE -> selectedMoodGenre?.let { category ->
+                            TAB_SEARCH -> selectedMoodGenre?.let { category ->
                                 MoodGenrePlaylistsScreen(
                                     title = category.title,
                                     state = moodGenreShelves,
@@ -3454,7 +3459,7 @@ private fun BitChordApp(
                                                 ),
                                                 QueueSource(
                                                     category.title,
-                                                    PlaybackSourceType.EXPLORE,
+                                                    PlaybackSourceType.SEARCH,
                                                     category.browseId,
                                                 ),
                                             )
@@ -3470,17 +3475,7 @@ private fun BitChordApp(
                                     onRetry = { viewModel.openMoodGenre(category) },
                                     contentPadding = listPadding,
                                 )
-                            } ?: ExploreScreen(
-                                state = exploreState,
-                                listState = exploreListState,
-                                onCategoryClick = viewModel::openMoodGenre,
-                                onRetry = viewModel::loadExplore,
-                                refreshing = MainViewModel.Feed.EXPLORE in refreshing,
-                                onRefresh = { viewModel.refresh(MainViewModel.Feed.EXPLORE) },
-                                pullState = explorePull,
-                                contentPadding = listPadding,
-                            )
-                            TAB_SEARCH -> SearchScreen(
+                            } ?: SearchScreen(
                                 query = query,
                                 onQueryChange = viewModel::onQueryChange,
                                 filter = filter,
@@ -3494,6 +3489,12 @@ private fun BitChordApp(
                                 scrollResetTrigger = searchScrollReset,
                                 focusRequested = searchFocusRequested,
                                 onFocusHandled = { searchFocusRequested = false },
+                                exploreState = exploreState,
+                                onExploreCategoryClick = viewModel::openMoodGenre,
+                                onExploreRetry = viewModel::loadExplore,
+                                exploreRefreshing = MainViewModel.Feed.EXPLORE in refreshing,
+                                onExploreRefresh = { viewModel.refresh(MainViewModel.Feed.EXPLORE) },
+                                explorePullState = explorePull,
                                 // Search hits are alternatives to each other, not a running
                                 // order — play the one tapped and build a station from it.
                                 onSongClick = { songs, index ->
@@ -3659,7 +3660,7 @@ private fun BitChordApp(
                                     )
                                 },
                             )
-                            else -> LibraryScreen(
+                            TAB_LIBRARY -> LibraryScreen(
                                 signedIn = signedIn,
                                 state = libraryState,
                                 listState = libraryListState,
@@ -3672,18 +3673,46 @@ private fun BitChordApp(
                                 onNewPlaylist = { creatingPlaylist = true },
                                 onImportSpotifyPlaylist = { showSpotifyImportDialog = true },
                                 onShowAll = { shelf -> navigator.push(AppRoute.LibraryShowAll(shelf)) },
-                                replay = {
-                                    LibraryReplayEntry(
-                                        cards = replayCards,
-                                        loading = replay.loading,
-                                        holder = account?.name.orEmpty(),
-                                        memberSince = replay.memberSince,
-                                        onOpenReplay = { page ->
-                                            replayLandingPage = page
-                                            navigator.push(AppRoute.Replay)
-                                        },
-                                    )
+                                replay = {},
+                                onSignIn = { webSession = WebSessionMode.SIGN_IN },
+                                onRetry = viewModel::loadLibrary,
+                                refreshing = MainViewModel.Feed.LIBRARY in refreshing,
+                                onRefresh = { viewModel.refresh(MainViewModel.Feed.LIBRARY) },
+                                pullState = libraryPull,
+                                contentPadding = listPadding,
+                                links = libraryLinks(),
+                                deviceItems = libraryDeviceItems(downloadedReleases) + localPlaylistItems,
+                            )
+                            TAB_YOU -> YouScreen(
+                                account = account,
+                                signedIn = signedIn,
+                                replayCards = replayCards,
+                                replayLoading = replay.loading,
+                                memberSince = replay.memberSince,
+                                onOpenSettings = { navigator.push(AppRoute.Settings) },
+                                onOpenDownloads = { navigator.push(AppRoute.Downloads) },
+                                onOpenHistory = {
+                                    navigator.push(AppRoute.History)
+                                    viewModel.loadHistory()
                                 },
+                                onOpenFullStats = {
+                                    replayLandingPage = ReplayStoryPage.INTRO
+                                    navigator.push(AppRoute.Replay)
+                                },
+                                onSignIn = { webSession = WebSessionMode.SIGN_IN },
+                                listState = youListState,
+                                contentPadding = listPadding,
+                            )
+                            else -> LibraryScreen(
+                                signedIn = signedIn,
+                                state = libraryState,
+                                listState = libraryListState,
+                                onShelfItemClick = onLibraryItemClick,
+                                onShelfItemLongPress = onBrowseLongPress,
+                                onNewPlaylist = { creatingPlaylist = true },
+                                onImportSpotifyPlaylist = { showSpotifyImportDialog = true },
+                                onShowAll = { shelf -> navigator.push(AppRoute.LibraryShowAll(shelf)) },
+                                replay = {},
                                 onSignIn = { webSession = WebSessionMode.SIGN_IN },
                                 onRetry = viewModel::loadLibrary,
                                 refreshing = MainViewModel.Feed.LIBRARY in refreshing,
@@ -3917,23 +3946,6 @@ private fun BitChordApp(
                         // None on Settings or the pages opened from it: those are
                         // about the account, and the photo would only reopen them.
                         if (!(route != null && AppRoute.Settings in navigator)) {
-                            // Left of the account photo, and only on Library itself:
-                            // a history is a record of what was played, which reads
-                            // as that tab's business rather than every tab's.
-                            if (route == null && detail == null && selectedTab == TAB_LIBRARY) {
-                                IconButton(
-                                    onClick = {
-                                        navigator.push(AppRoute.History)
-                                        viewModel.loadHistory()
-                                    },
-                                ) {
-                                    Icon(
-                                        Icons.Rounded.History,
-                                        contentDescription = stringResource(R.string.listening_history),
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                }
-                            }
                             // Left of the account photo, and only on a Library
                             // "Show all" grid — the same control the Downloads
                             // folder offers (see `LocalSearchField`), adapted to
@@ -4067,41 +4079,6 @@ private fun BitChordApp(
                                     )
                                 }
                             }
-                            // Left of the account photo, and only there while
-                            // there is a batch to report on — see
-                            // [TopBarDownloadButton], which decides that for
-                            // itself rather than being told. Not on the page it
-                            // opens, where it would only lead back to itself.
-                            if (route != AppRoute.Downloads) {
-                                TopBarDownloadButton(onClick = { navigator.push(AppRoute.Downloads) })
-                            }
-                            if (route == null && detail == null && selectedTab != TAB_SEARCH) {
-                                IconButton(
-                                    onClick = {
-                                        selectedTab = TAB_SEARCH
-                                        searchFocusRequested = true
-                                    },
-                                ) {
-                                    Icon(
-                                        BitChordIcons.Search,
-                                        contentDescription = stringResource(R.string.search),
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                }
-                            }
-                            // Not on a release page, whose pill already carries
-                            // three of its own controls — Apple Music leaves the
-                            // profile off its album pages too.
-                            if (!isReleaseDetail) TopBarAccountButton(
-                                account = account,
-                                onClick = {
-                                    if (signedIn) {
-                                        viewModel.loadChannels()
-                                        showAccountSelector = true
-                                    } else navigator.push(AppRoute.Settings)
-                                },
-                                onSwipeProfile = { forward -> viewModel.stepProfile(forward) },
-                            )
                         }
                     },
                 )
@@ -4130,14 +4107,12 @@ private fun BitChordApp(
                 val onTabSelected: (Int) -> Unit = { index ->
                     navigator.clear()
                     viewModel.closeMoodGenre()
-                    selectedTab = index
-
-                    // Every search tab tap resets the field, focuses it, and opens
-                    // the keyboard through SearchScreen's focus request.
                     if (index == TAB_SEARCH) {
-                        viewModel.onQueryChange("")
-                        searchFocusRequested = true
+                        if (selectedTab == TAB_SEARCH) {
+                            searchFocusRequested = true
+                        }
                     }
+                    selectedTab = index
                 }
 
                 if (glassActive) Column(
@@ -6249,6 +6224,6 @@ private object PlayerSheetShape : Shape {
 }
 
 private const val TAB_HOME = 0
-private const val TAB_EXPLORE = 1
-private const val TAB_LIBRARY = 2
+private const val TAB_LIBRARY = 1
+private const val TAB_YOU = 2
 private const val TAB_SEARCH = 3

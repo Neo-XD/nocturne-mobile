@@ -251,12 +251,23 @@ fun GlassNavBar(
                 tab(
                     key = index,
                     icon = {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = tab.label,
-                            tint = tint,
-                            modifier = Modifier.size(TAB_ICON_SIZE),
-                        )
+                        if (tab.avatarUrl != null) {
+                            coil3.compose.AsyncImage(
+                                model = tab.avatarUrl,
+                                contentDescription = tab.label,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(TAB_ICON_SIZE)
+                                    .clip(androidx.compose.foundation.shape.CircleShape),
+                            )
+                        } else {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.label,
+                                tint = tint,
+                                modifier = Modifier.size(TAB_ICON_SIZE),
+                            )
+                        }
                     },
                     title = {
                         Text(

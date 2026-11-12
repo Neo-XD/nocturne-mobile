@@ -34,10 +34,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +67,8 @@ import com.music.bitchord.ui.components.PAGE_GUTTER
 import com.music.bitchord.ui.icons.BitChordIcons
 import com.music.bitchord.ui.player.MeshGradientBackground
 import com.music.bitchord.ui.player.rememberArtworkColors
+import com.music.bitchord.data.scrobbling.LastFM
+import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.ui.theme.AccentRed
 
 /** Whether the Replay page is being shown in dark mode (vs light). */
@@ -247,6 +251,7 @@ fun ReplayScreen(
                     }
 
                     item("habits") { Habits(summary, dark) }
+                    item("lastfm-stats") { LastFmSection(dark = dark) }
                     item("share") {
                         ReplayActionRow(
                             Icons.Rounded.IosShare,
@@ -647,3 +652,102 @@ private fun EmptyReplay(period: ReplayPeriod, dark: Boolean) {
  * top ten is a list.
  */
 private const val CHART_LENGTH = 5
+
+@Composable
+private fun LastFmSection(dark: Boolean) {
+    val username by AppSettings.lastfmUsername.collectAsStateWithLifecycle()
+    if (username.isBlank()) return
+
+    var stats by remember { mutableStateOf<LastFM.LastFmStats?>(null) }
+    var loading by remember { mutableStateOf(false) }
+
+    LaunchedEffect(username) {
+        loading = true
+        stats = LastFM.getUserStats(username)
+        loading = false
+    }
+
+    val textColor = if (dark) Color.White else Color.Black
+    val textVariant = if (dark) Color.White.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.55f)
+
+    Column(Modifier.padding(horizontal = PAGE_GUTTER + 4.dp, vertical = 12.dp)) {
+        SectionTitle("Last.fm Stats", dark)
+        Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (dark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.04f))
+                .padding(16.dp),
+        ) {
+            val currentStats = stats
+            if (loading) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                }
+            } else if (currentStats != null) {
+                val s = currentStats
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "@${s.username}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFF4D4D),
+                        )
+                        Text(
+                            text = "${s.totalScrobbles} Scrobbles",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = textColor,
+                        )
+                    }
+                    if (s.topArtists.isNotEmpty()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = "Top Artists on Last.fm",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = textVariant,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        for ((i, artist) in s.topArtists.take(5).withIndex()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 3.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = "${i + 1}. ${artist.name}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Text(
+                                    text = "${artist.playcount} plays",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = textVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = "Could not fetch stats for @$username",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textVariant,
+                )
+            }
+        }
+    }
+}

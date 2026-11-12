@@ -92,6 +92,7 @@ internal fun AudioOutputSheet(
     val outputs = rememberAudioOutputs()
     val cast by PlayerPlatform.host.castState.collectAsStateWithLifecycle()
     val watch by PlayerPlatform.host.watchOutput.collectAsStateWithLifecycle()
+    val sync by PlayerPlatform.host.nocturneSync.collectAsStateWithLifecycle()
     // A watch comes and goes; ask again each time the drawer opens.
     LaunchedEffect(Unit) { PlayerPlatform.host.refreshWatchOutput() }
 
@@ -125,6 +126,7 @@ internal fun AudioOutputSheet(
                 WatchRow(watch = watch, onClick = { PlayerPlatform.host.selectWatchOutput() })
             }
             if (cast.supported) CastRow(cast = cast, onClick = onOpenCast)
+            NocturneSyncRow(sync = sync, onClick = { PlayerPlatform.host.toggleNocturneSync() })
         }
 
         Spacer(Modifier.height(10.dp))
@@ -273,6 +275,82 @@ private fun CastRow(cast: CastUi, onClick: () -> Unit) {
             tint = Color.White.copy(alpha = 0.35f),
             modifier = Modifier.size(20.dp),
         )
+    }
+}
+
+@Composable
+private fun NocturneSyncRow(sync: NocturneSyncUi, onClick: () -> Unit) {
+    val haptics = rememberHaptics()
+    val active = sync.active
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(ROW_SHAPE)
+            .background(Color.White.copy(alpha = if (active) 0.10f else 0.05f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                haptics.play(Haptic.Select)
+                onClick()
+            }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = if (active) 0.16f else 0.08f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Speaker,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = if (active) 1f else 0.7f),
+                modifier = Modifier.size(21.dp),
+            )
+        }
+        Spacer(Modifier.width(13.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "Nocturne Sync (PC)",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                ),
+                color = Color.White.copy(alpha = if (active) 1f else 0.85f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = when {
+                    active -> "Streaming to Nocturne PC"
+                    sync.connected -> "Connected to PC • Tap to sync"
+                    sync.status.isNotBlank() -> sync.status
+                    else -> "Link to PC via OTP"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.55f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (active) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp),
+            )
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.35f),
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 
