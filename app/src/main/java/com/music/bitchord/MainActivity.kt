@@ -3606,12 +3606,8 @@ private fun BitChordApp(
                                 onHistoryClear = viewModel::clearSearchHistory,
                                 onTypeaheadLongPress = openSongMenu,
                                 contentPadding = listPadding,
-                                // Snug under the bar rather than a page's breathing
-                                // gap below it: the field is in the bar (see the bar's
-                                // accessory), so what comes next is the field's own
-                                // suggestions and filters, and a gap reads as a break.
-                                topPadding = topBarHeight() + 4.dp,
-                                showField = false,
+                                topPadding = topBarHeight() + 8.dp,
+                                showField = true,
                                 // The settings page's own two-state selector, so the
                                 // app has one look for "pick one of these".
                                 sourceSwitcher = {
@@ -3828,7 +3824,7 @@ private fun BitChordApp(
                             detail != null && detailActiveShelf != null -> true
                             detail != null -> detailScrolled
                             selectedMoodGenre != null -> true
-                            else -> scrolled || selectedTab == TAB_SEARCH
+                            else -> scrolled
                         }
                     },
                     refreshing = currentFeed != null && currentFeed in refreshing,
@@ -3840,39 +3836,6 @@ private fun BitChordApp(
                         else -> null
                     },
                     modifier = Modifier.align(Alignment.TopCenter),
-                    // Only on the Search tab itself, not on anything pushed over it.
-                    accessory = if (
-                        selectedTab == TAB_SEARCH && route == null && detail == null && selectedMoodGenre == null
-                    ) {
-                        {
-                            // The search field lives up here in the bar, beside the
-                            // account photo, so it answers the nav bar's Search tap
-                            // itself: focus and keyboard, the way the page used to.
-                            val keyboard = LocalSoftwareKeyboardController.current
-                            LaunchedEffect(searchFocusRequested) {
-                                if (searchFocusRequested) {
-                                    searchFieldFocus.requestFocus()
-                                    keyboard?.show()
-                                    searchFocusRequested = false
-                                }
-                            }
-                            SearchField(
-                                query = query,
-                                onQueryChange = viewModel::onQueryChange,
-                                onSubmit = viewModel::submitSearch,
-                                focusRequester = searchFieldFocus,
-                                placeholder = org.jetbrains.compose.resources.stringResource(
-                                    if (searchSource == SearchSource.LIBRARY) {
-                                        SharedRes.string.search_library_hint
-                                    } else if (searchSource == SearchSource.ADDONS) {
-                                        SharedRes.string.search_addons_hint
-                                    } else {
-                                        SharedRes.string.search_hint
-                                    },
-                                ),
-                            )
-                        }
-                    } else null,
                     actions = {
                         // This is intentionally scoped to Listen together: the
                         // round-trip time is meaningful while coordinating a
@@ -4111,6 +4074,20 @@ private fun BitChordApp(
                             // opens, where it would only lead back to itself.
                             if (route != AppRoute.Downloads) {
                                 TopBarDownloadButton(onClick = { navigator.push(AppRoute.Downloads) })
+                            }
+                            if (route == null && detail == null && selectedTab != TAB_SEARCH) {
+                                IconButton(
+                                    onClick = {
+                                        selectedTab = TAB_SEARCH
+                                        searchFocusRequested = true
+                                    },
+                                ) {
+                                    Icon(
+                                        BitChordIcons.Search,
+                                        contentDescription = stringResource(R.string.search),
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
                             }
                             // Not on a release page, whose pill already carries
                             // three of its own controls — Apple Music leaves the
