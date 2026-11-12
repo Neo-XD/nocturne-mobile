@@ -51,7 +51,7 @@
     <string name="shuffle">Shuffle</string>
     <string name="more">More</string>
     <string name="lyrics_offset">Lyrics offset</string>
-    <string name="automix_overview">Automix overview</string>
+    <string name="automix_overview" translatable="false">Automix overview</string>
     <string name="auto_quick_picks">Quick picks</string>
     <string name="auto_recents">Recent</string>
     <string name="auto_liked">Liked songs</string>
@@ -1329,7 +1329,7 @@
     <string name="no_audio_version">No audio version found for this video</string>
     <string name="no_video_version">No video version found for this song</string>
     <string name="version_switch_in_party">Everyone in Listen Together hears the same version</string>
-    <string name="diwali_title">Nocturne wishes you a Happy Diwali</string>
-    <string name="diwali_subtitle">May this festival of lights fill your home with joy and your days with music.</string>
-    <string name="diwali_cta">Let\'s Celebrate</string>
+    <string name="diwali_title" translatable="false">Nocturne wishes you a Happy Diwali</string>
+    <string name="diwali_subtitle" translatable="false">May this festival of lights fill your home with joy and your days with music.</string>
+    <string name="diwali_cta" translatable="false">Let\'s Celebrate</string>
 </resources>
