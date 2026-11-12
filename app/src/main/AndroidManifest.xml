@@ -3,263 +3,635 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Tells Wi-Fi from mobile data, so the matching quality ceiling applies. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Saving a track to Music outlives the screen it was asked from. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!--    bluetooth connect-->
+    <!-- Touch feedback. The system's own haptics switch is honoured on top of
+         this, so granting it doesn't override a user who turned buzzing off. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Bit-perfect output: setting Android 14's preferred mixer attributes
+         for a USB DAC. A normal permission, granted at install. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+
+    <!--
+      Asked for only when the output picker is first opened, and only on API 31+
+      where it exists. Without it a paired headset is listed by the audio
+      framework under a generic name rather than its own, which turns a list of
+      places to send the music into a list of things called "Bluetooth".
+      Everything else in the app works without it.
+    -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- For Android 11 (API 30) and below -->
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <!-- Optional: If you also need to scan for Bluetooth devices -->
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <!--
+      BLUETOOTH_CONNECT's predecessor, granted at install: what reads a paired
+      device's class below API 31, so the player can draw a speaker for a
+      speaker. See AudioRouting.formOf.
+    -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
 
-    <!-- Microphone feature for music recognition (not required) -->
-    <uses-feature android:name="android.hardware.microphone" android:required="false" />
-
-<!--    install permission-->
+    <!--
+      In-app updates: handing a downloaded APK to the system installer. The
+      per-app "install unknown apps" switch is still the user's to flip; this
+      only lets the request reach the installer.
+    -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- Storage permissions for auto backup to Downloads/vivimusic/ -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Reading local audio files across the device -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
-    <!-- Android TV -->
-    <uses-feature android:name="android.software.leanback" android:required="false" />
-    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <!--
+      Only for API 28 and below. From 29 the app writes to the shared Music
+      folder through MediaStore, which grants access to the rows it created and
+      needs no permission at all — and this one stops being grantable there.
+    -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
-    <queries>
-        <intent>
-            <action android:name="android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL" />
-        </intent>
-    </queries>
     <application
-        android:name=".App"
+        android:name=".BitChordApplication"
         android:allowBackup="true"
         android:appCategory="audio"
-        android:banner="@mipmap/tv_banner"
+        android:usesCleartextTraffic="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:networkSecurityConfig="@xml/network_security_config"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Nocturne"
-        tools:targetApi="tiramisu">
-        <uses-library
-            android:name="org.apache.http.legacy"
-            android:required="false" />
+        android:theme="@style/Theme.BitChord"
+        tools:targetApi="34">
 
-        <activity
-            android:name=".ui.screens.CrashActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Nocturne"
-            android:excludeFromRecents="true"
-            android:process=":crash" />
+        <!--
+          Lets a release build be sampled with simpleperf or Perfetto from adb,
+          so jank is measured on the build users get rather than on a debug
+          build that is slow for its own reasons. No runtime cost.
+        -->
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
 
-        <activity
-            android:name=".WelcomeActivity"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_round"
-            android:theme="@style/Theme.Nocturne">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+        <!--
+          One UI 7+ only routes an app's ongoing notification to Live
+          Notifications / the Now Bar if the app opts in here. Ignored by every
+          other OEM. Samsung additionally gates the non-media Live Notification
+          extras behind a per-package allowlist; the media card does not need it.
+        -->
+        <meta-data
+            android:name="com.samsung.android.support.ongoing_activity"
+            android:value="true" />
 
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
+        <!-- Android Auto support -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <!--
+          No android:screenOrientation here, deliberately: the app follows the
+          system's own auto-rotate setting on every device, phones included.
+
+          [android:configChanges] is the other half of that: without it, a
+          rotation the system now allows is still a full Activity restart,
+          which throws away every bit of in-memory Compose state along with
+          it — the sheet showing Now Playing, whether the lyrics or queue
+          panel was open, mid-scrub position, all of it — before any of this
+          screen's own responsive layout logic ever gets a chance to run.
+          Declaring these configurations here is what turns a rotation back
+          into an ordinary recomposition: the same Activity keeps running,
+          the same state survives, and the width- and height-aware branches
+          in NowPlayingScreen.kt decide the new layout.
+
+          uiMode is deliberately *not* in the list: a day/night change should
+          still recreate the Activity so the theme is rebuilt from resources.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.Nocturne"
-            android:windowSoftInputMode="adjustResize">
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:theme="@style/Theme.BitChord">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <action android:name="android.intent.action.MUSIC_PLAYER" />
-
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <action android:name="android.intent.action.MAIN" />
+                <!--
+                  What makes the system call this a music app. "Play music" from
+                  the assistant, Android Auto's media list and the OEM pickers
+                  that put up "Complete action using" all ask for
+                  MAIN/APP_MUSIC by name and list whoever answers — a launcher
+                  entry alone is not enough, which is why BitChord was missing
+                  from that dialog while every other player on the device was in
+                  it.
+                -->
                 <category android:name="android.intent.category.APP_MUSIC" />
+            </intent-filter>
+
+            <!--
+              The pre-Lollipop spelling of the same request. Deprecated, and
+              still what some OEM shortcuts and headset "open music" buttons
+              fire, so it costs one filter to be reachable from them too.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.MUSIC_PLAYER" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.APP_MUSIC" />
+            </intent-filter>
+
+            <!--
+              "Play <something>" said out loud, and the search a media app is
+              handed when the assistant has words but no app in mind. An empty
+              query means "play music" with nothing said about what, which is
+              resumed rather than searched — see [MusicLink].
+            -->
+            <intent-filter>
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
-            <!-- Listen Together invite link (HTTPS App Link - works after APK installation verification) -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
+            <!--
+              YouTube Music links: a song, an album, a playlist or an artist,
+              tapped anywhere on the device.
 
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
+              Not autoVerify. Verification is a claim to *own* these domains,
+              which BitChord doesn't — and on Android 12+ an app that has
+              verified them (the YouTube Music app itself) takes the link
+              without a dialog either way. Declaring the filter is what puts
+              BitChord in the "Open with" list once the user turns YT Music's
+              "Open supported links" off; the SEND filter below is the path
+              that always works, because sharing asks rather than routing.
 
-                <data android:scheme="https" />
-                <data android:host="vivimusic-listen-together.onrender.com" />
-                <data android:pathPrefix="/listen" />
-            </intent-filter>
+              One host, not a family of them. Every entry here becomes a line
+              the user has to tick under "Supported web addresses", so a
+              plausible-looking host that never appears in a real link (a `www.`
+              form of this one, say) is a line to tick by mistake instead of the
+              one that matters.
 
-            <!-- Custom scheme for direct opens from browser (works in ALL browsers) -->
+              Schemes and paths still multiply out: every scheme × every path
+              prefix listed here is one accepted shape.
+            -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="vivimusic" />
-                <data android:host="listen" />
-            </intent-filter>
-
-            <!-- Youtube filter -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:scheme="http" />
                 <data android:scheme="https" />
-                <data android:host="youtube.com" />
-                <data android:host="m.youtube.com" />
-                <data android:host="www.youtube.com" />
                 <data android:host="music.youtube.com" />
-                <!-- video prefix -->
-                <data android:pathPrefix="/v/" />
-                <data android:pathPrefix="/embed/" />
                 <data android:pathPrefix="/watch" />
-                <!-- channel prefix -->
-                <data android:pathPrefix="/channel/" />
-                <data android:pathPrefix="/user/" />
-                <data android:pathPrefix="/c/" />
-                <!-- playlist prefix -->
                 <data android:pathPrefix="/playlist" />
-                <!-- browse prefix -->
-                <data android:pathPrefix="/browse/" />
-                <!-- search prefix -->
+                <data android:pathPrefix="/browse" />
+                <data android:pathPrefix="/channel" />
                 <data android:pathPrefix="/search" />
             </intent-filter>
-
-            <intent-filter android:autoVerify="true">
+            <!--
+              youtu.be short links, which are a bare video id and nothing else.
+              Kept in their own filter because the path there *is* the id, so it
+              can't share the path prefixes above.
+            -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:scheme="http" />
                 <data android:scheme="https" />
                 <data android:host="youtu.be" />
-                <data android:pathPrefix="/" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
-                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
 
+            <!-- Public Listen Together invites. autoVerify makes a tap open
+                 BitChord directly once the domain publishes its assetlinks
+                 association for the production signing certificate. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="vnd.youtube" />
-                <data android:scheme="vnd.youtube.launch" />
+                <data
+                    android:scheme="https"
+                    android:host="bitchord.kushagrasingh.in"
+                    android:pathPattern="/invite/......" />
             </intent-filter>
 
-            <!-- Share filter -->
+            <!-- Custom scheme for Listen Together invites on custom server deployments. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="bitchord"
+                    android:host="party" />
+            </intent-filter>
+
+            <!--
+              Share → BitChord, from YT Music's own share sheet or from
+              anywhere a link can be sent. The text is whatever the sending app
+              wrote around the URL, so the URL is picked out of it rather than
+              parsed whole.
+            -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
+            <!--
+              "Open with" for an audio file: a file manager, a downloads list, a
+              tapped attachment. Typed rather than matched on extension, which
+              is what every sender actually fills in — and the two Ogg/FLAC
+              spellings are there because some file managers still type those
+              files as applications. Answered by MusicLink.LocalFile.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/x-ogg" />
+                <data android:mimeType="application/x-flac" />
+            </intent-filter>
         </activity>
 
+        <!--
+          The launcher entries live on aliases, not on MainActivity, so the user can
+          swap the home-screen icon by enabling one alias and disabling the others
+          (see AppIcon). Exactly one is enabled at a time; Default is the shipped one.
+        -->
         <activity-alias
-            android:name=".MainActivityAlias"
-            android:enabled="false"
+            android:name=".LauncherDefault"
+            android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher"
             android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_round"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
 
         <activity-alias
-            android:name=".MainActivityStatic"
+            android:name=".LauncherMonochrome"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_launcher_static"
+            android:icon="@mipmap/ic_monochrome"
+            android:roundIcon="@mipmap/ic_monochrome"
             android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_static_round"
             android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
 
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.FileProvider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths" />
-        </provider>
+        <activity-alias
+            android:name=".LauncherGlassLight"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_liquid_glass"
+            android:roundIcon="@mipmap/ic_liquid_glass"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
-        <provider
-            android:name="com.dpi.DensityScaler"
-            android:authorities="${applicationId}.com.dpi.DensityScaler"
-            android:enabled="true"
-            android:exported="false" />
+        <activity-alias
+            android:name=".LauncherGlassDark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_liquid_glass_dark"
+            android:roundIcon="@mipmap/ic_liquid_glass_dark"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity-alias
+            android:name=".LauncherGlassClear"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_liquid_glass_clear"
+            android:roundIcon="@mipmap/ic_liquid_glass_clear"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherGlassClearDark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_liquid_glass_clear_dark"
+            android:roundIcon="@mipmap/ic_liquid_glass_clear_dark"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSamsungGlass"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_samsung_glass"
+            android:roundIcon="@mipmap/ic_samsung_glass"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSamsungGlassDark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_samsung_glass_dark"
+            android:roundIcon="@mipmap/ic_samsung_glass_dark"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSamsungGlassClear"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_samsung_glass_clear"
+            android:roundIcon="@mipmap/ic_samsung_glass_clear"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSamsungGlassClearDark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_samsung_glass_clear_dark"
+            android:roundIcon="@mipmap/ic_samsung_glass_clear_dark"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherPixelGlass"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_pixel_glass"
+            android:roundIcon="@mipmap/ic_pixel_glass"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherPixelGlassDark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_pixel_glass_dark"
+            android:roundIcon="@mipmap/ic_pixel_glass_dark"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherPixelGlassClear"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_pixel_glass_clear"
+            android:roundIcon="@mipmap/ic_pixel_glass_clear"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherPixelGlassClearDark"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_pixel_glass_clear_dark"
+            android:roundIcon="@mipmap/ic_pixel_glass_clear_dark"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherNeonSilver"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_neon_silver"
+            android:roundIcon="@mipmap/ic_neon_silver"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherNeonCyan"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_neon_cyan"
+            android:roundIcon="@mipmap/ic_neon_cyan"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherNeonViolet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_neon_violet"
+            android:roundIcon="@mipmap/ic_neon_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSamsungNeonSilver"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_samsung_neon_silver"
+            android:roundIcon="@mipmap/ic_samsung_neon_silver"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSamsungNeonCyan"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_samsung_neon_cyan"
+            android:roundIcon="@mipmap/ic_samsung_neon_cyan"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherSamsungNeonViolet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_samsung_neon_violet"
+            android:roundIcon="@mipmap/ic_samsung_neon_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherPixelNeonSilver"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_pixel_neon_silver"
+            android:roundIcon="@mipmap/ic_pixel_neon_silver"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherPixelNeonCyan"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_pixel_neon_cyan"
+            android:roundIcon="@mipmap/ic_pixel_neon_cyan"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".LauncherPixelNeonViolet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_pixel_neon_violet"
+            android:roundIcon="@mipmap/ic_pixel_neon_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <service
-            android:name=".playback.MusicService"
+            android:name=".playback.PlaybackService"
             android:exported="true"
-            android:foregroundServiceType="mediaPlayback"
-            tools:ignore="ExportedService">
+            android:foregroundServiceType="mediaPlayback">
             <intent-filter>
-                <action android:name="androidx.media3.session.MediaSessionService" />
                 <action android:name="androidx.media3.session.MediaLibraryService" />
+                <action android:name="androidx.media3.session.MediaSessionService" />
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
 
+        <!--
+          Commands from the BitChord watch app (wearos/). Exported because Play
+          services binds it; only messages from the same package and signing key
+          on a paired watch are ever delivered, and only under this path.
+        -->
         <service
-            android:name=".playback.ExoDownloadService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync">
+            android:name=".wear.WearCommandService"
+            android:exported="true">
             <intent-filter>
-                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/bitchord/command"
+                    android:scheme="wear" />
+            </intent-filter>
+            <!-- The watch's player reading a track through the phone. -->
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/bitchord/stream"
+                    android:scheme="wear" />
             </intent-filter>
         </service>
-
-        <!-- Receiver for Listen Together notification actions (Approve/Reject) -->
-        <receiver
-            android:name=".listentogether.ListenTogetherActionReceiver"
-            android:exported="false" />
 
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"
@@ -269,47 +641,116 @@
             </intent-filter>
         </receiver>
 
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc" />
-        <!-- Music Widget -->
+        <!--
+          Downloads. Not exported: it is started by the app and by its own
+          cancel action, and nothing outside has any business queueing work.
+        -->
+        <service
+            android:name=".download.DownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- The tap on a "new songs in this playlist" notification. See PlaylistSync. -->
         <receiver
-            android:name=".widget.MusicWidgetReceiver"
-            android:exported="true"
-            android:label="@string/widget_music_player">
+            android:name=".download.PlaylistSyncApproval"
+            android:exported="false" />
+
+        <!--
+          WorkManager comes up on first use instead of at every launch, since the
+          one thing using it is a setting that is off by default.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <!--
+          Home-screen widgets. Two providers so the picker lists a 2×2 and a 4×2,
+          both of which are the same widget resized — see MediaWidget.
+
+          Not exported, which is correct for a widget provider despite the
+          launcher being the one that talks to it: the system delivers
+          APPWIDGET_UPDATE to providers regardless, and the button PendingIntents
+          are sent with this app's own identity. Exporting them would only make
+          the update broadcast reachable by anything on the device.
+        -->
+        <receiver
+            android:name=".widget.MediaWidgetSquare"
+            android:exported="false"
+            android:label="@string/widget_square_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nocturne.music.widget.PLAY_PAUSE" />
-                <action android:name="com.nocturne.music.widget.LIKE" />
-                <action android:name="com.nocturne.music.widget.UPDATE_WIDGET" />
             </intent-filter>
-
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/music_widget_info" />
+                android:resource="@xml/widget_media_square" />
         </receiver>
 
-        <!-- Turntable Widget -->
         <receiver
-            android:name=".widget.TurntableWidgetReceiver"
-            android:exported="true"
-            android:label="@string/widget_turntable">
+            android:name=".widget.MediaWidgetWide"
+            android:exported="false"
+            android:label="@string/widget_wide_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.nocturne.music.widget.TURNTABLE_PLAY_PAUSE" />
-                <action android:name="com.nocturne.music.widget.TURNTABLE_LIKE" />
-                <action android:name="com.nocturne.music.widget.UPDATE_TURNTABLE_WIDGET" />
             </intent-filter>
-
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/turntable_widget_info" />
+                android:resource="@xml/widget_media_wide" />
         </receiver>
 
-        <!-- Google Cast Options Provider -->
+        <!-- The 4×1 capsule. Its own provider and layout; see MediaWidgetPill. -->
+        <receiver
+            android:name=".widget.MediaWidgetPill"
+            android:exported="false"
+            android:label="@string/widget_pill_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_media_pill" />
+        </receiver>
+
+        <!-- The transport buttons. Reached only by this app's own PendingIntents. -->
+        <receiver
+            android:name=".widget.MediaWidgetActions"
+            android:exported="false" />
+
+        <!--
+          Hands the Replay poster to whichever app the user picks to send it
+          with. The authority is derived from the applicationId rather than
+          written out, because the dev and prod flavours are two packages that
+          can be installed side by side — a fixed authority would make the
+          second install fail outright with INSTALL_FAILED_CONFLICTING_PROVIDER.
+
+          Not exported, and grantUriPermissions is the whole mechanism: the
+          receiving app gets a read grant that arrives with the intent, covers
+          one file (see @xml/file_paths) and expires with it.
+
+          Also serves the downloaded update APK to the system installer
+          without it needing broad storage access — its own cache-only scope,
+          nothing else shared through it.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Where the Cast framework asks how this app wants to cast. -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="com.nocturne.music.cast.CastOptionsProvider" />
+            android:value="com.music.bitchord.playback.cast.CastOptionsProvider" />
     </application>
 
 </manifest>

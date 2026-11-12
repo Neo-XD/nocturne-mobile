@@ -1,326 +1,549 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
-import java.net.URL
+import java.security.MessageDigest
+import java.io.FileInputStream
 
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localProperties.load(localPropertiesFile.inputStream())
-}
 plugins {
     id("com.android.application")
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.kotlin.ksp)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.protobufPlugin)
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+/**
+ * Signing details, kept out of the repository in `keystore.properties`
+ * (see keystore.properties.example). Absent on a fresh checkout, in which case
+ * the release build still runs and simply comes out unsigned rather than
+ * failing — only whoever holds the key can produce a shippable APK.
+ */
+val signing = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+val localProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val lastfmApiKey: String = (
+    localProps.getProperty("LASTFM_API_KEY")
+        ?: System.getenv("LASTFM_API_KEY")
+        ?: ""
+    ).trim()
+val lastfmSecret: String = (
+    localProps.getProperty("LASTFM_SECRET")
+        ?: System.getenv("LASTFM_SECRET")
+        ?: ""
+    ).trim()
+
+/*
+ * Where Listen Together's party server lives. Not a credential — it is a public
+ * URL, and every device in a party has to be pointed at the same one — but it is
+ * deployment-specific rather than a property of the source, which is what puts
+ * it here beside the others instead of in a constant.
+ *
+ * Empty is a supported state, not a broken build: the field below is only the
+ * *default* the address box on the Listen Together screen starts with, and
+ * anything typed there wins and persists. So a fresh checkout without this line
+ * builds and runs, and simply asks for an address the first time somebody opens
+ * the screen. See ListenTogether.DEFAULT_SERVER.
+ */
+val listenTogetherServer: String = (
+    localProps.getProperty("LISTEN_TOGETHER_SERVER")
+        ?: System.getenv("LISTEN_TOGETHER_SERVER")
+        ?: "https://bitchord-listen-together.onrender.com"
+    ).trim().trimEnd('/')
+
+/*
+ * The service that checks this app's hardware key attestation and issues addon
+ * tokens. See AddonAuth. Overridable for a staging deployment. A fork that
+ * points this at its own server gains nothing: addons only trust tokens signed
+ * by the official service's key.
+ */
+val addonAuthServer: String = (
+    localProps.getProperty("ADDON_AUTH_SERVER")
+        ?: System.getenv("ADDON_AUTH_SERVER")
+        ?: "https://bitchord-auth.kushagrasingh.in"
+    ).trim().trimEnd('/')
+
+// See the root build.gradle.kts: one version for the phone and its watch app.
+val betaSuffix = rootProject.extra["bitchordBetaSuffix"] as String
+
 android {
-    namespace = "com.nocturne.music"
+    namespace = "com.music.bitchord"
+    // InnerTubeX's AAR requires compiling against 37; targetSdk (runtime behaviour) stays 36.
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.nocturne.music"
+        applicationId = "com.music.bitchord"
+        // 26 keeps reach wide; real-time blur (RenderEffect) kicks in on API 31+,
+        // Haze falls back to a translucent scrim below that.
         minSdk = 26
-        targetSdk = 37
-        versionCode = 9
-        versionName = "v0.4"
+        targetSdk = 36
+        versionCode = rootProject.extra["bitchordVersionCode"] as Int
+        versionName = rootProject.extra["bitchordVersionName"] as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables.useSupportLibrary = true
 
-        // Empty rather than a build failure: a contributor without the credentials still needs to build, and LastFM.initialize is skipped when they are blank.
-        val lastFmKey = localProperties.getProperty("LASTFM_API_KEY") ?: System.getenv("LASTFM_API_KEY") ?: ""
-        val lastFmSecret = localProperties.getProperty("LASTFM_SECRET") ?: System.getenv("LASTFM_SECRET") ?: ""
-
-        buildConfigField("String", "LASTFM_API_KEY", "\"$lastFmKey\"")
-        buildConfigField("String", "LASTFM_SECRET", "\"$lastFmSecret\"")
-
-//add nightly build label support
-        val isNightly = project.hasProperty("nightly") && project.property("nightly") == "true"
-        buildConfigField("Boolean", "IS_NIGHTLY", isNightly.toString())
+        // Last.fm credentials are supplied locally and never committed.
+        buildConfigField("String", "LASTFM_API_KEY", "\"${lastfmApiKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        buildConfigField("String", "LASTFM_SECRET", "\"${lastfmSecret.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+        buildConfigField(
+            "String",
+            "LISTEN_TOGETHER_SERVER",
+            "\"${listenTogetherServer.replace("\\", "\\\\").replace("\"", "\\\"")}\"",
+        )
+        buildConfigField(
+            "String",
+            "ADDON_AUTH_URL",
+            "\"${addonAuthServer.replace("\\", "\\\\").replace("\"", "\\\"")}\"",
+        )
+        // Which release assets are this app's: the phone and TV APKs ship in
+        // the same GitHub release, told apart by file name. See
+        // AppUpdateChecker.apkAssetUrl.
+        buildConfigField("String", "UPDATE_APK_PREFIX", "\"BitChord-\"")
     }
-    
 
-    flavorDimensions += listOf("abi", "variant")
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
+    // The phone <-> watch protocol, one file shared with the watch app so the
+    // two cannot drift. See wearos/protocol/.../WearProtocol.kt.
+    sourceSets {
+        getByName("main") { java.srcDir("../wearos/protocol") }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
+    // applicationId can only be overridden per flavor, not per build type, so a
+    // dev/prod dimension exists purely to let both sit installed side by side
+    // on the same device instead of the dev build overwriting the prod one.
+    flavorDimensions += "env"
     productFlavors {
-        // FOSS variant (default) - F-Droid compatible, no Google Play Services
-        create("foss") {
-            dimension = "variant"
-            isDefault = true
-            buildConfigField("Boolean", "CAST_AVAILABLE", "false")
+        create("dev") {
+            dimension = "env"
+            applicationId = "com.dev.bitchord"
+            resValue("string", "app_name", "BitChord Dev")
         }
-
-        // GMS variant - with Google Cast support (requires Google Play Services)
-        create("gms") {
-            dimension = "variant"
-            buildConfigField("Boolean", "CAST_AVAILABLE", "true")
-        }
-        
-        create("universal") {
-            dimension = "abi"
-            buildConfigField("String", "ARCHITECTURE", "\"universal\"")
-        }
-        create("arm64") {
-            dimension = "abi"
-            buildConfigField("String", "ARCHITECTURE", "\"arm64\"")
-        }
-        create("armeabi") {
-            dimension = "abi"
-            buildConfigField("String", "ARCHITECTURE", "\"armeabi\"")
-        }
-        create("x86") {
-            dimension = "abi"
-            buildConfigField("String", "ARCHITECTURE", "\"x86\"")
-        }
-        create("x86_64") {
-            dimension = "abi"
-            buildConfigField("String", "ARCHITECTURE", "\"x86_64\"")
+        create("prod") {
+            dimension = "env"
+            // Matches defaultConfig — this is the package already shipped/installed.
         }
     }
-
-    val releaseKeystore = file("keystore/release.keystore")
-    val hasReleaseKeystore = releaseKeystore.exists() && !System.getenv("STORE_PASSWORD").isNullOrBlank()
 
     signingConfigs {
-        create("persistentDebug") {
-            storeFile = file("persistent-debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
-        if (hasReleaseKeystore) {
+        // Both halves have to be there, not just the properties file: it *names*
+        // the keystore rather than containing it, and both are gitignored
+        // separately, so a checkout can easily end up with the one and not the
+        // other. A signing config pointing at a keystore that is not on disk
+        // fails the release build outright at validateSigningRelease — which is
+        // exactly the failure the unsigned fallback above exists to avoid, so
+        // the keystore has to be looked for rather than assumed.
+        val store = signing.getProperty("storeFile")?.let { rootProject.file(it) }
+        if (store != null && store.exists()) {
             create("release") {
-                storeFile = releaseKeystore
-                storePassword = System.getenv("STORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
-                enableV1Signing = true
-                enableV2Signing = true
-                enableV3Signing = true
+                storeFile = store
+                storePassword = signing.getProperty("storePassword")
+                keyAlias = signing.getProperty("keyAlias")
+                keyPassword = signing.getProperty("keyPassword")
             }
-        }
-        getByName("debug") {
-            storeFile = file("debug.keystore")
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-            storePassword = "android"
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
         }
     }
 
     buildTypes {
+        debug {
+            if (betaSuffix.isNotEmpty()) versionNameSuffix = "-$betaSuffix"
+        }
         release {
-            if (hasReleaseKeystore) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
-            }
+            // Carried here too — see [betaSuffix]. A sideloaded beta is a
+            // release build, and it is the one that most needs the marker.
+            if (betaSuffix.isNotEmpty()) versionNameSuffix = "-$betaSuffix"
+            /*
+             * On for what it does to speed, not size. Compose is written to be
+             * run through R8 — without it every composable keeps the debug-era
+             * shape the compiler emits, and the whole UI runs measurably slower.
+             *
+             * Nothing is renamed (-dontobfuscate), and every library that reaches
+             * for classes by name — Rhino running YouTube's player JavaScript,
+             * NewPipe, InnerTubeX, QuickJS, SMBJ and BouncyCastle, ONNX's JNI,
+             * protobuf-lite, Ktor — is kept whole: see proguard-rules.pro. What R8
+             * is left to optimise is Compose, Media3, coroutines and our own
+             * code, which is where the time goes. Checked on a device through the
+             * `benchmark` build type below before it ships.
+             */
             isMinifyEnabled = true
             isShrinkResources = true
-            isCrunchPngs = false
-            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "ARCHITECTURE", "\"release\"")
+            // Null without a keystore to sign with: the build then produces
+            // app-release-unsigned.apk instead of failing outright.
+            signingConfig = signingConfigs.findByName("release")
         }
-        debug {
-            isDebuggable = true
+        /*
+         * The release build, installable next to the dev and prod apps: same R8,
+         * same non-debuggable runtime, signed with the debug key under its own
+         * package so it never replaces either. For measuring startup the way
+         * users get it and for checking that shrinking broke nothing — a debug
+         * build is interpreted and verified at runtime and says little about
+         * either. `./gradlew installDevBenchmark`.
+         */
+        create("benchmark") {
+            initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
-            buildConfigField("String", "ARCHITECTURE", "\"debug\"")
+            applicationIdSuffix = ".benchmark"
+            matchingFallbacks += listOf("release")
         }
     }
-
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
-
-    kotlin {
-        jvmToolchain(21)
-        compilerOptions {
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
-            freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
-            jvmTarget.set(JvmTarget.JVM_21)
+    packaging {
+        resources {
+            // SMBJ's BouncyCastle and jspecify both ship this descriptor.
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+            // The three BouncyCastle jars (bcprov, bcutil, bcpkix) ship one licence between them.
+            pickFirsts += setOf("META-INF/LICENSE.md", "META-INF/LICENSE.txt", "META-INF/NOTICE.md")
         }
     }
-
     buildFeatures {
         compose = true
         buildConfig = true
     }
-
-    dependenciesInfo {
-        includeInApk = false
-        includeInBundle = false
-    }
-
-    lint {
-        lintConfig = file("lint.xml")
-        // Ratchet: the 1287 issues present when this landed are recorded in the baseline and pass,
-        // while anything new fails the build. Shrinking the baseline is the cleanup track's work.
-        baseline = file("lint-baseline.xml")
-        warningsAsErrors = false
-        abortOnError = true
-        checkReleaseBuilds = false
-        checkDependencies = false
-    }
-
-    androidResources {
-        generateLocaleConfig = true
-    }
-
-    packaging {
-        jniLibs {
-            useLegacyPackaging = false
-            keepDebugSymbols += listOf(
-                "**/libandroidx.graphics.path.so",
-                "**/libdatastore_shared_counter.so"
-            )
-        }
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "META-INF/NOTICE.md"
-            excludes += "META-INF/CONTRIBUTORS.md"
-            excludes += "META-INF/LICENSE.md"
-            excludes += "META-INF/INDEX.LIST"
-            excludes += "META-INF/io.netty.versions.properties"
+    testOptions {
+        unitTests {
+            // Unit tests run against a stub android.jar whose methods throw
+            // rather than return. That is the right default for anything whose
+            // behaviour depends on the framework, and wrong for android.util.Log
+            // — which [TrackLog] calls on every decision the source layer makes,
+            // so a test of that layer fails on the logging rather than on the
+            // logic it was written to check.
+            isReturnDefaultValues = true
         }
     }
 }
 
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
-    }
-    generateProtoTasks {
-        all().forEach { task ->
-            task.builtins {
-                create("java") {
-                    option("lite")
-                }
-                create("kotlin") {
-                    option("lite")
-                }
-            }
-        }
-    }
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+kotlin {
     compilerOptions {
-        freeCompilerArgs.addAll(
-            "-opt-in=kotlin.RequiresOptIn"
-        )
-        suppressWarnings.set(false)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+/*
+ * NewPipeExtractor ships its own org.schabi.newpipe.extractor.utils.Utils, and
+ * app/src/main/java carries a patched copy at the same package path (see that
+ * file for why it exists). A debug build keeps project and library dex separate,
+ * so the project copy simply wins at class-load time and the two coexist; a
+ * release build merges every input into one dex set, where D8 rejects the
+ * duplicate type outright ("Utils is defined multiple times"). So the library's
+ * copy is stripped from its jar before it reaches dexing, leaving exactly one
+ * definition of the class in the build.
+ *
+ * The artifact is resolved on its own and non-transitive purely to re-jar it;
+ * the transitive dependencies it would otherwise have carried are declared by
+ * hand in the dependencies block below, since dropping the module drops them too.
+ */
+val newPipeExtractorRaw: Configuration by configurations.creating {
+    isTransitive = false
+    isCanBeConsumed = false
+}
+dependencies {
+    newPipeExtractorRaw("com.github.TeamNewPipe:NewPipeExtractor:v0.26.3")
+}
+val newPipeExtractorStripped = tasks.register<org.gradle.api.tasks.bundling.Jar>(
+    "stripNewPipeExtractorUtils"
+) {
+    archiveFileName.set("NewPipeExtractor-v0.26.3-noutils.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("stripped-libs"))
+    from(provider { newPipeExtractorRaw.map { zipTree(it) } }) {
+        // The class itself, plus any nested or synthetic siblings the upstream
+        // compiler emitted alongside it, so nothing from the jar's Utils survives.
+        exclude("org/schabi/newpipe/extractor/utils/Utils.class")
+        exclude("org/schabi/newpipe/extractor/utils/Utils\$*.class")
     }
 }
 
 dependencies {
-    implementation(libs.guava)
-    implementation(libs.coroutines.guava)
-    implementation(libs.concurrent.futures)
+    implementation(project(":shared"))
+    implementation(project(":sharedUi"))
 
-    implementation(libs.activity)
-    implementation(libs.hilt.navigation)
-    implementation(libs.datastore)
+    // ---- Compose (Material 3) ----
+    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
+    implementation(composeBom)
+    // Pinned above the BOM's 1.7.6: [IosOverscroll] uses OverscrollFactory,
+    // which that version doesn't have. Newer foundation alongside the BOM's
+    // older ui/material3 is a combination Compose supports deliberately —
+    // foundation depends on ui, not the reverse — and this exact pairing was
+    // already in effect (foundation was reaching 1.10.0 transitively through
+    // the liquid-glass library before that dependency was removed).
+    implementation("androidx.compose.foundation:foundation:1.10.0")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    // ProcessLifecycleOwner: whether the app is on screen, for the open-app count.
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
+    // The scheduled check behind "Keep playlists updated"; see PlaylistSync.
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    debugImplementation("androidx.compose.ui:ui-tooling")
 
-    implementation(libs.compose.runtime)
-    implementation(libs.compose.foundation)
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.util)
-    implementation(libs.compose.ui.tooling)
-    implementation(libs.compose.animation)
-    implementation(libs.compose.reorderable)
+    // ---- Media playback: Media3 / ExoPlayer ----
+    implementation("androidx.media3:media3-exoplayer:1.11.0")
+    implementation("androidx.media3:media3-session:1.11.0")
+    implementation("androidx.media3:media3-common:1.11.0")
+    implementation("androidx.media3:media3-datasource-okhttp:1.11.0")
+    // Audio is progressive, but Apple serves its motion artwork as HLS — this
+    // is what lets the animated sleeve play it. See CanvasArtworkPlayer.
+    implementation("androidx.media3:media3-exoplayer-hls:1.11.0")
+    // Source modules hand back manifests rather than files, and which kind is
+    // the backend's choice, not ours: the Tidal one served `.m3u8` until
+    // September 2026 and `.mpd` after it, for the same track and the same
+    // request. Without this artifact a DASH manifest is not merely unplayed —
+    // DefaultMediaSourceFactory cannot build a source for it, falls back to
+    // progressive, and the extractors try to sniff XML as audio
+    // (ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED). See withResolvedStreamType.
+    implementation("androidx.media3:media3-exoplayer-dash:1.11.0")
+    // FFmpeg audio decoding for what the phone has no decoder of its own for:
+    // ALAC on every phone, and AC-4, E-AC-3 / AC-3 (Dolby Atmos music),
+    // TrueHD and DTS on phones without Dolby or DTS licensed in. Added as the
+    // *last* audio renderer in silenceSkippingRenderers, so a platform decoder
+    // still wins wherever one exists. No artifact: the extension's Java half is
+    // vendored under app/src/main/java/androidx/media3/decoder/ffmpeg, and
+    // libffmpegJNI.so under src/main/jniLibs is built from librempeg (the only
+    // FFmpeg line with an AC-4 decoder) by native/ffmpeg/build.sh. It needs
+    // media3-decoder, which media3-exoplayer already brings.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.9.0")
 
-    implementation(libs.viewmodel)
-    implementation(libs.viewmodel.compose)
+    // ---- Images: Coil 3 + Palette (dominant colors for the mesh gradient) ----
+    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
+    // Title logos are PNG, but artist signatures are usually SVG — without
+    // this Coil can't decode them (see ArtistSignatureRepository).
+    implementation("io.coil-kt.coil3:coil-svg:3.0.4")
+    // SF Symbols as Compose vectors, for the iOS-style settings and menus (as Convx uses).
+    // Without its own dependencies: it asks for Compose 1.12, which needs a newer Android
+    // Gradle plugin than this build, and the plain ImageVectors used here need nothing
+    // the app's own Compose doesn't already have.
+    implementation("com.github.cosmictaserdev-creator.Jetpack_SF_Symbols:sfsymbols-android:1.1.1") {
+        isTransitive = false
+    }
+    implementation("androidx.palette:palette-ktx:1.0.0")
 
-    implementation(libs.material3)
-    implementation(libs.androidx.adaptive)
-    implementation(libs.androidx.adaptive.layout)
-    implementation(libs.androidx.adaptive.navigation)
-    implementation(libs.material3.adaptive.navigation.suite)
-    implementation(libs.palette)
-    implementation(libs.materialKolor)
+    // ---- Frosted glass / progressive blur (Telegram-style bars) ----
+    implementation("dev.chrisbanes.haze:haze:1.3.1")
+    implementation("dev.chrisbanes.haze:haze-materials:1.3.1")
 
-    implementation(libs.appcompat)
+    // ---- QR encoding, for the party invite ----
+    // `core` only: the `android-core`/`zxing-android-embedded` artifacts bring
+    // a camera scanner and an Activity with it, and nothing here reads a code —
+    // a party is joined by tapping somebody else's link or typing six
+    // characters. This produces the bit matrix; the drawing is ours, in
+    // [com.music.bitchord.ui.components.QrCode], so the result is styled like
+    // the rest of the app rather than a stock black-and-white bitmap.
+    implementation("com.google.zxing:core:3.5.3")
 
-    implementation(libs.coil)
-    implementation(libs.coil.network.okhttp)
+    // ---- Markdown rendering (release notes in the update dialog) ----
+    // Pure Compose, not an AndroidView wrapper — needed so the text composes
+    // correctly under the dialog's Haze blur.
+    implementation("com.halilibo.compose-richtext:richtext-ui-material3:0.20.0")
+    implementation("com.halilibo.compose-richtext:richtext-commonmark:0.20.0")
 
-    implementation(libs.ucrop)
+    // ---- Innertube (YouTube Music) client: Ktor + kotlinx.serialization ----
+    // Ktor and serialization are held at InnerTubeX's versions (below) so the
+    // upgrade it forces is explicit rather than resolved behind our backs.
+    implementation("io.ktor:ktor-client-core:3.5.2")
+    implementation("io.ktor:ktor-client-okhttp:3.5.2")
+    implementation("io.ktor:ktor-client-content-negotiation:3.5.2")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
-    implementation(libs.shimmer)
+    // ---- Discord Rich Presence: the gateway is a WebSocket, so Ktor needs the plugin ----
+    implementation("io.ktor:ktor-client-websockets:3.5.2")
 
-    implementation(libs.media3)
-    implementation(libs.media3.session)
-    implementation(libs.media3.hls)
-    implementation(libs.media3.ui)
-    implementation(libs.media3.okhttp)
+    // ---- YouTube stream extraction: live-benchmarked client catalog + cipher tiers ----
+    implementation("com.github.MetrolistGroup.innertubex:innertubex-android:v0.7.0")
 
-    // Google Cast - only included in GMS flavor (not available in F-Droid/FOSS builds)
-    "gmsImplementation"(libs.media3.cast)
-    "gmsImplementation"(libs.mediarouter)
-    "gmsImplementation"(libs.cast.framework)
+    // ---- Stream resolution: NewPipe solves YouTube's signature + `n` throttling ----
+    // Pinned to v0.26.3, not the newer v0.26.4: v0.26.4's player-JS parser fails with
+    // "Could not parse deobfuscation function" on the current player build, which blocks
+    // WEB_REMIX's ciphered formats entirely. v0.26.3 solves the same signatures cleanly
+    // against the same player JS — confirmed side by side against PixelMusic-ref, which
+    // pins v0.26.3 and doesn't hit the parse failure.
+    //
+    // Consumed as a stripped jar rather than as the module, so its own
+    // Utils.class does not reach dexing. See newPipeExtractorStripped above; the
+    // transitive dependencies the module would have brought are listed here
+    // because dropping its artifact drops them too. If the version changes,
+    // re-derive this list with
+    //   ./gradlew :app:dependencies --configuration prodReleaseRuntimeClasspath
+    implementation(files(newPipeExtractorStripped))
+    implementation("com.github.TeamNewPipe:nanojson:e9d656ddb49a412a5a0a5d5ef20ca7ef09549996")
+    implementation("org.jsoup:jsoup:1.22.2")
+    implementation("com.google.code.findbugs:jsr305:3.0.2")
+    implementation("com.google.protobuf:protobuf-javalite:4.35.0")
+    implementation("org.mozilla:rhino:1.8.1")
+    implementation("org.mozilla:rhino-engine:1.8.1")
 
-    implementation(libs.room.runtime)
-    implementation(libs.kuromoji.ipadic)
-    implementation(libs.tinypinyin)
-    ksp(libs.room.compiler)
-    implementation(libs.room.ktx)
+    // ---- Auth/session storage ----
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    implementation(libs.apache.lang3)
+    // ---- JS module execution: QuickJS VM for style source plugins ----
+    // Held at InnerTubeX's version; the same VM runs QuickJsExecutor's module sources.
+    implementation("io.github.dokar3:quickjs-kt-android:1.0.14")
 
-    implementation(libs.hilt)
-    implementation(libs.jsoup)
-    ksp(libs.hilt.compiler)
+    // ---- SMB file shares: pure-Java SMB2/3 client (listing + streaming) ----
+    implementation("com.hierynomus:smbj:0.15.0")
 
-    implementation(project(":innertube"))
-    implementation(project(":kizzy"))
-    implementation(project(":lastfm"))
-    implementation(project(":canvas"))
-    implementation(project(":shazamkit"))
-    implementation(project(":artistvideo"))
-    implementation(project(":applecanvas"))
-    implementation(project(":nocturnecanvas"))
-    implementation(project(":jiosaavn"))
-    implementation(project(":spotify"))
-    implementation(project(":lyricsProvider"))
+    // ---- Automix: on-device beat/downbeat model (Beat This!, MIT-licensed) ----
+    // The full android artifact, not onnxruntime-mobile: mobile only loads .ort
+    // files, which would put an offline conversion step between the model and
+    // the app for a saving that does not matter in a self-distributed APK.
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.28.0")
 
+    // ---- Casting: Google Cast sender + the route discovery it sits on ----
+    // The framework and the router only. media3-cast is left out on purpose:
+    // its CastPlayer hands the receiver whatever URI a MediaItem carries, and
+    // ours are `bitchord://` addresses that only the service's resolver can
+    // turn into a real stream — see [com.music.bitchord.playback.cast.CastPlayback].
+    implementation("com.google.android.gms:play-services-cast-framework:22.2.0")
+    implementation("androidx.mediarouter:mediarouter:1.8.1")
 
+    // ---- The watch app (wearos/): Data Layer state out, commands in ----
+    // See com.music.bitchord.wear.WearBridge. Rides on the Play services base
+    // the Cast framework already brings, so it adds very little.
+    implementation("com.google.android.gms:play-services-wearable:20.0.1")
+    // Opens the watch app after an update, so its install prompt is on screen.
+    implementation("androidx.wear:wear-remote-interactions:1.1.0")
 
+    // ---- "BitChord for Wear OS": the first install onto a watch ----
+    // Without the Play Store only ADB can install on a watch, so this phone is
+    // the ADB client, over the watch's Wireless debugging — see WatchInstaller.
+    // GPL-3.0/Apache-2.0 dual-licensed. Its own BouncyCastle (jdk15to18) is the
+    // same classes as the jdk18on one SMBJ already brings, so it is excluded;
+    // bcpkix supplies the certificate the ADB client identifies itself with.
+    implementation("com.github.MuntashirAkon:libadb-android:3.1.1") {
+        exclude(group = "org.bouncycastle")
+    }
+    implementation("org.conscrypt:conscrypt-android:2.5.3")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.85")
 
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.json)
-
-    // Protobuf for message serialization (lite version for Android)
-    implementation(libs.protobuf.javalite)
-    implementation(libs.protobuf.kotlin.lite)
-
-    coreLibraryDesugaring(libs.desugaring)
-    implementation(libs.timber)
-    implementation(libs.smoothCorner)
-    implementation(libs.lottie.compose)
-    implementation(libs.haze)
-    implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation(libs.work.runtime.ktx)
-    implementation(libs.androidx.core.splashscreen)
-
-    testImplementation(libs.junit)
+    testImplementation("junit:junit:4.13.2")
+    // A real HTTP server for the addon tests. The addon protocol is entirely
+    // "what does this app send, and what does it do with what comes back", and
+    // a hand-rolled fake of the client would be a test of the fake. Pinned to
+    // the OkHttp version already on the runtime classpath.
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 }
 
+/*
+ * A debug APK lands on the device uncompiled — `dumpsys package dexopt` reports
+ * it as run-from-apk — so every launch verifies the whole app's classes at
+ * runtime before a line of our code runs. Measured on the BlueStacks box, that
+ * was about two seconds of every cold start and most of why the dev build felt
+ * so much slower than a release one. `verify` is the cheapest filter that
+ * removes it (~15s once per install), and unlike `speed` it leaves the debug
+ * build debuggable exactly as before.
+ *
+ * Runs after `installDevDebug` from the command line. Android Studio's Run
+ * button deploys on its own and never reaches this task, so from there run
+ * `./gradlew verifyDevInstall` after installing.
+ */
+val verifyDevInstall = tasks.register("verifyDevInstall") {
+    group = "install"
+    description = "Pre-verifies the installed dev build on every connected device."
+    val adb = androidComponents.sdkComponents.adb
+    doLast {
+        val adbPath = adb.get().asFile.absolutePath
+        val serials = ProcessBuilder(adbPath, "devices").start()
+            .inputStream.bufferedReader().readLines()
+            .drop(1)
+            .mapNotNull { line -> line.split('\t').takeIf { it.size == 2 && it[1] == "device" }?.get(0) }
+        serials.forEach { serial ->
+            logger.lifecycle("verifyDevInstall: compiling com.dev.bitchord on $serial")
+            ProcessBuilder(
+                adbPath, "-s", serial, "shell", "cmd", "package", "compile",
+                "-m", "verify", "-f", "com.dev.bitchord",
+            ).inheritIO().start().waitFor()
+        }
+    }
+}
+tasks.matching { it.name == "installDevDebug" }.configureEach { finalizedBy(verifyDevInstall) }
 
+/*
+ * The watch app rides inside the phone app, so "BitChord for Wear OS" in
+ * Settings can put it on a watch — or update it — with no computer involved.
+ *
+ * Each phone variant carries the watch build of the same flavor *and* build
+ * type: the same package (dev with dev, prod with prod) and the same signing
+ * key, which is what the Wearable Data Layer needs before the two will talk at
+ * all. A SHA-256 travels with it, so the phone can tell the watch's build from
+ * the one it carries even when the version numbers match.
+ *
+ * Costs a watch build per phone build; -Pbitchord.bundleWear=false skips it
+ * for a quick local iteration (Settings then offers no install).
+ */
+abstract class BundleWearApk : DefaultTask() {
+    @get:InputFiles
+    abstract val apks: ConfigurableFileCollection
 
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun bundle() {
+        val out = outputDir.get().asFile.resolve("wear")
+        out.deleteRecursively()
+        out.mkdirs()
+        val apk = apks.asFileTree.matching { include("*.apk") }.files.singleOrNull()
+            ?: throw GradleException("Expected exactly one watch APK in ${apks.files}")
+        val target = out.resolve("BitChordWear.apk")
+        apk.copyTo(target, overwrite = true)
+        val digest = MessageDigest.getInstance("SHA-256")
+        target.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        out.resolve("BitChordWear.sha256").writeText(digest.digest().joinToString("") { "%02x".format(it) })
+    }
+}
+
+if (providers.gradleProperty("bitchord.bundleWear").orNull != "false" && findProject(":wearos") != null) {
+    androidComponents.onVariants { variant ->
+        val flavor = variant.productFlavors.firstOrNull { it.first == "env" }?.second ?: return@onVariants
+        val type = variant.buildType ?: return@onVariants
+        // The benchmark build has no watch counterpart.
+        if (type != "debug" && type != "release") return@onVariants
+        val cap = variant.name.replaceFirstChar { it.uppercase() }
+        val bundle = tasks.register<BundleWearApk>("bundleWearApk$cap") {
+            dependsOn(":wearos:assemble$cap")
+            apks.from(rootProject.layout.projectDirectory.dir("wearos/build/outputs/apk/$flavor/$type"))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(bundle, BundleWearApk::outputDir)
+    }
+}

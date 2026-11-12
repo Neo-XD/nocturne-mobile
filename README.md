@@ -1,127 +1,156 @@
 <div align="center">
 
-<img src="./Nocturne-mobile-Social-preview.png" alt="Nocturne Mobile Banner" width="100%">
+<br/>
+<br/>
 
-# Nocturne Mobile
+<img src="Logo.png" alt="BitChord app icon" width="200" />
 
-**A native Android YouTube Music client — built from scratch for Nocturne, designed for music on the go.**
+# BitChord
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white">
-  <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white">
-  <img src="https://img.shields.io/badge/Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white">
-  <img src="https://img.shields.io/badge/Material_3-757575?style=for-the-badge&logo=materialdesign&logoColor=white">
-</p>
+### Aesthetic YouTube Music Client
 
-**Nocturne Mobile** is a native Android music client built as the mobile counterpart to [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music), while also working completely on its own.
+<br/>
 
-Stream and manage your music, take your library with you, and enjoy a Nocturne experience designed specifically for Android.
+[![Latest release](https://img.shields.io/github/v/release/kushagrasinghx/BitChord?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/BitChord/releases)
+[![License](https://img.shields.io/github/license/kushagrasinghx/BitChord?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/BitChord/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/kushagrasinghx/BitChord/total?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/BitChord/releases)
+[![Listening now](https://api.bitchord.kushagrasingh.in/api/stats/live/badge.svg)](https://api.bitchord.kushagrasingh.in/api/stats/live)
+
+<br/>
+
+[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Support**](#support) · [**Disclaimer**](#disclaimer)
+
+<br/>
+
+<a href="https://fmhy.net/mobile#youtube-music" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/available/fmhy/cozy.svg" alt="Featured on FMHY" height="55"/></a>
+<a href="https://trendshift.io/repositories/177639?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-177639" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/177639" alt="kushagrasinghx%2FBitChord | Trendshift" width="250" height="55"/></a>
+
+</div>
+
+> [!IMPORTANT]
+> BitChord is not affiliated with, endorsed by, or connected to YouTube or Google in any way. Use it at your own discretion.
+
+---
+
+<div align="center">
+
+<img src="Banner.png" alt="BitChord banner" width="100%" />
+
+<h1><a id="features"></a>Features</h1>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+
+#### Playback
+- **Search, browse and play** anything available on YouTube Music.
+- **Hi-Res lossless audio** — FLAC/ALAC from a configured module source, with YouTube Music as fallback.
+- **Gapless playback with true crossfade**, adjustable 0–12s.
+- **Automix [Beta]** — DJ-style transitions with beat-matching and tempo-stretching.
+- **Offline downloads** — save tracks with embedded metadata.
+- **Local music library** integration.
+- **Background playback** via a proper foreground media session.
+- **Apple-like lyrics animation** — credit to [binimum](https://github.com/binimum/am-lyrics).
+
+#### Connectivity & Accounts
+- **Sign in with your Google account** for personalized content.
+- **Spotify integration** — connect your account to play your playlists and Liked Songs.
+- **Discord Rich Presence** — in-app login, live track/artist/album and progress.
+- **Scrobbling** to Last.fm and ListenBrainz.
+- **Pluggable sources** — add, edit, test and health-check module sources.
+
+    </td>
+    <td width="50%" valign="top">
+
+#### Experience
+- **Animated album canvas** — motion artwork on the now-playing screen.
+- **Word-synced lyrics** — word/syllable-level highlighting from multiple sources.
+- **Lyrics providers** — credit to [lrc.red](https://lrc.red), [BiniLyrics](https://github.com/binimum), [BetterLyrics](https://github.com/better-lyrics/better-lyrics), [PaxSenix](https://lyrics.paxsenix.org), [LyricsPlus](https://github.com/ibratabian17/YouLyPlus), [SimpMusic](https://github.com/maxrave-dev/SimpMusic), [Unison](https://unison.boidu.dev), [Megalobiz](https://www.megalobiz.com), [KuGou](https://www.kugou.com), [LRCLIB](https://lrclib.net), [Musixmatch](https://www.musixmatch.com) and [Genius](https://genius.com).
+- **Dynamic, artwork-driven theming** — Material palette extracted from album art.
+- **Frosted-glass UI** — Telegram-style translucent bars via Haze, Material 3 theming.
+
+#### Controls & Tweaks
+- **Per-network audio quality** — separate quality ceilings for Wi-Fi and mobile data.
+- **Playback speed control** (0.5×–2.0×) and **skip silence**.
+- **Sleep timer** — fixed presets or "stop after this track".
+- **System equalizer** integration.
+- **Bit-perfect USB exclusive output** — sends lossless tracks to a USB DAC unchanged, at each track's own rate and bit depth. Thanks to [Mornye](https://github.com/mornyeapp/Mornye) for the reference.
+- **Stats for nerds** — codec, bit depth, sample rate, and more on the now-playing screen.
+
+    </td>
+  </tr>
+</table>
 
 </div>
 
 ---
 
-## Features
+<div align="center">
 
-* Built specifically for Android using Kotlin rather than wrapping a website.
-* Search, browse, and play all your favourite songs directly from YouTube Music.
-* Ever get annoyed by the constant ads? Enjoy Ad-Free Listening on Nocturne Mobile!
-* Don't let the beats stop with background playback.
-* Access all your playlists, liked songs, artists, and albums directly from YouTube Music 
-* Sing along with your music with **Synced Lyrics**
-* Scrobble your songs with last.fm integration.
-* Part of the Nocturne Ecosystem and is designed to work alongside [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music)
+<h1><a id="download"></a>Download</h1>
 
----
+<a href="https://github.com/kushagrasinghx/BitChord/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
 
-<h2 align="center">Download</h2>
+Grab the latest signed APK from the [Releases](https://github.com/kushagrasinghx/BitChord/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
 
-<p align="center">
-  <a href="https://github.com/Neo-XD/nocturne-mobile/releases/latest">
-    <img src="https://img.shields.io/badge/GitHub_Releases-100000?style=for-the-badge&logo=github&logoColor=white" height="40">
-  </a>
-</p>
 
-Download the latest APK from the [Releases](https://github.com/Neo-XD/nocturne-mobile/releases/latest) page and install it on your Android device.
-
-> Nocturne Mobile is currently under active development. Expect occasional bugs and unfinished features.
+</div>
 
 ---
 
-## Part of the Nocturne Ecosystem
+<div align="center">
 
-Nocturne Mobile was built alongside **[Nocturne Desktop](https://github.com/Neo-XD/nocturne-music)**, the desktop version of Nocturne available for Windows, Mac and Linux.
+<h1><a id="contributing"></a>Contributing</h1>
 
-The two applications share the same goal:
+We welcome contributions to BitChord! Please review our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a Pull Request.
 
-> A fast, native, customizable YouTube Music experience without the bloat of **Electron**.
+[**Contributing Guide**](CONTRIBUTING.md) · [**Code of Conduct**](CODE_OF_CONDUCT.md) · [**Maintainers**](MAINTAINERS.md) · [**Additional Docs**](ADDITIONAL.md)
 
-| Platform | Project                                                    | Rough Description|
-| -------- | ---------------------------------------------------------- |------------------|
-| Desktop  | [Nocturne Desktop](https://github.com/Neo-XD/nocturne-music) | The Original Client. Built for Windows, MacOS, and Linux. |
-| Android  | Nocturne Mobile                                            | The Mobile Client. Built for Android and as a companion app to the original. | 
+### Thanks to all contributors ❤
 
-Nocturne Mobile can work independently, but is designed to feel like part of the same ecosystem.
+<a href="https://github.com/kushagrasinghx/BitChord/graphs/contributors">
+  <img src="https://raw.githubusercontent.com/kushagrasinghx/BitChord/contributors/contributors.svg" />
+</a>
 
----
-
-## Building from Source
-
-Clone the repository:
-
-```bash
-git clone https://github.com/Neo-XD/nocturne-mobile.git
-cd nocturne-mobile
-```
-
-Open the project in Android Studio or build it using Gradle.
-
-### Last.fm Credentials
-
-> The Local Builds of nocturne do not have the required api keys for scrobbling.
-
-To scrobble with your local build, add your credentials to `local.properties`:
-
-```properties
-LASTFM_API_KEY=your_key
-LASTFM_SECRET=your_secret
-```
-
-Alternatively, provide them through environment variables:
-
-```text
-LASTFM_API_KEY
-LASTFM_SECRET
-```
-
-This is also how CI supplies credentials during builds.
+</div>
 
 ---
 
-## Project Status
+<div align="center">
 
-Nocturne Mobile is actively developed and evolving quickly.
+<h1><a id="support"></a>Support</h1>
 
-Features, architecture, and UI may change significantly between releases. Bug reports, feature requests, and contributions are welcome.
+BitChord is free and always will be — if it's earned a spot in your rotation, you can chip in here:
 
----
+<a href="https://ko-fi.com/kushagrasinghx" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/donate/kofi-singular-alt/cozy.svg" alt="Support me on Ko-fi" height="55"/></a>
+<a href="https://paypal.me/kuxhagrasingh" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/donate/paypal-plural/cozy.svg" alt="Support us on PayPal" height="55"/></a>
 
-## Note for Contributors
+<br/>
+<img src="upi_support.jpg" alt="UPI Support" width="250" />
 
-Like Nocturne Music, this project has been developed heavily through experimentation and AI-assisted development. Some parts of the codebase may not be perfectly optimized or architected.
-
-If you find bugs, performance issues, or areas that can be improved, contributions and constructive feedback are always welcome.
-
----
-
-## Disclaimer
-
-This project is not affiliated with, funded, authorized, endorsed by, or in any way associated with YouTube, Google LLC, or any of their affiliates and subsidiaries.
-
-All trademarks, service marks, and intellectual property rights referenced in this project belong to their respective owners.
+</div>
 
 ---
 
-## License
+<div align="center">
 
-[GPL-3.0](LICENSE)
+<h1><a id="disclaimer"></a>Disclaimer & Legal Notice</h1>
+
+BitChord is an independent, community-driven third-party audio player and client. It is **not** associated with Google LLC, YouTube Music, Deezer, Telegram, or any of their parent companies.
+
+* **No Media Hosting:** BitChord does not host, upload, or store copyrighted music files. It operates strictly as an interface to scan local device storage or stream media directly from public, public-facing, or user-authenticated APIs.
+* **Fair Use & API Usage:** This software is created solely for personal research, educational, and fair-use purposes. The user is entirely responsible for ensuring their usage aligns with their local copyright laws and YouTube Terms of Service.
+* **No Ad-Blocking Guarantee:** While BitChord focuses on providing a clean listening environment, it does not guarantee permanent bypasses or modifications to commercial third-party platform conditions.
+* **Copyleft:** BitChord is free software under the GPLv3. The license does not let anyone forbid others from selling or redistributing copies, but any distribution must come with the Corresponding Source under the same license.
+
+</div>
+
+---
+
+<div align="center">
+
+<h1><a id="license"></a>License</h1>
+
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. See the [LICENSE](LICENSE) file for details.
+
+</div>
