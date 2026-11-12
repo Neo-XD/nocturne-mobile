@@ -54,7 +54,7 @@ android {
         create("dev") {
             dimension = "env"
             applicationId = "com.nocturne.music"
-            resValue("string", "app_name", "Nocturne Dev")
+            resValue("string", "app_name", "Nocturne")
         }
         create("prod") {
             dimension = "env"
