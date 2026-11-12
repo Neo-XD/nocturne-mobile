@@ -73,6 +73,7 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.Upgrade
 import com.music.bitchord.data.listentogether.ServerConnectionState
@@ -3686,6 +3687,7 @@ private fun BitChordApp(
                             TAB_YOU -> YouScreen(
                                 account = account,
                                 signedIn = signedIn,
+                                historyState = historyState,
                                 replayCards = replayCards,
                                 replayLoading = replay.loading,
                                 memberSince = replay.memberSince,
@@ -3695,6 +3697,13 @@ private fun BitChordApp(
                                     navigator.push(AppRoute.History)
                                     viewModel.loadHistory()
                                 },
+                                onPlayHistorySong = { songs, index ->
+                                    playFrom(songs, index, QueueSource(historyLabel, PlaybackSourceType.HISTORY))
+                                },
+                                onPlayDownloadedSong = { songs, index ->
+                                    playFrom(songs, index, QueueSource(context.getString(R.string.downloads), PlaybackSourceType.BROWSE))
+                                },
+                                onRefreshHistory = { viewModel.loadHistory() },
                                 onOpenFullStats = {
                                     replayLandingPage = ReplayStoryPage.INTRO
                                     navigator.push(AppRoute.Replay)
@@ -3928,6 +3937,13 @@ private fun BitChordApp(
                         // Only worth surfacing where there's room for it and it won't
                         // be mistaken for a per-page action — Home, at rest.
                         if (route == null && detail == null && selectedTab == TAB_HOME) {
+                            IconButton(onClick = { navigator.push(AppRoute.Settings) }) {
+                                Icon(
+                                    Icons.Rounded.Settings,
+                                    contentDescription = stringResource(R.string.settings),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
                             updateNotice?.let { update ->
                                 IconButton(onClick = { showUpdateDialog = true }) {
                                     Icon(

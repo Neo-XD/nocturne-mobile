@@ -38,12 +38,15 @@ jobs:
       run: chmod +x gradlew
 
     - name: Build Signed Prod Release APK
+      env:
+        LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+        LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
       run: ./gradlew assembleProdRelease
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: bitchord-prod-release-signed
+        name: nocturne-prod-release-signed
         path: app/build/outputs/apk/prod/release/*.apk
 
     # Built by the same assembleProdRelease, with the same key. The watch app
@@ -52,5 +55,5 @@ jobs:
     - name: Upload Wear OS APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: bitchord-wear-prod-release-signed
+        name: nocturne-wear-prod-release-signed
         path: wearos/build/outputs/apk/prod/release/*.apk

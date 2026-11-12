@@ -20,17 +20,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Computer
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
@@ -57,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -69,8 +74,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.music.bitchord.R
 import com.music.bitchord.data.model.Account
+import com.music.bitchord.data.model.Song
+import com.music.bitchord.data.model.UiState
 import com.music.bitchord.data.scrobbling.LastFM
 import com.music.bitchord.data.settings.AppSettings
+import com.music.bitchord.download.Downloads
 import com.music.bitchord.sync.NocturnePlaybackTarget
 import com.music.bitchord.sync.NocturneSyncManager
 import com.music.bitchord.sync.NocturneSyncState
@@ -86,21 +94,37 @@ import kotlinx.coroutines.launch
 fun YouScreen(
     account: Account?,
     signedIn: Boolean,
+    historyState: UiState<List<Song>>,
     replayCards: List<ReplayHeroCard>,
     replayLoading: Boolean,
     memberSince: String?,
     onOpenSettings: () -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenHistory: () -> Unit,
+    onPlayHistorySong: (List<Song>, Int) -> Unit,
+    onPlayDownloadedSong: (List<Song>, Int) -> Unit,
+    onRefreshHistory: () -> Unit,
     onOpenFullStats: () -> Unit,
     onSignIn: () -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val haptics = rememberHaptics()
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+
+    // Downloads list
+    val savedDownloads by Downloads.saved.collectAsStateWithLifecycle()
+    var downloadedSongs by remember { mutableStateOf<List<Song>>(emptyList()) }
+    LaunchedEffect(savedDownloads) {
+        downloadedSongs = Downloads.getDownloadedSongs(context)
+    }
+
+    LaunchedEffect(Unit) {
+        onRefreshHistory()
+    }
 
     // Sync State
     val syncState by NocturneSyncManager.connectionState.collectAsStateWithLifecycle()
@@ -236,7 +260,30 @@ fun YouScreen(
             }
         }
 
-        // ── 2. Listening Stats (1 Main Card) ───────────────────────────
+        // ── 2. History Side-Scrolling Shelf ────────────────────────────
+        item(key = "you-history-shelf") {
+            val historySongs = (historyState as? UiState.Success)?.data.orEmpty()
+            ShelfListSection(
+                title = stringResource(R.string.history),
+                songs = historySongs,
+                onShowMore = onOpenHistory,
+                onSongClick = { song, index -> onPlayHistorySong(historySongs, index) },
+                emptyText = "No history recorded yet",
+            )
+        }
+
+        // ── 3. Downloads Side-Scrolling Shelf ──────────────────────────
+        item(key = "you-downloads-shelf") {
+            ShelfListSection(
+                title = stringResource(R.string.downloads),
+                songs = downloadedSongs,
+                onShowMore = onOpenDownloads,
+                onSongClick = { song, index -> onPlayDownloadedSong(downloadedSongs, index) },
+                emptyText = "No downloaded songs",
+            )
+        }
+
+        // ── 4. Listening Stats (1 Main Card) ───────────────────────────
         item(key = "you-stats-header") {
             Row(
                 modifier = Modifier
@@ -363,48 +410,7 @@ fun YouScreen(
             }
         }
 
-        // ── 3. Quick Actions (Downloads, History) ──────────────────────
-        item(key = "you-shortcuts-header") {
-            Text(
-                text = "Library & History",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 12.dp),
-            )
-        }
-
-        item(key = "you-shortcuts") {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PAGE_GUTTER)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-            ) {
-                YouActionRow(
-                    icon = Icons.Rounded.Download,
-                    title = stringResource(R.string.downloads),
-                    subtitle = stringResource(R.string.downloaded_songs),
-                    onClick = onOpenDownloads,
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .padding(horizontal = 16.dp)
-                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-                )
-                YouActionRow(
-                    icon = Icons.Rounded.History,
-                    title = stringResource(R.string.history),
-                    subtitle = "Recently played tracks and stations",
-                    onClick = onOpenHistory,
-                )
-            }
-        }
-
-        // ── 4. Nocturne Sync (PC OTP Setup) ────────────────────────────
+        // ── 5. Nocturne Sync (PC OTP Setup) ────────────────────────────
         item(key = "you-sync-header") {
             Text(
                 text = "Nocturne Sync (PC Link)",
@@ -458,63 +464,90 @@ fun YouScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                if (syncState != NocturneSyncState.CONNECTED) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        OutlinedTextField(
-                            value = inputHost,
-                            onValueChange = { inputHost = it },
-                            label = { Text("PC IP Address") },
-                            placeholder = { Text("192.168.1.10") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
-                            modifier = Modifier.weight(2f),
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                        OutlinedTextField(
-                            value = inputPort,
-                            onValueChange = { inputPort = it.filter { ch -> ch.isDigit() } },
-                            label = { Text("Port") },
-                            placeholder = { Text("8080") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
+                Row(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
-                        value = inputPin,
-                        onValueChange = { inputPin = it.trim() },
-                        label = { Text("Pairing PIN / OTP") },
-                        placeholder = { Text("e.g. 123456") },
+                        value = inputHost,
+                        onValueChange = { inputHost = it },
+                        label = { Text("PC IP Address") },
+                        placeholder = { Text("192.168.1.xxx") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1.8f),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Ascii,
+                            imeAction = ImeAction.Next,
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                        ),
                     )
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedTextField(
+                        value = inputPort,
+                        onValueChange = { inputPort = it },
+                        label = { Text("Port") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next,
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                        ),
+                    )
+                }
 
-                    Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+                OutlinedTextField(
+                    value = inputPin,
+                    onValueChange = { inputPin = it },
+                    label = { Text("Pairing PIN / OTP (from Desktop)") },
+                    placeholder = { Text("6-digit PIN") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                    ),
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    if (syncState == NocturneSyncState.CONNECTED) {
+                        Button(
+                            onClick = { NocturneSyncManager.disconnect() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            ),
+                        ) {
+                            Text("Disconnect")
+                        }
+                    } else {
                         Button(
                             onClick = {
                                 focusManager.clearFocus()
-                                val parsedPort = inputPort.toIntOrNull() ?: 8080
-                                NocturneSyncManager.saveConfig(inputHost, parsedPort, inputPin)
-                                NocturneSyncManager.startConnect(inputHost, parsedPort, inputPin)
+                                val portNum = inputPort.toIntOrNull() ?: 24124
+                                NocturneSyncManager.startConnect(inputHost.trim(), portNum, inputPin.trim())
                             },
-                            enabled = syncState != NocturneSyncState.CONNECTING && inputHost.isNotBlank(),
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
+                            enabled = syncState != NocturneSyncState.CONNECTING &&
+                                syncState != NocturneSyncState.FAILED_BLOCKED &&
+                                inputHost.isNotBlank() && inputPin.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
                         ) {
                             if (syncState == NocturneSyncState.CONNECTING) {
                                 CircularProgressIndicator(
@@ -525,86 +558,156 @@ fun YouScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Text("Connecting...")
                             } else {
-                                Icon(Icons.Rounded.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
                                 Text("Connect to PC")
                             }
-                        }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Button(
-                            onClick = { NocturneSyncManager.disconnect() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                            ),
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                        ) {
-                            Text("Disconnect")
                         }
                     }
                 }
             }
         }
 
-        item {
-            Spacer(Modifier.height(24.dp))
+        item(key = "you-bottom-spacer") {
+            Spacer(Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
-private fun YouActionRow(
-    icon: ImageVector,
+private fun ShelfListSection(
     title: String,
-    subtitle: String,
-    onClick: () -> Unit,
+    songs: List<Song>,
+    onShowMore: () -> Unit,
+    onSongClick: (Song, Int) -> Unit,
+    emptyText: String,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(
             modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .padding(horizontal = PAGE_GUTTER, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
             )
-            Spacer(Modifier.height(2.dp))
             Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "Show more",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { onShowMore() },
             )
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp),
-        )
+
+        if (songs.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PAGE_GUTTER, vertical = 12.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = emptyText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = PAGE_GUTTER),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                itemsIndexed(songs.take(5), key = { _, s -> s.videoId }) { index, song ->
+                    Column(
+                        modifier = Modifier
+                            .width(116.dp)
+                            .clickable { onSongClick(song, index) },
+                    ) {
+                        val artwork = song.thumbnailUrl
+                        if (artwork != null) {
+                            AsyncImage(
+                                model = artwork,
+                                contentDescription = song.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(116.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(116.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MusicNote,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(36.dp),
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = song.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = song.artist.ifBlank { "Unknown Artist" },
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                item(key = "$title-show-more-card") {
+                    Box(
+                        modifier = Modifier
+                            .size(116.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .clickable { onShowMore() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                                contentDescription = "Show more",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = "Show more",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
