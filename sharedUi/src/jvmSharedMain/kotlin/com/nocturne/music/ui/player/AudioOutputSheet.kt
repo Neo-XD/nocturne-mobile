@@ -314,7 +314,7 @@ private fun NocturneSyncRow(sync: NocturneSyncUi, onClick: () -> Unit) {
         Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = "Nocturne Sync (PC)",
+                text = sync.hostName.ifBlank { "Nocturne PC" },
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                 ),
@@ -325,8 +325,8 @@ private fun NocturneSyncRow(sync: NocturneSyncUi, onClick: () -> Unit) {
             Spacer(Modifier.height(2.dp))
             Text(
                 text = when {
-                    active -> "Streaming to Nocturne PC"
-                    sync.connected -> "Connected to PC • Tap to sync"
+                    active -> "Playing on PC • Tap to switch to Phone"
+                    sync.connected -> "Connected • Tap to play on PC"
                     sync.status.isNotBlank() -> sync.status
                     else -> "Link to PC via OTP"
                 },

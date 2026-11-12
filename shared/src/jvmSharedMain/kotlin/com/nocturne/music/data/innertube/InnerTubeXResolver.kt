@@ -402,7 +402,7 @@ object InnerTubeXResolver {
     private const val LOW_KBPS = 64
     private const val EXCLUDE_MS = 10 * 60 * 1000L
     private const val MAX_REMEMBERED = 64
-    /** Off the cold-start path; the first tap on a track is rarely sooner. */
-    private const val WARM_DELAY_MS = 2_000L
+    /** Off the cold-start path; quick warm-up so the first song resolve is immediate. */
+    private const val WARM_DELAY_MS = 200L
     private const val KEPT_PLAYERS = 3
 }

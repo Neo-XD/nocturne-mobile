@@ -99,6 +99,7 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
 
         override fun setLastPlayerScreen(value: LastPlayerScreen) = AppSettings.setLastPlayerScreen(value)
         override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value)
+        override fun setFullBleedArtwork(value: Boolean) = AppSettings.setFullBleedArtwork(value)
         override fun setMixViewOpen(open: Boolean) {
             AppSettings.mixViewOpen.value = open
         }
@@ -138,9 +139,10 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         val outputs = rememberAndroidAudioOutputs()
         val cast by CastController.state.collectAsStateWithLifecycle()
         val watch by WearBridge.watchOutput.collectAsStateWithLifecycle()
-        // While a receiver is the speaker no output of this phone is the one
-        // playing, so none of them is lit; the Cast or watch row is.
-        return if (cast.casting || watch.active) outputs.map { it.copy(isActive = false) } else outputs
+        val sync by nocturneSync.collectAsStateWithLifecycle()
+        // While a receiver or PC is the speaker no output of this phone is the one
+        // playing, so none of them is lit; the Cast, watch, or Nocturne PC row is.
+        return if (cast.casting || watch.active || sync.active) outputs.map { it.copy(isActive = false) } else outputs
     }
 
     @Composable
@@ -152,6 +154,9 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         if (CastController.state.value.casting) CastController.disconnect(resumeHere = true)
         AudioRouting.select(id)
         WearBridge.leaveWatchOutput()
+        if (com.nocturne.music.sync.NocturneSyncManager.playbackTarget.value == com.nocturne.music.sync.NocturnePlaybackTarget.REMOTE_PC) {
+            com.nocturne.music.sync.NocturneSyncManager.requestTransferToPhone()
+        }
     }
 
     override val watchOutput: StateFlow<WatchOutputUi> by lazy {
@@ -165,11 +170,15 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
             com.nocturne.music.sync.NocturneSyncManager.connectionState,
             com.nocturne.music.sync.NocturneSyncManager.statusMessage,
             com.nocturne.music.sync.NocturneSyncManager.playbackTarget,
-        ) { conn, status, target ->
+            com.nocturne.music.sync.NocturneSyncManager.activeConnectedDevice,
+        ) { conn, status, target, dev ->
+            val isConnected = conn == com.nocturne.music.sync.NocturneSyncState.CONNECTED
+            val isActive = isConnected && target == com.nocturne.music.sync.NocturnePlaybackTarget.REMOTE_PC
+            val name = dev?.name ?: com.nocturne.music.sync.NocturneSyncManager.discoveredDevice.value?.substringBefore(" (")?.ifBlank { null } ?: "Nocturne PC"
             NocturneSyncUi(
-                connected = conn == com.nocturne.music.sync.NocturneSyncState.CONNECTED,
-                hostName = com.nocturne.music.sync.NocturneSyncManager.host.value,
-                active = target == com.nocturne.music.sync.NocturnePlaybackTarget.REMOTE_PC && conn == com.nocturne.music.sync.NocturneSyncState.CONNECTED,
+                connected = isConnected,
+                hostName = name,
+                active = isActive,
                 status = status,
             )
         }.stateIn(scope, SharingStarted.Eagerly, NocturneSyncUi())
@@ -177,14 +186,18 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
 
     override fun toggleNocturneSync() {
         if (com.nocturne.music.sync.NocturneSyncManager.connectionState.value == com.nocturne.music.sync.NocturneSyncState.CONNECTED) {
-            val next = if (com.nocturne.music.sync.NocturneSyncManager.playbackTarget.value == com.nocturne.music.sync.NocturnePlaybackTarget.REMOTE_PC) {
-                com.nocturne.music.sync.NocturnePlaybackTarget.LOCAL
+            if (com.nocturne.music.sync.NocturneSyncManager.playbackTarget.value == com.nocturne.music.sync.NocturnePlaybackTarget.REMOTE_PC) {
+                com.nocturne.music.sync.NocturneSyncManager.requestTransferToPhone()
             } else {
-                com.nocturne.music.sync.NocturnePlaybackTarget.REMOTE_PC
+                com.nocturne.music.sync.NocturneSyncManager.requestTransferToDesktop()
             }
-            com.nocturne.music.sync.NocturneSyncManager.setPlaybackTarget(next)
         } else {
-            com.nocturne.music.sync.NocturneSyncManager.startConnect()
+            val mostRecent = com.nocturne.music.sync.NocturneSyncManager.savedDevices.value.maxByOrNull { it.lastConnectedMs }
+            if (mostRecent != null) {
+                com.nocturne.music.sync.NocturneSyncManager.connectToSaved(mostRecent)
+            } else {
+                com.nocturne.music.sync.NocturneSyncManager.startConnect()
+            }
         }
     }
 

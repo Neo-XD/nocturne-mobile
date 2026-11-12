@@ -152,6 +152,7 @@ import com.nocturne.music.data.model.UserPlaylist
 import com.nocturne.music.data.model.EntityType
 import com.nocturne.music.data.model.SearchHistoryEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import com.nocturne.music.data.model.durationMillis
 import com.nocturne.music.data.scrobbling.LastFM
@@ -1098,16 +1099,121 @@ private fun BitChordApp(
     }
     val controller = rememberMediaController()
     val player = rememberPlayerState(controller)
-    // Synchronize local playback to Nocturne PC if connected and PC is idle
-    LaunchedEffect(player.song, player.isPlaying) {
-        val song = player.song
-        if (song != null && player.isPlaying) {
-            com.nocturne.music.sync.NocturneSyncManager.onLocalSongPlayed(
-                song = song,
-                positionMs = player.position.positionMs,
-                isPlaying = true,
-                queue = player.queue
-            )
+    val syncTarget by com.nocturne.music.sync.NocturneSyncManager.playbackTarget.collectAsStateWithLifecycle()
+    val syncConnState by com.nocturne.music.sync.NocturneSyncManager.connectionState.collectAsStateWithLifecycle()
+    val syncRoomState by com.nocturne.music.sync.NocturneSyncManager.roomState.collectAsStateWithLifecycle()
+
+    val isSyncConnected = syncConnState == com.nocturne.music.sync.NocturneSyncState.CONNECTED
+    val isPcSpeaker = isSyncConnected && (
+        syncTarget == com.nocturne.music.sync.NocturnePlaybackTarget.REMOTE_PC ||
+        (!player.isPlaying && syncRoomState?.current_track != null && syncRoomState?.is_playing == true)
+    )
+    val remoteTrackSong = remember(syncRoomState?.current_track) {
+        syncRoomState?.current_track?.let { com.nocturne.music.sync.NocturneSyncManager.remoteTrackToSong(it) }
+    }
+    val activeTrack = if (isPcSpeaker && remoteTrackSong != null) remoteTrackSong else player.song
+    val effectiveIsPlaying = if (isPcSpeaker) (syncRoomState?.is_playing ?: false) else player.isPlaying
+    val effectiveDurationMs = if (isPcSpeaker) (syncRoomState?.current_track?.duration_ms ?: 0L) else player.durationMs
+
+    val activeQueue = remember(isPcSpeaker, syncRoomState?.queue, player.queue) {
+        if (isPcSpeaker && syncRoomState != null && syncRoomState!!.queue.isNotEmpty()) {
+            syncRoomState!!.queue.map { com.nocturne.music.sync.NocturneSyncManager.remoteTrackToSong(it) }
+        } else {
+            player.queue
+        }
+    }
+    val activeQueueIndex = remember(isPcSpeaker, syncRoomState?.queue, syncRoomState?.current_track, activeQueue, player.queueIndex) {
+        if (isPcSpeaker) {
+            val curId = syncRoomState?.current_track?.id ?: activeTrack?.videoId
+            val idx = activeQueue.indexOfFirst { it.videoId == curId }
+            if (idx >= 0) idx else 0
+        } else {
+            player.queueIndex
+        }
+    }
+    val activeHasPrevious = if (isPcSpeaker) activeQueueIndex > 0 else player.hasPrevious
+    val activeHasNext = if (isPcSpeaker) activeQueueIndex < activeQueue.lastIndex else player.hasNext
+
+    // Synchronize local playback to Nocturne PC if connected and phone is playing
+    LaunchedEffect(player.isPlaying, player.song, isSyncConnected, isPcSpeaker) {
+        if (isSyncConnected && !isPcSpeaker) {
+            val song = player.song
+            if (player.isPlaying) {
+                if (song != null) {
+                    com.nocturne.music.sync.NocturneSyncManager.onLocalSongPlayed(
+                        song = song,
+                        positionMs = player.position.positionMs,
+                        isPlaying = true,
+                        queue = player.queue,
+                    )
+                } else {
+                    com.nocturne.music.sync.NocturneSyncManager.sendPlay()
+                }
+            } else {
+                com.nocturne.music.sync.NocturneSyncManager.sendPause()
+            }
+        }
+    }
+
+    // Keep seekbar smoothly updated to PC speaker when PC is active output
+    LaunchedEffect(isPcSpeaker, syncRoomState?.is_playing, syncRoomState?.position_ms, syncRoomState?.last_update_ms) {
+        if (!isPcSpeaker) return@LaunchedEffect
+        val room = syncRoomState ?: return@LaunchedEffect
+        while (isActive) {
+            val cur = com.nocturne.music.sync.NocturneSyncManager.calculateRemotePositionMs()
+            player.position.report(cur)
+            if (!room.is_playing) break
+            delay(250)
+        }
+    }
+
+    // Handle remote playback actions from PC and seamless handoffs
+    val syncScope = rememberCoroutineScope()
+    DisposableEffect(controller) {
+        com.nocturne.music.sync.NocturneSyncManager.onRemotePlaybackActionReceived = { action ->
+            when (action.kind) {
+                "pause" -> controller?.pause()
+                "play" -> controller?.play()
+                "toggle" -> {
+                    if (controller?.isPlaying == true) controller?.pause() else controller?.play()
+                }
+                "seek" -> controller?.seekTo(action.position_ms)
+                "next", "next_track" -> controller?.seekToNextMediaItem()
+                "prev", "previous", "previous_track" -> controller?.seekToPrevious()
+            }
+        }
+        com.nocturne.music.sync.NocturneSyncManager.onTransferToDesktopRequested = {
+            val song = player.song
+            val pos = player.position.positionMs
+            val queue = player.queue
+            controller?.pause()
+            com.nocturne.music.sync.NocturneSyncManager.performTransferToDesktop(song, pos, queue)
+        }
+        com.nocturne.music.sync.NocturneSyncManager.onTransferToPhoneRequested = {
+            val remoteTrack = com.nocturne.music.sync.NocturneSyncManager.roomState.value?.current_track
+            val remotePos = com.nocturne.music.sync.NocturneSyncManager.calculateRemotePositionMs()
+            val remoteQueue = com.nocturne.music.sync.NocturneSyncManager.roomState.value?.queue.orEmpty()
+            com.nocturne.music.sync.NocturneSyncManager.performTransferToPhone()
+            if (remoteTrack != null) {
+                syncScope.launch {
+                    if (player.song?.videoId == remoteTrack.id) {
+                        controller?.seekTo(remotePos)
+                        controller?.play()
+                    } else {
+                        val songToPlay = com.nocturne.music.sync.NocturneSyncManager.remoteTrackToSong(remoteTrack)
+                        val queueToPlay = remoteQueue.map { com.nocturne.music.sync.NocturneSyncManager.remoteTrackToSong(it) }.ifEmpty { listOf(songToPlay) }
+                        val idx = queueToPlay.indexOfFirst { it.videoId == remoteTrack.id }.coerceAtLeast(0)
+                        controller?.playSongs(queueToPlay, idx)
+                        delay(350)
+                        controller?.seekTo(remotePos)
+                    }
+                }
+            }
+        }
+        onDispose {
+            com.nocturne.music.sync.NocturneSyncManager.onRemotePlaybackActionReceived = null
+            com.nocturne.music.sync.NocturneSyncManager.onTransferToDesktopRequested = null
+            com.nocturne.music.sync.NocturneSyncManager.onTransferToPhoneRequested = null
         }
     }
     // A music video's picture follows this controller's clock — see [MusicVideoEngine].
@@ -1169,14 +1275,28 @@ private fun BitChordApp(
      * of starting a second of audio that [PartySync] then has to stop.
      */
     val togglePlayPause: () -> Unit = {
-        controller?.let { c ->
-            val party = ListenTogether.state.value
-            if (party.controlsLocked && !party.playback.isPlaying && !c.isPlaying) {
-                showHostOnlyNotice()
-            } else if (c.isPlaying) {
-                c.pause()
+        if (isPcSpeaker) {
+            if (syncRoomState?.is_playing == true) {
+                com.nocturne.music.sync.NocturneSyncManager.sendPause()
             } else {
-                c.play()
+                com.nocturne.music.sync.NocturneSyncManager.sendPlay()
+            }
+        } else {
+            controller?.let { c ->
+                val party = ListenTogether.state.value
+                if (party.controlsLocked && !party.playback.isPlaying && !c.isPlaying) {
+                    showHostOnlyNotice()
+                } else if (c.isPlaying) {
+                    c.pause()
+                    if (isSyncConnected) {
+                        com.nocturne.music.sync.NocturneSyncManager.sendPause()
+                    }
+                } else {
+                    c.play()
+                    if (isSyncConnected) {
+                        com.nocturne.music.sync.NocturneSyncManager.sendPlay()
+                    }
+                }
             }
         }
     }
@@ -2456,7 +2576,7 @@ private fun BitChordApp(
     // See [topBarContentPadding].
     val listPadding = PaddingValues(
         top = topBarContentPadding(),
-        bottom = if (player.song != null) 210.dp else 140.dp,
+        bottom = if (activeTrack != null) 210.dp else 140.dp,
     )
 
     // What colour the page currently under the bars is. The fades either end
@@ -2564,63 +2684,69 @@ private fun BitChordApp(
             // the parameter.
             menuOpen = { songActions != null && menuFromPlayer && songMenuOrigin == null },
             onLiveCanvasChanged = { playerLiveCanvas = it },
-            isPlaying = player.isPlaying,
-            isLoading = playPauseBusy,
+            isPlaying = effectiveIsPlaying,
+            isLoading = if (isPcSpeaker) false else playPauseBusy,
             position = player.position,
-            durationMs = player.durationMs,
+            durationMs = effectiveDurationMs,
             audioVersionSwitching = switchingAudioVersion,
             qualityUpgraded = player.isQualityUpgraded,
             onPlayPause = {
                 togglePlayPause()
             },
-            onNext = { controller?.seekToNextMediaItem() },
-            onPrevious = { controller?.seekToPrevious() },
+            onNext = {
+                if (isPcSpeaker) com.nocturne.music.sync.NocturneSyncManager.sendNext() else controller?.seekToNextMediaItem()
+            },
+            onPrevious = {
+                if (isPcSpeaker) com.nocturne.music.sync.NocturneSyncManager.sendPrevious() else controller?.seekToPrevious()
+            },
             onBlockedControl = showHostOnlyNotice,
             onSeekFraction = { fraction ->
-                controller?.let { player ->
-                    // Read at the moment of the seek, not from the
-                    // polled snapshot the screen draws with: a track
-                    // change updates the current item before it updates
-                    // the duration, so a fraction dropped seconds after
-                    // a transition would otherwise be scaled by the
-                    // previous song's length.
-                    val duration = player.duration
+                if (isPcSpeaker) {
+                    val duration = syncRoomState?.current_track?.duration_ms ?: 0L
                     if (duration > 0) {
-                        player.seekTo(
-                            (fraction * duration).toLong()
-                                .coerceIn(0L, (duration - SEEK_END_GUARD_MS).coerceAtLeast(0L)),
-                        )
+                        val target = (fraction * duration).toLong().coerceIn(0L, duration)
+                        player.position.seeks++
+                        player.position.report(target)
+                        com.nocturne.music.sync.NocturneSyncManager.sendSeek(target)
+                    }
+                } else {
+                    controller?.let { player ->
+                        val duration = player.duration
+                        if (duration > 0) {
+                            val target = (fraction * duration).toLong()
+                                .coerceIn(0L, (duration - SEEK_END_GUARD_MS).coerceAtLeast(0L))
+                            player.seekTo(target)
+                            if (isSyncConnected) {
+                                com.nocturne.music.sync.NocturneSyncManager.sendSeek(target)
+                            }
+                        }
                     }
                 }
             },
             onSeek = { target ->
-                controller?.let { player ->
-                    // Clamped here rather than at each caller because
-                    // not every caller can clamp. The scrubber's target
-                    // is a fraction of the duration and cannot overrun,
-                    // but a tapped lyric line seeks to a timestamp from
-                    // whichever transcription matched on title, artist
-                    // and duration — and a match against a slightly
-                    // longer master puts every line late, so a tap near
-                    // the end asks for a position past the end of this
-                    // stream. Media3 answers that by clamping to the
-                    // final millisecond, which ends the track and starts
-                    // the next one: tapping the last line of a song
-                    // skipped it.
-                    val duration = player.duration
-                    player.seekTo(
-                        if (duration > 0) {
+                if (isPcSpeaker) {
+                    player.position.seeks++
+                    player.position.report(target)
+                    com.nocturne.music.sync.NocturneSyncManager.sendSeek(target)
+                } else {
+                    controller?.let { player ->
+                        val duration = player.duration
+                        val clamped = if (duration > 0) {
                             target.coerceIn(0L, (duration - SEEK_END_GUARD_MS).coerceAtLeast(0L))
                         } else {
                             target.coerceAtLeast(0L)
-                        },
-                    )
+                        }
+                        player.seekTo(clamped)
+                        if (isSyncConnected) {
+                            com.nocturne.music.sync.NocturneSyncManager.sendSeek(clamped)
+                        }
+                    }
                 }
             },
-            queue = player.queue,
-            queueIndex = player.queueIndex,
-            hasPrevious = player.hasPrevious,
-            hasNext = player.hasNext,
+            queue = activeQueue,
+            queueIndex = activeQueueIndex,
+            hasPrevious = activeHasPrevious,
+            hasNext = activeHasNext,
             repeatMode = player.repeatMode,
             shuffleEnabled = shuffleEnabled,
             autoplayEnabled = autoplayEnabled,
@@ -2654,13 +2780,20 @@ private fun BitChordApp(
                 controller?.toggleAutoplay()
             },
             onJumpTo = { index ->
-                controller?.let { c ->
-                    // The session applies the jump plan to its own player (see
-                    // its seekTo override); editing the queue from here would
-                    // round-trip every item through the controller and lose
-                    // their bounded-window metadata.
-                    c.seekTo(index, 0L)
-                    c.play()
+                if (isPcSpeaker) {
+                    val targetRemoteTrack = syncRoomState?.queue?.getOrNull(index)
+                    if (targetRemoteTrack != null) {
+                        com.nocturne.music.sync.NocturneSyncManager.sendJumpTo(index, targetRemoteTrack)
+                    }
+                } else {
+                    controller?.let { c ->
+                        // The session applies the jump plan to its own player (see
+                        // its seekTo override); editing the queue from here would
+                        // round-trip every item through the controller and lose
+                        // their bounded-window metadata.
+                        c.seekTo(index, 0L)
+                        c.play()
+                    }
                 }
             },
             onRemoveFromQueue = { controller?.removeMediaItem(it) },
@@ -4113,7 +4246,7 @@ private fun BitChordApp(
 
                 // Drawn before the bars so their own glass reads on top of it.
                 BottomFadeScrim(
-                    withMiniPlayer = player.song != null,
+                    withMiniPlayer = activeTrack != null,
                     // Not the wash: by the foot of the screen the page has finished
                     // easing out of it and into this, so this is what is actually
                     // under the tab bar.
@@ -4160,14 +4293,18 @@ private fun BitChordApp(
                         selectedIndex = selectedTab,
                         onTabSelected = onTabSelected,
                         scrollConnection = navBarScroll,
-                        song = player.song,
-                        isPlaying = player.isPlaying,
-                        isLoading = playPauseBusy,
+                        song = activeTrack,
+                        isPlaying = effectiveIsPlaying,
+                        isLoading = if (isPcSpeaker) false else playPauseBusy,
                         onPlayPause = {
                             togglePlayPause()
                         },
-                        onNext = { controller?.seekToNextMediaItem() },
-                        onPrevious = { controller?.seekToPrevious() },
+                        onNext = {
+                            if (isPcSpeaker) com.nocturne.music.sync.NocturneSyncManager.sendNext() else controller?.seekToNextMediaItem()
+                        },
+                        onPrevious = {
+                            if (isPcSpeaker) com.nocturne.music.sync.NocturneSyncManager.sendPrevious() else controller?.seekToPrevious()
+                        },
                         onExpand = if (reducePlayerMotion) {
                             { showNowPlaying = true }
                         } else {
@@ -4194,17 +4331,21 @@ private fun BitChordApp(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     QueueActionNoticeHost(queueNotice)
-                    player.song?.let { song ->
+                    activeTrack?.let { song ->
                         MiniPlayer(
                             song = song,
-                            isPlaying = player.isPlaying,
-                            isLoading = playPauseBusy,
+                            isPlaying = effectiveIsPlaying,
+                            isLoading = if (isPcSpeaker) false else playPauseBusy,
                             hazeState = hazeState,
                             onPlayPause = {
                                 togglePlayPause()
                             },
-                            onNext = { controller?.seekToNextMediaItem() },
-                            onPrevious = { controller?.seekToPrevious() },
+                            onNext = {
+                                if (isPcSpeaker) com.nocturne.music.sync.NocturneSyncManager.sendNext() else controller?.seekToNextMediaItem()
+                            },
+                            onPrevious = {
+                                if (isPcSpeaker) com.nocturne.music.sync.NocturneSyncManager.sendPrevious() else controller?.seekToPrevious()
+                            },
                             onExpand = if (reducePlayerMotion) {
                                 { showNowPlaying = true }
                             } else {
@@ -4229,7 +4370,7 @@ private fun BitChordApp(
 
         }
 
-        val playerRaised = showNowPlaying && playerSong != null
+        val playerRaised = showNowPlaying && (activeTrack != null || playerSong != null)
 
         // ---- The page's still, for a menu hung over it ----
         // Taken as a ⋮ or ⋯ menu opens over a page, let go once it has played
@@ -4777,7 +4918,10 @@ private fun BitChordApp(
                         },
                     ) {
                         CompositionLocalProvider(LocalPlayerDock provides activeDock) {
-                            nowPlaying(playerSong)
+                            val activeSongToPlay = if (isPcSpeaker && remoteTrackSong != null) remoteTrackSong else (playerSong ?: activeTrack)
+                            activeSongToPlay?.let { track ->
+                                nowPlaying(track)
+                            }
                         }
                     }
                     IosMenuPopover(

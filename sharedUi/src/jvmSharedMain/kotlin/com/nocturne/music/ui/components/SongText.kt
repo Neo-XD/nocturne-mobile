@@ -70,6 +70,10 @@ fun ExplicitSongTitle(
             ExplicitBadge(badgeColor)
             Spacer(Modifier.width(6.dp))
         }
+        if (AiDetector.isAiTrack(song.title, song.artist)) {
+            AiBadge(badgeColor)
+            Spacer(Modifier.width(6.dp))
+        }
         if (fadeOverflow) {
             FadingLine(text = song.title, style = style, color = color, modifier = Modifier.weight(1f, fill = false))
         } else {
@@ -182,6 +186,40 @@ fun ExplicitBadge(color: Color, modifier: Modifier = Modifier) {
             topLeft = Offset(
                 (this.size.width - letter.size.width) / 2f,
                 (this.size.height + capPx) / 2f - letter.firstBaseline,
+            ),
+            blendMode = BlendMode.DstOut,
+        )
+    }
+}
+
+/**
+ * A badge marking AI-generated content (e.g. Suno, Udio, AI covers).
+ * Uses the same punched-out Apple Music typography style as [ExplicitBadge].
+ */
+@Composable
+fun AiBadge(color: Color, modifier: Modifier = Modifier) {
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.labelSmall.copy(
+        fontSize = 8.5.sp,
+        fontWeight = FontWeight.W800,
+        letterSpacing = 0.sp,
+    )
+    val text = remember(measurer, style) { measurer.measure("AI", style) }
+    val density = LocalDensity.current
+    val capPx = with(density) { style.fontSize.toPx() } * CAP_HEIGHT
+    val height = with(density) { (capPx / BADGE_CAP_SHARE).toDp() }
+    val width = with(density) { (text.size.width + 6.dp.toPx()).toDp() }
+    Canvas(
+        modifier
+            .size(width, height)
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
+    ) {
+        drawRoundRect(color = color, cornerRadius = CornerRadius(2.dp.toPx()))
+        drawText(
+            textLayoutResult = text,
+            topLeft = Offset(
+                (this.size.width - text.size.width) / 2f,
+                (this.size.height + capPx) / 2f - text.firstBaseline,
             ),
             blendMode = BlendMode.DstOut,
         )

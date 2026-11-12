@@ -441,10 +441,18 @@ internal fun LandscapeCredits(
                     color = Color.White,
                     onOverflowChange = { titleOverflowing = it },
                     // Before the title, in the artist line's colour.
-                    leading = if (song.isExplicit == true) {
-                        { ExplicitBadge(artistColor) }
-                    } else {
-                        null
+                    leading = {
+                        val isExplicit = song.isExplicit == true
+                        val isAi = com.nocturne.music.ui.components.AiDetector.isAiTrack(song.title, song.artist)
+                        if (isExplicit || isAi) {
+                            androidx.compose.foundation.layout.Row(
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (isExplicit) ExplicitBadge(artistColor)
+                                if (isAi) com.nocturne.music.ui.components.AiBadge(artistColor)
+                            }
+                        }
                     },
                     modifier = Modifier.opensPage(song.albumId, onOpenAlbum),
                 )

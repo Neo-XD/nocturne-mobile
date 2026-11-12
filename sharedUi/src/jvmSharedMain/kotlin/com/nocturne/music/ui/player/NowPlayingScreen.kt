@@ -1400,7 +1400,7 @@ fun NowPlayingScreen(
     // answering to that preference exactly as before.
     // A music video sits in the card's place at its own 16:9, never full bleed.
     val heroMode = !videoMode && (
-        spotifyCanvasOnPhone ||
+        (spotifyCanvasOnPhone && fullBleedArt) ||
             (fullBleedArt && playerFillsWindow(windowWidth))
         )
 
@@ -3516,7 +3516,10 @@ fun NowPlayingScreen(
                                             closeLyrics()
                                         }
                                     } else {
-                                        Modifier
+                                        Modifier.clickable {
+                                            haptics.play(Haptic.Select)
+                                            PlayerSettings.setFullBleedArtwork(!fullBleedArt)
+                                        }
                                     },
                                 ),
                             contentAlignment = Alignment.Center,
@@ -3739,10 +3742,18 @@ fun NowPlayingScreen(
                                             enabled = scrolling,
                                             // Before the title, in the artist line's
                                             // colour.
-                                            leading = if (song.isExplicit == true) {
-                                                { ExplicitBadge(color = artistColor) }
-                                            } else {
-                                                null
+                                            leading = {
+                                                val isExplicit = song.isExplicit == true
+                                                val isAi = com.nocturne.music.ui.components.AiDetector.isAiTrack(song.title, song.artist)
+                                                if (isExplicit || isAi) {
+                                                    androidx.compose.foundation.layout.Row(
+                                                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                    ) {
+                                                        if (isExplicit) ExplicitBadge(color = artistColor)
+                                                        if (isAi) com.nocturne.music.ui.components.AiBadge(color = artistColor)
+                                                    }
+                                                }
                                             },
                                             onOverflowChange = { titleOverflowing = it },
                                             // Only the tracks YouTube hands us a browse id for

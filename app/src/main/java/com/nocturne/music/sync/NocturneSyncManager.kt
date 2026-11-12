@@ -135,6 +135,10 @@ object NocturneSyncManager {
     val savedDevices = MutableStateFlow<List<SavedSyncDevice>>(emptyList())
     val activeConnectedDevice = MutableStateFlow<SavedSyncDevice?>(null)
 
+    var onRemotePlaybackActionReceived: ((SyncPlaybackActionPayload) -> Unit)? = null
+    var onTransferToDesktopRequested: (() -> Unit)? = null
+    var onTransferToPhoneRequested: (() -> Unit)? = null
+
     // Current connection target (empty by default so fields remain blank for next pairing)
     val host = MutableStateFlow("")
     val port = MutableStateFlow(8080)
@@ -142,6 +146,11 @@ object NocturneSyncManager {
 
     private var appContext: Context? = null
     private var lastDiscoveredHostName: String = ""
+
+    @Volatile
+    private var lastSeekTimestamp: Long = 0L
+    @Volatile
+    private var lastSeekPositionMs: Long = 0L
 
     fun init(context: Context) {
         appContext = context.applicationContext
@@ -423,7 +432,34 @@ object NocturneSyncManager {
                                     // PC says no song: nothing gets shown on phone
                                     roomState.value = null
                                 } else {
-                                    roomState.value = s
+                                    val now = System.currentTimeMillis()
+                                    val adjustedState = if ((now - lastSeekTimestamp) < 1500L) {
+                                        val elapsed = if (s.is_playing) now - lastSeekTimestamp else 0L
+                                        s.copy(position_ms = lastSeekPositionMs + elapsed, last_update_ms = now)
+                                    } else {
+                                        s
+                                    }
+                                    roomState.value = adjustedState
+                                }
+                            }
+                            "playback_action" -> {
+                                msg.action?.let { action ->
+                                    onRemotePlaybackActionReceived?.invoke(action)
+                                }
+                                msg.state?.let { s ->
+                                    val track = s.current_track
+                                    if (track == null || track.id.isBlank() || track.title.isBlank()) {
+                                        roomState.value = null
+                                    } else {
+                                        val now = System.currentTimeMillis()
+                                        val adjustedState = if ((now - lastSeekTimestamp) < 1500L) {
+                                            val elapsed = if (s.is_playing) now - lastSeekTimestamp else 0L
+                                            s.copy(position_ms = lastSeekPositionMs + elapsed, last_update_ms = now)
+                                        } else {
+                                            s
+                                        }
+                                        roomState.value = adjustedState
+                                    }
                                 }
                             }
                         }
@@ -500,7 +536,7 @@ object NocturneSyncManager {
                 SyncRemoteTrack(
                     id = q.videoId,
                     title = q.title,
-                    artist = q.artists.joinToString { it.name },
+                    artist = q.artists.joinToString { it.name }.ifEmpty { q.artist },
                     thumbnail = q.artworkAt(400) ?: q.thumbnailUrl,
                     duration_ms = q.durationMillis() ?: 0L
                 )
@@ -508,7 +544,7 @@ object NocturneSyncManager {
             val currentRemote = SyncRemoteTrack(
                 id = song.videoId,
                 title = song.title,
-                artist = song.artists.joinToString { it.name },
+                artist = song.artists.joinToString { it.name }.ifEmpty { song.artist },
                 thumbnail = song.artworkAt(400) ?: song.thumbnailUrl,
                 duration_ms = song.durationMillis() ?: 0L
             )
@@ -524,10 +560,106 @@ object NocturneSyncManager {
         }
     }
 
+    fun requestTransferToDesktop() {
+        onTransferToDesktopRequested?.invoke()
+    }
+
+    fun requestTransferToPhone() {
+        onTransferToPhoneRequested?.invoke()
+    }
+
+    fun performTransferToDesktop(song: Song?, positionMs: Long, queue: List<Song>) {
+        if (connectionState.value != NocturneSyncState.CONNECTED) return
+        playbackTarget.value = NocturnePlaybackTarget.REMOTE_PC
+        val remoteQueue = queue.map { q ->
+            SyncRemoteTrack(
+                id = q.videoId,
+                title = q.title,
+                artist = q.artists.joinToString { it.name }.ifEmpty { q.artist },
+                thumbnail = q.artworkAt(400) ?: q.thumbnailUrl,
+                duration_ms = q.durationMillis() ?: 0L,
+            )
+        }
+        val currentRemote = song?.let { s ->
+            SyncRemoteTrack(
+                id = s.videoId,
+                title = s.title,
+                artist = s.artists.joinToString { it.name }.ifEmpty { s.artist },
+                thumbnail = s.artworkAt(400) ?: s.thumbnailUrl,
+                duration_ms = s.durationMillis() ?: 0L,
+            )
+        }
+        sendAction(
+            SyncPlaybackActionPayload(
+                kind = "transfer_to_desktop",
+                track = currentRemote,
+                position_ms = positionMs,
+                playing = true,
+                queue = remoteQueue.ifEmpty { currentRemote?.let { listOf(it) } },
+            )
+        )
+    }
+
+    fun performTransferToPhone() {
+        playbackTarget.value = NocturnePlaybackTarget.LOCAL
+        if (connectionState.value == NocturneSyncState.CONNECTED) {
+            sendAction(SyncPlaybackActionPayload(kind = "transfer_to_phone", playing = false))
+        }
+    }
+
+    fun calculateRemotePositionMs(): Long {
+        val room = roomState.value ?: return 0L
+        val now = System.currentTimeMillis()
+        val isSeeking = (now - lastSeekTimestamp) < 1500L
+        val basePos = if (isSeeking) lastSeekPositionMs else room.position_ms
+        val baseUpdate = if (isSeeking) lastSeekTimestamp else room.last_update_ms
+        val elapsed = if (room.is_playing && baseUpdate > 0) {
+            (now - baseUpdate).coerceAtLeast(0L)
+        } else {
+            0L
+        }
+        val total = basePos + elapsed
+        val maxDur = room.current_track?.duration_ms?.takeIf { it > 0 } ?: Long.MAX_VALUE
+        return total.coerceIn(0L, maxDur)
+    }
+
+    fun remoteTrackToSong(track: SyncRemoteTrack): Song {
+        val totalSec = track.duration_ms / 1000
+        val min = totalSec / 60
+        val sec = totalSec % 60
+        val durStr = if (track.duration_ms > 0) "$min:${sec.toString().padStart(2, '0')}" else null
+        return Song(
+            videoId = track.id,
+            title = track.title,
+            artist = track.artist,
+            thumbnailUrl = track.thumbnail,
+            durationText = durStr,
+        )
+    }
+
     fun sendPlay() = sendAction(SyncPlaybackActionPayload(kind = "play", playing = true))
     fun sendPause() = sendAction(SyncPlaybackActionPayload(kind = "pause", playing = false))
     fun sendToggle() = sendAction(SyncPlaybackActionPayload(kind = "toggle"))
     fun sendNext() = sendAction(SyncPlaybackActionPayload(kind = "next_track"))
     fun sendPrevious() = sendAction(SyncPlaybackActionPayload(kind = "previous_track"))
-    fun sendSeek(positionMs: Long) = sendAction(SyncPlaybackActionPayload(kind = "seek", position_ms = positionMs))
+    fun sendSeek(positionMs: Long) {
+        lastSeekTimestamp = System.currentTimeMillis()
+        lastSeekPositionMs = positionMs
+        roomState.value = roomState.value?.copy(
+            position_ms = positionMs,
+            last_update_ms = System.currentTimeMillis()
+        )
+        sendAction(SyncPlaybackActionPayload(kind = "seek", position_ms = positionMs))
+    }
+
+    fun sendJumpTo(index: Int, track: SyncRemoteTrack) {
+        sendAction(
+            SyncPlaybackActionPayload(
+                kind = "change_track",
+                track = track,
+                to_index = index,
+                playing = true,
+            )
+        )
+    }
 }
