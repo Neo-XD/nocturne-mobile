@@ -2,6 +2,9 @@
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import com.nocturne.music.data.model.Song
+import com.nocturne.music.data.model.artworkAt
+import com.nocturne.music.data.model.durationMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -94,6 +97,17 @@ data class DiscoveryBeacon(
     val ip: String? = null,
 )
 
+@Serializable
+data class SavedSyncDevice(
+    val id: String,
+    val name: String,
+    val host: String,
+    val port: Int = 8080,
+    val pin: String = "",
+    val sessionToken: String? = null,
+    val lastConnectedMs: Long = 0L,
+)
+
 object NocturneSyncManager {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
@@ -115,21 +129,75 @@ object NocturneSyncManager {
     val roomState = MutableStateFlow<SyncRemoteRoomState?>(null)
     val sessionToken = MutableStateFlow<String?>(null)
     val discoveredDevice = MutableStateFlow<String?>(null)
+    val discoveredIp = MutableStateFlow<String?>(null)
+    val discoveredPort = MutableStateFlow(8080)
 
-    val host = MutableStateFlow("192.168.1.10")
+    val savedDevices = MutableStateFlow<List<SavedSyncDevice>>(emptyList())
+    val activeConnectedDevice = MutableStateFlow<SavedSyncDevice?>(null)
+
+    // Current connection target (empty by default so fields remain blank for next pairing)
+    val host = MutableStateFlow("")
     val port = MutableStateFlow(8080)
     val pin = MutableStateFlow("")
 
     private var appContext: Context? = null
+    private var lastDiscoveredHostName: String = ""
 
     fun init(context: Context) {
         appContext = context.applicationContext
         val sp = context.getSharedPreferences("nocturne_sync", Context.MODE_PRIVATE)
-        host.value = sp.getString("host", "192.168.1.10") ?: "192.168.1.10"
-        port.value = sp.getInt("port", 8080)
-        pin.value = sp.getString("pin", "") ?: ""
+        val rawSaved = sp.getString("saved_devices_v2", null)
+        if (!rawSaved.isNullOrEmpty()) {
+            runCatching {
+                savedDevices.value = json.decodeFromString<List<SavedSyncDevice>>(rawSaved)
+            }
+        }
         sessionToken.value = sp.getString("token", null)
+
         startLanDiscovery()
+
+        // Attempt auto-connect to the most recent saved device if available
+        val mostRecent = savedDevices.value.maxByOrNull { it.lastConnectedMs }
+        if (mostRecent != null) {
+            scope.launch {
+                delay(1200)
+                if (connectionState.value == NocturneSyncState.DISCONNECTED) {
+                    startConnect(
+                        targetHost = mostRecent.host,
+                        targetPort = mostRecent.port,
+                        targetPin = mostRecent.pin,
+                        targetToken = mostRecent.sessionToken,
+                        expectedName = mostRecent.name
+                    )
+                }
+            }
+        }
+    }
+
+    private fun persistSavedDevices(list: List<SavedSyncDevice>) {
+        savedDevices.value = list
+        appContext?.getSharedPreferences("nocturne_sync", Context.MODE_PRIVATE)?.edit()?.apply {
+            putString("saved_devices_v2", json.encodeToString(list))
+            apply()
+        }
+    }
+
+    fun removeSavedDevice(id: String) {
+        val updated = savedDevices.value.filterNot { it.id == id }
+        persistSavedDevices(updated)
+        if (activeConnectedDevice.value?.id == id) {
+            disconnect()
+        }
+    }
+
+    fun connectToSaved(device: SavedSyncDevice) {
+        startConnect(
+            targetHost = device.host,
+            targetPort = device.port,
+            targetPin = device.pin,
+            targetToken = device.sessionToken,
+            expectedName = device.name
+        )
     }
 
     fun startLanDiscovery() {
@@ -173,10 +241,23 @@ object NocturneSyncManager {
                                 val devIp = obj.ip ?: inPacket.address?.hostAddress ?: ""
                                 val devPort = obj.port ?: 8080
                                 if (devIp.isNotBlank()) {
+                                    lastDiscoveredHostName = devName
                                     discoveredDevice.value = "$devName ($devIp)"
-                                    if (host.value == "192.168.1.10" || host.value.isBlank()) {
-                                        host.value = devIp
-                                        port.value = devPort
+                                    discoveredIp.value = devIp
+                                    discoveredPort.value = devPort
+
+                                    // If auto-connectable to a saved device matching this IP
+                                    if (connectionState.value == NocturneSyncState.DISCONNECTED) {
+                                        val match = savedDevices.value.find { it.host == devIp }
+                                        if (match != null) {
+                                            startConnect(
+                                                targetHost = match.host,
+                                                targetPort = match.port,
+                                                targetPin = match.pin,
+                                                targetToken = match.sessionToken,
+                                                expectedName = match.name
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -194,18 +275,6 @@ object NocturneSyncManager {
         }
     }
 
-    fun saveConfig(newHost: String, newPort: Int, newPin: String) {
-        host.value = newHost.trim()
-        port.value = newPort
-        pin.value = newPin.trim()
-        appContext?.getSharedPreferences("nocturne_sync", Context.MODE_PRIVATE)?.edit()?.apply {
-            putString("host", host.value)
-            putInt("port", port.value)
-            putString("pin", pin.value)
-            apply()
-        }
-    }
-
     /**
      * Start connection with anti-spam limiter:
      * Sends at most 2 requests spaced by 3 seconds.
@@ -215,15 +284,23 @@ object NocturneSyncManager {
         targetHost: String = host.value,
         targetPort: Int = port.value,
         targetPin: String = pin.value,
+        targetToken: String? = null,
+        expectedName: String? = null,
     ) {
+        val cleanHost = targetHost.trim()
+        if (cleanHost.isBlank()) {
+            statusMessage.value = "Enter PC IP address"
+            return
+        }
+
         connectJob?.cancel()
         disconnectInternal()
         connectionState.value = NocturneSyncState.CONNECTING
-        statusMessage.value = "Connecting to $targetHost:$targetPort (Attempt 1/2)..."
+        statusMessage.value = "Connecting to $cleanHost:$targetPort (Attempt 1/2)..."
 
         connectJob = scope.launch {
             // Attempt 1
-            val ok1 = tryConnectOnce(targetHost, targetPort, targetPin)
+            val ok1 = tryConnectOnce(cleanHost, targetPort, targetPin, targetToken, expectedName)
             if (ok1) return@launch
 
             // Gap of 3 seconds between requests
@@ -231,8 +308,8 @@ object NocturneSyncManager {
             delay(3000)
 
             // Attempt 2
-            statusMessage.value = "Retrying connection to $targetHost:$targetPort (Attempt 2/2)..."
-            val ok2 = tryConnectOnce(targetHost, targetPort, targetPin)
+            statusMessage.value = "Retrying connection to $cleanHost:$targetPort (Attempt 2/2)..."
+            val ok2 = tryConnectOnce(cleanHost, targetPort, targetPin, targetToken, expectedName)
             if (ok2) return@launch
 
             // Both attempts failed: STOP to avoid spamming and blocking
@@ -242,7 +319,13 @@ object NocturneSyncManager {
         }
     }
 
-    private suspend fun tryConnectOnce(h: String, p: Int, userPin: String): Boolean =
+    private suspend fun tryConnectOnce(
+        h: String,
+        p: Int,
+        userPin: String,
+        token: String? = null,
+        expectedName: String? = null,
+    ): Boolean =
         suspendCancellableCoroutine { cont ->
             val cleanHost = h.trim()
             val wsUrl = if (cleanHost.startsWith("ws://") || cleanHost.startsWith("wss://")) {
@@ -266,6 +349,8 @@ object NocturneSyncManager {
                 }
             }
 
+            var detectedHostName: String = expectedName ?: lastDiscoveredHostName.ifEmpty { "Nocturne PC" }
+
             val socket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     statusMessage.value = "Handshaking with PC..."
@@ -276,8 +361,9 @@ object NocturneSyncManager {
                         val msg = json.decodeFromString<SyncWireMessage>(text)
                         when (msg.type) {
                             "auth_challenge" -> {
+                                msg.host_device_name?.let { if (it.isNotBlank()) detectedHostName = it }
                                 val nonce = msg.nonce.orEmpty()
-                                val tokenToSend = sessionToken.value
+                                val tokenToSend = token ?: sessionToken.value
                                 val trimmed = userPin.trim()
                                 val pinHashToSend = if (trimmed.isNotEmpty()) pinProof(nonce, trimmed) else null
                                 val responseMsg = SyncWireMessage(
@@ -292,12 +378,37 @@ object NocturneSyncManager {
                                 if (msg.success == true) {
                                     activeSocket = webSocket
                                     connectionState.value = NocturneSyncState.CONNECTED
-                                    statusMessage.value = "Connected to Nocturne PC"
-                                    msg.session_token?.let { tok ->
-                                        sessionToken.value = tok
+                                    statusMessage.value = "Connected to $detectedHostName"
+
+                                    val finalToken = msg.session_token ?: token ?: sessionToken.value
+                                    if (finalToken != null) {
+                                        sessionToken.value = finalToken
                                         appContext?.getSharedPreferences("nocturne_sync", Context.MODE_PRIVATE)
-                                            ?.edit()?.putString("token", tok)?.apply()
+                                            ?.edit()?.putString("token", finalToken)?.apply()
                                     }
+
+                                    // Save connected device so user can connect anytime without re-entering
+                                    val savedDev = SavedSyncDevice(
+                                        id = "$cleanHost:$p",
+                                        name = detectedHostName,
+                                        host = cleanHost,
+                                        port = p,
+                                        pin = userPin.trim(),
+                                        sessionToken = finalToken,
+                                        lastConnectedMs = System.currentTimeMillis()
+                                    )
+                                    activeConnectedDevice.value = savedDev
+                                    val updatedList = savedDevices.value.filterNot { it.id == savedDev.id } + savedDev
+                                    persistSavedDevices(updatedList)
+
+                                    // Once connected, phone app queries PC for current playback state
+                                    webSocket.send(json.encodeToString(
+                                        SyncWireMessage(
+                                            type = "playback_action",
+                                            action = SyncPlaybackActionPayload(kind = "query_state")
+                                        )
+                                    ))
+
                                     safeResume(true)
                                 } else {
                                     statusMessage.value = msg.message ?: "Pairing rejected by PC"
@@ -306,7 +417,14 @@ object NocturneSyncManager {
                                 }
                             }
                             "sync_state" -> {
-                                msg.state?.let { roomState.value = it }
+                                val s = msg.state
+                                val track = s?.current_track
+                                if (track == null || track.id.isBlank() || track.title.isBlank()) {
+                                    // PC says no song: nothing gets shown on phone
+                                    roomState.value = null
+                                } else {
+                                    roomState.value = s
+                                }
                             }
                         }
                     } catch (_: Exception) {
@@ -321,6 +439,8 @@ object NocturneSyncManager {
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                     if (activeSocket == webSocket) {
                         activeSocket = null
+                        activeConnectedDevice.value = null
+                        roomState.value = null
                         if (connectionState.value == NocturneSyncState.CONNECTED) {
                             connectionState.value = NocturneSyncState.DISCONNECTED
                             statusMessage.value = "Disconnected"
@@ -340,11 +460,14 @@ object NocturneSyncManager {
         disconnectInternal()
         connectionState.value = NocturneSyncState.DISCONNECTED
         statusMessage.value = "Disconnected"
+        activeConnectedDevice.value = null
+        roomState.value = null
     }
 
     private fun disconnectInternal() {
         activeSocket?.close(1000, "User disconnected")
         activeSocket = null
+        activeConnectedDevice.value = null
     }
 
     fun setPlaybackTarget(target: NocturnePlaybackTarget) {
@@ -356,6 +479,48 @@ object NocturneSyncManager {
         if (ws != null && connectionState.value == NocturneSyncState.CONNECTED) {
             val wireMsg = SyncWireMessage(type = "playback_action", action = action)
             ws.send(json.encodeToString(wireMsg))
+        }
+    }
+
+    /**
+     * Called when a song is played on phone:
+     * If no song is played on PC and devices are connected,
+     * PC receives the timestamp, track details, queue, and playback state!
+     */
+    fun onLocalSongPlayed(
+        song: Song,
+        positionMs: Long,
+        isPlaying: Boolean,
+        queue: List<Song>
+    ) {
+        if (connectionState.value != NocturneSyncState.CONNECTED) return
+        val pcHasSong = roomState.value?.let { it.current_track != null && it.is_playing } == true
+        if (!pcHasSong) {
+            val remoteQueue = queue.map { q ->
+                SyncRemoteTrack(
+                    id = q.videoId,
+                    title = q.title,
+                    artist = q.artists.joinToString { it.name },
+                    thumbnail = q.artworkAt(400) ?: q.thumbnailUrl,
+                    duration_ms = q.durationMillis() ?: 0L
+                )
+            }
+            val currentRemote = SyncRemoteTrack(
+                id = song.videoId,
+                title = song.title,
+                artist = song.artists.joinToString { it.name },
+                thumbnail = song.artworkAt(400) ?: song.thumbnailUrl,
+                duration_ms = song.durationMillis() ?: 0L
+            )
+            sendAction(
+                SyncPlaybackActionPayload(
+                    kind = "sync_queue_from_mobile",
+                    track = currentRemote,
+                    position_ms = positionMs,
+                    playing = isPlaying,
+                    queue = remoteQueue.ifEmpty { listOf(currentRemote) }
+                )
+            )
         }
     }
 

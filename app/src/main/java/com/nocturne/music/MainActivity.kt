@@ -1098,6 +1098,18 @@ private fun BitChordApp(
     }
     val controller = rememberMediaController()
     val player = rememberPlayerState(controller)
+    // Synchronize local playback to Nocturne PC if connected and PC is idle
+    LaunchedEffect(player.song, player.isPlaying) {
+        val song = player.song
+        if (song != null && player.isPlaying) {
+            com.nocturne.music.sync.NocturneSyncManager.onLocalSongPlayed(
+                song = song,
+                positionMs = player.position.positionMs,
+                isPlaying = true,
+                queue = player.queue
+            )
+        }
+    }
     // A music video's picture follows this controller's clock — see [MusicVideoEngine].
     DisposableEffect(controller) {
         MusicVideoEngine.attach(controller)

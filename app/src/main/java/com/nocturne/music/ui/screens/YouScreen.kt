@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.History
@@ -48,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -129,14 +131,22 @@ fun YouScreen(
     // Sync State
     val syncState by NocturneSyncManager.connectionState.collectAsStateWithLifecycle()
     val syncStatus by NocturneSyncManager.statusMessage.collectAsStateWithLifecycle()
-    val syncHost by NocturneSyncManager.host.collectAsStateWithLifecycle()
-    val syncPort by NocturneSyncManager.port.collectAsStateWithLifecycle()
-    val syncPin by NocturneSyncManager.pin.collectAsStateWithLifecycle()
     val discoveredDevice by NocturneSyncManager.discoveredDevice.collectAsStateWithLifecycle()
+    val savedDevices by NocturneSyncManager.savedDevices.collectAsStateWithLifecycle()
+    val activeConnectedDevice by NocturneSyncManager.activeConnectedDevice.collectAsStateWithLifecycle()
 
-    var inputHost by remember(syncHost) { mutableStateOf(syncHost) }
-    var inputPort by remember(syncPort) { mutableStateOf(syncPort.toString()) }
-    var inputPin by remember(syncPin) { mutableStateOf(syncPin) }
+    var inputHost by remember { mutableStateOf("") }
+    var inputPort by remember { mutableStateOf("") }
+    var inputPin by remember { mutableStateOf("") }
+
+    // Once connected, clear the IP, port and PIN fields ready for the next device
+    LaunchedEffect(syncState) {
+        if (syncState == NocturneSyncState.CONNECTED) {
+            inputHost = ""
+            inputPort = ""
+            inputPin = ""
+        }
+    }
 
     // Last.fm live stats
     val lastfmUsername by AppSettings.lastfmUsername.collectAsStateWithLifecycle()
@@ -463,15 +473,103 @@ fun YouScreen(
                     }
                 }
 
+                // ── Saved Devices ──────────────────────────────
+                if (savedDevices.isNotEmpty()) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Saved Devices",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    savedDevices.forEach { dev ->
+                        val isThisConnected = syncState == NocturneSyncState.CONNECTED && activeConnectedDevice?.id == dev.id
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Computer,
+                                contentDescription = null,
+                                tint = if (isThisConnected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = dev.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = "${dev.host}:${dev.port}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (isThisConnected) {
+                                TextButton(
+                                    onClick = { NocturneSyncManager.disconnect() },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                ) {
+                                    Text("Disconnect")
+                                }
+                            } else {
+                                Button(
+                                    onClick = { NocturneSyncManager.connectToSaved(dev) },
+                                    enabled = syncState != NocturneSyncState.CONNECTING,
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                ) {
+                                    Text("Connect")
+                                }
+                            }
+                            IconButton(
+                                onClick = { NocturneSyncManager.removeSavedDevice(dev.id) },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = "Remove",
+                                    tint = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                    }
+                }
+
+                // ── Pair New PC Form (Inputs kept clean & empty ready for next device) ──
                 Spacer(Modifier.height(14.dp))
+                Text(
+                    text = if (savedDevices.isEmpty()) "Pair Device with PC" else "Pair Another PC",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
 
                 if (discoveredDevice != null && syncState == NocturneSyncState.DISCONNECTED) {
-                    Text(
-                        text = "Auto-detected: $discoveredDevice",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 6.dp),
-                    )
+                    TextButton(
+                        onClick = {
+                            inputHost = NocturneSyncManager.discoveredIp.value.orEmpty()
+                            inputPort = NocturneSyncManager.discoveredPort.value.toString()
+                        },
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(
+                            text = "Detected nearby: $discoveredDevice (Tap to fill)",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
                 }
 
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -496,6 +594,7 @@ fun YouScreen(
                         value = inputPort,
                         onValueChange = { inputPort = it },
                         label = { Text("Port") },
+                        placeholder = { Text("8080") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(
@@ -535,7 +634,7 @@ fun YouScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    if (syncState == NocturneSyncState.CONNECTED) {
+                    if (syncState == NocturneSyncState.CONNECTED && activeConnectedDevice == null) {
                         Button(
                             onClick = { NocturneSyncManager.disconnect() },
                             colors = ButtonDefaults.buttonColors(
@@ -567,7 +666,7 @@ fun YouScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Text("Connecting...")
                             } else {
-                                Text("Connect to PC")
+                                Text("Connect & Save")
                             }
                         }
                     }
