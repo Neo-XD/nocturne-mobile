@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard).
  *
  * Copyright (C) 2026 SFG545 (original Orchard implementation)
@@ -39,7 +39,7 @@
 #include <numeric>
 #include <vector>
 
-namespace bitchord::smart {
+namespace nocturne::smart {
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;
@@ -550,4 +550,4 @@ TempoResult AnalyzeTempo(
   return result;
 }
 
-}  // namespace bitchord::smart
+}  // namespace nocturne::smart

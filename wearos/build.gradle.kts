@@ -28,10 +28,10 @@ val signing = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
-val betaSuffix = rootProject.extra["bitchordBetaSuffix"] as String
+val betaSuffix = rootProject.extra["nocturneBetaSuffix"] as String
 
 android {
-    namespace = "com.music.bitchord.wear"
+    namespace = "com.nocturne.music.wear"
     compileSdk = 36
 
     defaultConfig {
@@ -40,8 +40,8 @@ android {
         minSdk = 30
         targetSdk = 36
         // The phone's version — see the root build.gradle.kts.
-        versionCode = rootProject.extra["bitchordVersionCode"] as Int
-        versionName = rootProject.extra["bitchordVersionName"] as String
+        versionCode = rootProject.extra["nocturneVersionCode"] as Int
+        versionName = rootProject.extra["nocturneVersionName"] as String
     }
 
     sourceSets {

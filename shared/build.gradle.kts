@@ -64,6 +64,6 @@ kotlin {
 }
 
 android {
-    namespace = "com.music.bitchord.shared"
+    namespace = "com.nocturne.music.shared"
     compileSdk = 36
 }

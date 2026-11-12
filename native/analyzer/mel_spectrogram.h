@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard), whose native mel
  * front end this file is adapted from almost unchanged: every constant here
  * is dictated by the Beat This! model's training data, not a preference, so
@@ -44,7 +44,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace bitchord::smart {
+namespace nocturne::smart {
 
 // The model's input rate. Audio at any other rate is refused rather than
 // resampled here, because resampling belongs upstream where the decoded
@@ -76,4 +76,4 @@ BeatSpectrogram ComputeBeatSpectrogram(
   double sample_rate
 );
 
-}  // namespace bitchord::smart
+}  // namespace nocturne::smart

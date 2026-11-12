@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard).
  *
  * Copyright (C) 2026 SFG545 (original Orchard implementation)
@@ -33,7 +33,7 @@
 // Offline DSP implementation: reusable vectors and percentile copies favor
 // readable whole-track analysis over real-time allocation constraints.
 
-namespace bitchord::smart {
+namespace nocturne::smart {
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;
@@ -688,4 +688,4 @@ AnalysisResult AnalyzeAudio(
   return result;
 }
 
-}  // namespace bitchord::smart
+}  // namespace nocturne::smart

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard), whose native STFT
  * front end this file is adapted from almost unchanged: every constant here
  * is dictated by the open-unmix model's training data, not a preference, so
@@ -44,7 +44,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace bitchord::smart {
+namespace nocturne::smart {
 
 inline constexpr double kVocalSpectrogramSampleRate = 44100;
 inline constexpr size_t kVocalSpectrogramChannels = 2;
@@ -76,4 +76,4 @@ VocalSpectrogram ComputeVocalSpectrogram(
   double sample_rate
 );
 
-}  // namespace bitchord::smart
+}  // namespace nocturne::smart

@@ -1,4 +1,4 @@
-// BitChord: the Automix loop mix's renderer. Two decks, each a decoded region
+﻿// BitChord: the Automix loop mix's renderer. Two decks, each a decoded region
 // of one song played through Signalsmith Stretch, looped on whole bars and
 // following a tempo ramp beat by beat, mixed into one stereo stream.
 //
@@ -19,7 +19,7 @@
 
 #include "signalsmith-stretch/signalsmith-stretch.h"
 
-namespace bitchord::loopmix {
+namespace nocturne::loopmix {
 
 /** A piecewise-linear automation curve over mix time (seconds since t0). */
 struct Envelope {
@@ -134,4 +134,4 @@ class Renderer {
   std::vector<float> mixLeft_, mixRight_;
 };
 
-}  // namespace bitchord::loopmix
+}  // namespace nocturne::loopmix

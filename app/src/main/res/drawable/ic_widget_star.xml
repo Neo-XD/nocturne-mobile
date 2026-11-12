@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
-  Favorite, unset. The same star BitChordIcons.Star draws in the player, carried
+  Favorite, unset. The same star NocturneIcons.Star draws in the player, carried
   over as a drawable because a widget can't render an ImageVector. Stroked at
   the transport's 2.4 rather than the app's 2.2 so it matches its neighbours.
 -->

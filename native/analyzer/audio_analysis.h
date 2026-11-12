@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard), whose native
  * analyzer this file is adapted from almost unchanged: the mix-out budget,
  * phrase detection and cue scoring below were tuned against real material,
@@ -43,7 +43,7 @@
 #include <string>
 #include <vector>
 
-namespace bitchord::smart {
+namespace nocturne::smart {
 
 // Times are seconds, confidence/probability values are nominally in [0, 1],
 // and ordered event vectors use playback order unless stated otherwise.
@@ -147,4 +147,4 @@ TempoResult AnalyzeTempo(
   double audible_start
 );
 
-}  // namespace bitchord::smart
+}  // namespace nocturne::smart

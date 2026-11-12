@@ -1,4 +1,4 @@
-// BitChord: the Automix loop mix's renderer. See loop_mix_renderer.h.
+﻿// BitChord: the Automix loop mix's renderer. See loop_mix_renderer.h.
 //
 // Copyright (C) 2026 Kushagra Singh. GPL-3.0-or-later, with the rest of BitChord.
 #include "loopmix/loop_mix_renderer.h"
@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace bitchord::loopmix {
+namespace nocturne::loopmix {
 
 namespace {
 
@@ -283,4 +283,4 @@ void Renderer::renderDeck(Deck& deck, int64_t frame, int frames) {
   if (fadeAt >= 0 && heardStart > fadeAt + fadeSamples) deck.finished = true;
 }
 
-}  // namespace bitchord::loopmix
+}  // namespace nocturne::loopmix

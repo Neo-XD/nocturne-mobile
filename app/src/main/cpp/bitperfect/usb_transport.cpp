@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2026 BitChord Project
  *
  * Adapted from Mornye (https://github.com/mornyeapp/Mornye),
@@ -552,7 +552,7 @@ std::vector<Candidate> decode(const jint *v, jsize length) {
 }
 } // namespace
 
-#define JNI_USB(name) Java_com_music_bitchord_playback_audio_bitperfect_usb_UsbDirectNative_##name
+#define JNI_USB(name) Java_com_nocturne_music_playback_audio_bitperfect_usb_UsbDirectNative_##name
 
 extern "C" {
 JNIEXPORT jlong JNICALL JNI_USB(open)(JNIEnv *env, jobject, jint fd, jintArray candidates) {

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard), whose native mel
  * front end this file is adapted from almost unchanged.
  *
@@ -27,7 +27,7 @@
 #include <complex>
 #include <vector>
 
-namespace bitchord::smart {
+namespace nocturne::smart {
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;
@@ -216,4 +216,4 @@ BeatSpectrogram ComputeBeatSpectrogram(
   return result;
 }
 
-}  // namespace bitchord::smart
+}  // namespace nocturne::smart

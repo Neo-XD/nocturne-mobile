@@ -70,7 +70,7 @@ val listenTogetherServer: String = (
 val betaSuffix = ""
 
 android {
-    namespace = "com.music.bitchord"
+    namespace = "com.nocturne.music"
     // InnerTubeX's AAR requires compiling against 37; targetSdk (runtime behaviour) stays 36.
     compileSdk = 37
 
@@ -82,8 +82,8 @@ android {
         // Haze falls back to a translucent scrim below that.
         minSdk = 26
         targetSdk = 36
-        versionCode = rootProject.extra["bitchordVersionCode"] as Int
-        versionName = rootProject.extra["bitchordVersionName"] as String
+        versionCode = rootProject.extra["nocturneVersionCode"] as Int
+        versionName = rootProject.extra["nocturneVersionName"] as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

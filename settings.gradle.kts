@@ -15,7 +15,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BitChord"
+rootProject.name = "nocturne-mobile"
 include(":shared")
 include(":sharedUi")
 

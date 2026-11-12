@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -61,7 +61,7 @@
         android:maxSdkVersion="28" />
 
     <application
-        android:name=".BitChordApplication"
+        android:name=".NocturneApplication"
         android:allowBackup="true"
         android:appCategory="audio"
         android:usesCleartextTraffic="false"
@@ -72,7 +72,7 @@
         android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.BitChord"
+        android:theme="@style/Theme.Nocturne"
         tools:targetApi="34">
 
         <!--
@@ -131,7 +131,7 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
-            android:theme="@style/Theme.BitChord">
+            android:theme="@style/Theme.Nocturne">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <!--
@@ -234,6 +234,9 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="nocturne"
+                    android:host="party" />
                 <data
                     android:scheme="bitchord"
                     android:host="party" />
@@ -620,7 +623,7 @@
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
                 <data
                     android:host="*"
-                    android:pathPrefix="/bitchord/command"
+                    android:pathPrefix="/nocturne/command"
                     android:scheme="wear" />
             </intent-filter>
             <!-- The watch's player reading a track through the phone. -->
@@ -628,7 +631,7 @@
                 <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
                 <data
                     android:host="*"
-                    android:pathPrefix="/bitchord/stream"
+                    android:pathPrefix="/nocturne/stream"
                     android:scheme="wear" />
             </intent-filter>
         </service>
@@ -750,7 +753,7 @@
         <!-- Where the Cast framework asks how this app wants to cast. -->
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="com.music.bitchord.playback.cast.CastOptionsProvider" />
+            android:value="com.nocturne.music.playback.cast.CastOptionsProvider" />
     </application>
 
 </manifest>

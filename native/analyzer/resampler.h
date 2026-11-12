@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard).
  *
  * Copyright (C) 2026 SFG545 (original Orchard implementation)
@@ -39,7 +39,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace bitchord::smart {
+namespace nocturne::smart {
 
 // Zero crossings kept either side of each output sample. Higher is a better
 // stopband at linear cost; 32 puts the aliasing well below the noise floor of
@@ -60,4 +60,4 @@ std::vector<float> Resample(
   double output_rate
 );
 
-}  // namespace bitchord::smart
+}  // namespace nocturne::smart

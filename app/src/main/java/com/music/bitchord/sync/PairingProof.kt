@@ -1,9 +1,0 @@
-package com.music.bitchord.sync
-
-import java.security.MessageDigest
-
-// Must match expected_pin_hash on the desktop: lowercase hex SHA-256 over "nonce:pin".
-internal fun pinProof(nonce: String, pin: String): String =
-    MessageDigest.getInstance("SHA-256")
-        .digest("$nonce:$pin".toByteArray(Charsets.UTF_8))
-        .joinToString("") { "%02x".format(it) }

@@ -1,4 +1,4 @@
-# R8 is on for release for speed, not size — see the note on isMinifyEnabled in
+﻿# R8 is on for release for speed, not size — see the note on isMinifyEnabled in
 # build.gradle.kts. These rules keep it away from everything that finds classes
 # by name at runtime, where a missing class shows up as a crash on a device
 # rather than as a build error.
@@ -58,7 +58,7 @@
 -keep class io.ktor.** { *; }
 # Our own @Serializable models, whole: kotlinx.serialization's bundled rules
 # cover the generated serializers, and keeping the classes too costs little.
--keep @kotlinx.serialization.Serializable class com.music.bitchord.** { *; }
+-keep @kotlinx.serialization.Serializable class com.nocturne.music.** { *; }
 -keep @kotlinx.serialization.Serializable class com.my.kizzy.** { *; }
 
 # ---- WebView bridges ------------------------------------------------------------

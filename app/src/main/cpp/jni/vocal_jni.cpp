@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Ported from Orchard (https://github.com/SFG5453/Orchard).
  *
  * Copyright (C) 2026 SFG545 (original Orchard implementation)
@@ -38,7 +38,7 @@ extern "C" {
 // mirroring the planar layout the front end wants and avoiding a deinterleave
 // on either side of the boundary.
 JNIEXPORT jfloatArray JNICALL
-Java_com_music_bitchord_playback_smart_VocalSpectrogram_nativeCompute(
+Java_com_nocturne_music_playback_smart_VocalSpectrogram_nativeCompute(
     JNIEnv* env,
     jclass /* clazz */,
     jfloatArray left,
@@ -53,8 +53,8 @@ Java_com_music_bitchord_playback_smart_VocalSpectrogram_nativeCompute(
   if (left_count > 0) env->GetFloatArrayRegion(left, 0, left_count, channels[0].data());
   if (right_count > 0) env->GetFloatArrayRegion(right, 0, right_count, channels[1].data());
 
-  const bitchord::smart::VocalSpectrogram spectrogram =
-      bitchord::smart::ComputeVocalSpectrogram(channels, sample_rate);
+  const nocturne::smart::VocalSpectrogram spectrogram =
+      nocturne::smart::ComputeVocalSpectrogram(channels, sample_rate);
 
   const jsize produced = static_cast<jsize>(spectrogram.values.size());
   jfloatArray result = env->NewFloatArray(produced);
@@ -66,27 +66,27 @@ Java_com_music_bitchord_playback_smart_VocalSpectrogram_nativeCompute(
 }
 
 JNIEXPORT jint JNICALL
-Java_com_music_bitchord_playback_smart_VocalSpectrogram_nativeBins(
+Java_com_nocturne_music_playback_smart_VocalSpectrogram_nativeBins(
     JNIEnv* /* env */, jclass /* clazz */) {
-  return static_cast<jint>(bitchord::smart::kVocalSpectrogramBins);
+  return static_cast<jint>(nocturne::smart::kVocalSpectrogramBins);
 }
 
 JNIEXPORT jdouble JNICALL
-Java_com_music_bitchord_playback_smart_VocalSpectrogram_nativeSampleRate(
+Java_com_nocturne_music_playback_smart_VocalSpectrogram_nativeSampleRate(
     JNIEnv* /* env */, jclass /* clazz */) {
-  return bitchord::smart::kVocalSpectrogramSampleRate;
+  return nocturne::smart::kVocalSpectrogramSampleRate;
 }
 
 JNIEXPORT jint JNICALL
-Java_com_music_bitchord_playback_smart_VocalSpectrogram_nativeHop(
+Java_com_nocturne_music_playback_smart_VocalSpectrogram_nativeHop(
     JNIEnv* /* env */, jclass /* clazz */) {
-  return static_cast<jint>(bitchord::smart::kVocalSpectrogramHop);
+  return static_cast<jint>(nocturne::smart::kVocalSpectrogramHop);
 }
 
 JNIEXPORT jint JNICALL
-Java_com_music_bitchord_playback_smart_VocalSpectrogram_nativeFftSize(
+Java_com_nocturne_music_playback_smart_VocalSpectrogram_nativeFftSize(
     JNIEnv* /* env */, jclass /* clazz */) {
-  return static_cast<jint>(bitchord::smart::kVocalSpectrogramFft);
+  return static_cast<jint>(nocturne::smart::kVocalSpectrogramFft);
 }
 
 }  // extern "C"
