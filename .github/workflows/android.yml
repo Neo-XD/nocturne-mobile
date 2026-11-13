@@ -2,6 +2,14 @@ name: Android Release APK
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version / tag to attach APKs to (e.g. v0.4)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   build-prod-release:
@@ -42,23 +50,91 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Signed Prod Release APK
+    - name: Build Prod Release APK
       env:
         LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
         LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
       run: ./gradlew assembleProdRelease
 
+    - name: Prepare Release APKs
+      run: |
+        mkdir -p release-assets
+
+        for apk in app/build/outputs/apk/prod/release/*.apk; do
+          [ -f "$apk" ] || continue
+          filename=$(basename "$apk")
+          if [[ "$filename" == *"arm64-v8a"* ]]; then
+            cp "$apk" release-assets/Nocturne-Mobile-Arm64-v8a.apk
+          elif [[ "$filename" == *"armeabi-v7a"* ]]; then
+            cp "$apk" release-assets/Nocturne-Mobile-Armeabi-v7a.apk
+          elif [[ "$filename" == *"universal"* ]]; then
+            cp "$apk" release-assets/Nocturne-Mobile-Universal.apk
+          elif [[ "$filename" == *"x86_64"* ]]; then
+            cp "$apk" release-assets/Nocturne-Mobile-X86_64.apk
+          else
+            cp "$apk" "release-assets/$filename"
+          fi
+        done
+
+        for apk in wearos/build/outputs/apk/prod/release/*.apk; do
+          [ -f "$apk" ] || continue
+          cp "$apk" release-assets/Nocturne-WearOS.apk
+        done
+
+        echo "Prepared assets:"
+        ls -la release-assets/
+
+    - name: Upload APKs to GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        INPUT_VERSION: ${{ github.event.inputs.version }}
+      run: |
+        TAG="$INPUT_VERSION"
+        TARGET_TAG=""
+
+        # 1. Match by exact tag
+        if gh release view "$TAG" > /dev/null 2>&1; then
+          TARGET_TAG="$TAG"
+        fi
+
+        # 2. Match with/without 'v' prefix
+        if [ -z "$TARGET_TAG" ]; then
+          if [[ "$TAG" == v* ]]; then
+            CANDIDATE="${TAG#v}"
+          else
+            CANDIDATE="v${TAG}"
+          fi
+          if gh release view "$CANDIDATE" > /dev/null 2>&1; then
+            TARGET_TAG="$CANDIDATE"
+          fi
+        fi
+
+        # 3. Match by release title/name
+        if [ -z "$TARGET_TAG" ]; then
+          MATCH=$(gh release list --limit 100 --json tagName,name -q ".[] | select(.name == \"$TAG\" or .tagName == \"$TAG\") | .tagName" | head -n 1)
+          if [ -n "$MATCH" ]; then
+            TARGET_TAG="$MATCH"
+          fi
+        fi
+
+        # 4. If release does not exist yet, create it
+        if [ -z "$TARGET_TAG" ]; then
+          echo "Release '$TAG' not found. Creating release..."
+          gh release create "$TAG" --title "$TAG" --generate-notes
+          TARGET_TAG="$TAG"
+        fi
+
+        echo "Attaching APKs to release: $TARGET_TAG"
+        gh release upload "$TARGET_TAG" release-assets/*.apk --clobber
+
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: nocturne-prod-release-signed
-        path: app/build/outputs/apk/prod/release/*.apk
+        name: nocturne-prod-release
+        path: release-assets/*.apk
 
-    # Built by the same assembleProdRelease, with the same key. The watch app
-    # only pairs with a phone app signed by the same key, so a prod watch APK
-    # for these phone builds can only come from here, never a local build.
     - name: Upload Wear OS APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: nocturne-wear-prod-release-signed
+        name: nocturne-wear-prod-release
         path: wearos/build/outputs/apk/prod/release/*.apk
