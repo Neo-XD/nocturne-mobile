@@ -88,3 +88,9 @@
 -dontwarn org.conscrypt.**
 -dontwarn com.android.org.conscrypt.**
 -dontwarn io.github.muntashirakon.adb.**
+
+# ---- Kotlin metadata ----
+# Dependencies compiled with newer Kotlin toolchains (e.g. InnerTubeX, Ktor)
+-dontwarn kotlin.Metadata
+-dontwarn kotlin.**
+

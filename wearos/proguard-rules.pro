@@ -4,3 +4,6 @@
 # watch CPU. Line numbers are kept; map traces with build/outputs/mapping.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+-dontwarn kotlin.Metadata
+-dontwarn kotlin.**
+
