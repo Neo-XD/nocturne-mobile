@@ -53,8 +53,8 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            applicationId = "com.nocturne.music"
-            resValue("string", "app_name", "Nocturne")
+            applicationId = "com.nocturne.music.dev"
+            resValue("string", "app_name", "Nocturne Dev")
         }
         create("prod") {
             dimension = "env"
@@ -102,9 +102,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // Null without a keystore, like the phone: an unsigned APK rather
-            // than a build failure.
-            signingConfig = signingConfigs.findByName("release")
+            // Fallback to debug signing if release key is absent, so release builds
+            // always produce an installable signed APK rather than failing with "App not installed".
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 

@@ -150,8 +150,8 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            applicationId = "com.nocturne.music.tv"
-            resValue("string", "app_name", "Nocturne TV")
+            applicationId = "com.nocturne.music.tv.dev"
+            resValue("string", "app_name", "Nocturne TV Dev")
         }
         create("prod") {
             dimension = "env"

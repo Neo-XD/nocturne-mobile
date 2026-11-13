@@ -132,8 +132,8 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            applicationId = "com.nocturne.music"
-            resValue("string", "app_name", "Nocturne")
+            applicationId = "com.nocturne.music.dev"
+            resValue("string", "app_name", "Nocturne Dev")
         }
         create("prod") {
             dimension = "env"
@@ -187,9 +187,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Null without a keystore to sign with: the build then produces
-            // app-release-unsigned.apk instead of failing outright.
-            signingConfig = signingConfigs.findByName("release")
+            // Fallback to debug signing if release key is absent, so release builds
+            // always produce an installable signed APK rather than failing with "App not installed".
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
         /*
          * The release build, installable next to the dev and prod apps: same R8,
@@ -481,10 +481,10 @@ val verifyDevInstall = tasks.register("verifyDevInstall") {
             .drop(1)
             .mapNotNull { line -> line.split('\t').takeIf { it.size == 2 && it[1] == "device" }?.get(0) }
         serials.forEach { serial ->
-            logger.lifecycle("verifyDevInstall: compiling com.nocturne.music on $serial")
+            logger.lifecycle("verifyDevInstall: compiling com.nocturne.music.dev on $serial")
             ProcessBuilder(
                 adbPath, "-s", serial, "shell", "cmd", "package", "compile",
-                "-m", "verify", "-f", "com.nocturne.music",
+                "-m", "verify", "-f", "com.nocturne.music.dev",
             ).inheritIO().start().waitFor()
         }
     }
