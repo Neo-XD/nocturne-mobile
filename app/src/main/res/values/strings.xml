@@ -387,9 +387,26 @@
     <string name="player_theme_default">Default</string>
     <string name="player_theme_legacy">Legacy</string>
     <string name="player_theme_simple">Simple</string>
+    <string name="player_theme_blur" translatable="false">Blur (v0.3)</string>
     <string name="player_theme_default_subtitle">The cover\'s own colours carry on below it</string>
     <string name="player_theme_simple_subtitle">A soft blur of the cover behind the whole player</string>
     <string name="player_theme_legacy_subtitle">Brings back the drifting colour blobs behind the player from v1.5</string>
+    <string name="player_theme_blur_subtitle" translatable="false">Classic v0.3 deep frosted album art blur behind the player</string>
+    <string name="ui_style" translatable="false">UI style</string>
+    <string name="ui_style_default" translatable="false">Liquid Glass</string>
+    <string name="ui_style_m3e" translatable="false">M3 Expressive</string>
+    <string name="ui_style_default_subtitle" translatable="false">Frosted glass chrome and monochrome surfaces</string>
+    <string name="ui_style_m3e_subtitle" translatable="false">Material 3 Expressive dynamic colors, pill navigation, and bold shapes</string>
+    <string name="home_style" translatable="false">Home screen style</string>
+    <string name="home_style_default" translatable="false">Default</string>
+    <string name="home_style_nocturne_music" translatable="false">Nocturne Music</string>
+    <string name="home_style_default_subtitle" translatable="false">Classic Listen Now shelves and top picks</string>
+    <string name="home_style_nocturne_music_subtitle" translatable="false">Greeting header, mood chips, quick shortcuts, and centered hero carousel</string>
+    <string name="player_style" translatable="false">Player layout</string>
+    <string name="player_style_square" translatable="false">Square</string>
+    <string name="player_style_classic" translatable="false">Classic</string>
+    <string name="player_style_square_subtitle" translatable="false">Glass disc controls, top source bar, and bottom panel switcher</string>
+    <string name="player_style_classic_subtitle" translatable="false">Classic full-bleed player controls</string>
     <string name="animated_cover_art">Animated cover art</string>
     <string name="artist_signatures">Artist signatures</string>
     <string name="artist_signatures_subtitle">Shows a handwritten signature when Apple Music has no title logo</string>

@@ -996,9 +996,12 @@ fun NowPlayingScreen(
     val canvasCover = remember(canvas?.url) { mutableFloatStateOf(0f) }
     // What the main player stands on — see [PlayerTheme].
     val playerTheme by PlayerSettings.playerTheme.collectAsStateWithLifecycle()
+    val playerStyle by PlayerSettings.playerStyle.collectAsStateWithLifecycle()
+    val isSquareStyle = playerStyle == com.nocturne.music.data.settings.PlayerStyle.SQUARE
+    val reduceDynamicBlurGlobal by PlayerSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     // Both meshes follow a playing clip's colours. The blurred still cover has
     // nothing to re-tint, and each read is a GPU readback.
-    val tintsOffClip = playerTheme != PlayerTheme.SIMPLE
+    val tintsOffClip = playerTheme != PlayerTheme.SIMPLE && playerTheme != PlayerTheme.BLUR
     // How often those colours are re-read — see CanvasArtworkPlayer's
     // refreshFrameEveryMs.
     val meshRefreshMs = MESH_REFRESH_MS.takeIf { tintsOffClip }
@@ -1024,6 +1027,7 @@ fun NowPlayingScreen(
     var lyricsOpen by remember {
         mutableStateOf(restoredPlayerScreen == LastPlayerScreen.LYRICS)
     }
+    var infoOpen by remember { mutableStateOf(false) }
     val queueSlide = remember { mutableFloatStateOf(0f) }
     // Expensive, song-scoped preparation is deliberately staggered. The small
     // backdrop decode runs after the track hand-off has settled; lyrics and
@@ -1081,6 +1085,7 @@ fun NowPlayingScreen(
         lyricsControlsOpen = true
         lyricsOpen = true
         queueOpen = false
+        infoOpen = false
     }
     val closeLyrics: () -> Unit = {
         lyricsControlsOpen = false
@@ -1097,7 +1102,10 @@ fun NowPlayingScreen(
         // the whole player on the sleeve's first frame of moving.
         if (opening) queueControlsOpen = true
         queueOpen = opening
-        if (opening) closeLyrics()
+        if (opening) {
+            closeLyrics()
+            infoOpen = false
+        }
     }
     val lyricsLoadingLines = stringArrayResource(Res.array.lyrics_loading_lines)
     val lyricsLoadingText = remember(song.videoId) { lyricsLoadingLines.random() }
@@ -1186,6 +1194,7 @@ fun NowPlayingScreen(
 
     // Back out of the queue to the player.
     PlayerBackHandler(enabled = queueOpen) { queueOpen = false }
+    PlayerBackHandler(enabled = infoOpen) { infoOpen = false }
 
     // Registered ahead of the pipeline dialog's own handler below: the
     // pipeline is now only ever opened from the row at the bottom of this
@@ -1313,7 +1322,7 @@ fun NowPlayingScreen(
     // How collapsed the sleeve is, whichever surface asked for it — one 420ms
     // ease for the queue and the lyrics both.
     val animatedCollapse = animateFloatAsState(
-        targetValue = if (lyricsOpen || queueOpen) 1f else 0f,
+        targetValue = if (lyricsOpen || queueOpen || infoOpen) 1f else 0f,
         animationSpec = tween(durationMillis = 420, easing = FastOutSlowInEasing),
         label = "sleeveCollapse",
     )
@@ -1553,7 +1562,7 @@ fun NowPlayingScreen(
     // in three places — the strip itself,
     // the scrim drawn over it and the banner's own height — which all have to
     // agree or the artwork and the credits under it move.
-    val topStrip = DISMISS_STRIP_HEIGHT
+    val topStrip = if (isSquareStyle) 48.dp else DISMISS_STRIP_HEIGHT
 
     // The band of the player a vertical drag belongs to rather than to whatever
     // is under it: from the top of the artwork to the bottom of the credits, in
@@ -1778,8 +1787,8 @@ fun NowPlayingScreen(
         // Straight away when it is the main player's backdrop too: the decode
         // and blur run off the main thread, and the last cover's blur is held
         // on screen until this one is ready.
-        prepare = playerTheme == PlayerTheme.SIMPLE || landscape || tabletArtworkBackdrop ||
-            lyricsOpen || queueOpen || playerPrewarmStage >= 1,
+        prepare = playerTheme == PlayerTheme.SIMPLE || playerTheme == PlayerTheme.BLUR || landscape || tabletArtworkBackdrop ||
+            lyricsOpen || queueOpen || infoOpen || playerPrewarmStage >= 1,
     )
     // One movable Image node, not two backdrop call sites. Compose carries it
     // between the portrait and landscape players; only the cached bitmap
@@ -2362,19 +2371,29 @@ fun NowPlayingScreen(
                 // Default: the artwork's own mesh under the main player, with the
                 // blurred cover fading in over it for the lyrics and queue, which
                 // have no sleeve for a mesh to carry on from.
+                val v3BlurBackdrop = !tabletArtworkBackdrop && !spotifyCanvasPresentation &&
+                    playerTheme == PlayerTheme.BLUR
                 val legacyMeshBackdrop = !tabletArtworkBackdrop && !spotifyCanvasPresentation &&
                     playerTheme == PlayerTheme.LEGACY
                 val artworkMeshBackdrop = !tabletArtworkBackdrop && playerTheme == PlayerTheme.DEFAULT
                 val fullArtworkBackdropAlpha by animateFloatAsState(
                     targetValue = if (
+                        !v3BlurBackdrop &&
                         !legacyMeshBackdrop &&
                         (tabletArtworkBackdrop || fullArtworkBlurImage != null) &&
-                        (!spotifyCanvasPresentation || lyricsOpen || queueOpen) &&
-                        (!artworkMeshBackdrop || lyricsOpen || queueOpen)
+                        (!spotifyCanvasPresentation || lyricsOpen || queueOpen || infoOpen) &&
+                        (!artworkMeshBackdrop || lyricsOpen || queueOpen || infoOpen)
                     ) 1f else 0f,
                     animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
                     label = "fullArtworkBackdropCrossfade",
                 )
+                if (v3BlurBackdrop) {
+                    V3BlurredAlbumBackdrop(
+                        imageUrl = remoteArt,
+                        fallbackImage = fullArtworkBlurImage,
+                        reduceDynamicBlur = reduceDynamicBlurGlobal,
+                    )
+                }
                 if (legacyMeshBackdrop) {
                     // v1.5's backdrop, restored verbatim: no seam, because the blobs
                     // are not anchored to anything on screen — they fill the player and
@@ -2695,46 +2714,66 @@ fun NowPlayingScreen(
                             },
                         contentAlignment = Alignment.Center,
                     ) {
-                        // While the origin caption is present the handle belongs at
-                        // the top of the strip. As lyrics or the queue replace the
-                        // album-cover player, it glides into the now-empty strip's
-                        // vertical centre alongside the caption's fade.
-                        Box(
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .offset {
-                                    IntOffset(
-                                        x = 0,
-                                        y = lerp(
-                                            6.dp,
-                                            (topStrip - 5.dp).coerceAtLeast(0.dp) / 2,
-                                            p(),
-                                        ).roundToPx(),
+                        if (isSquareStyle) {
+                            val currentStage = when {
+                                lyricsOpen -> SquareStage.LYRICS
+                                queueOpen -> SquareStage.QUEUE
+                                infoOpen -> SquareStage.INFO
+                                else -> SquareStage.COVER
+                            }
+                            SquarePlayerTopBar(
+                                stage = currentStage,
+                                sourceLabel = playbackOriginText(song, playedBy),
+                                onOpenSource = openPlaybackOrigin,
+                                onCollapse = null,
+                                onOpenOutput = openAudioOutput,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = PLAYER_GUTTER)
+                                    .graphicsLayer { alpha = spotifyChromeAlpha },
+                            )
+                        } else {
+                            // While the origin caption is present the handle belongs at
+                            // the top of the strip. As lyrics or the queue replace the
+                            // album-cover player, it glides into the now-empty strip's
+                            // vertical centre alongside the caption's fade.
+                            Box(
+                                Modifier
+                                    .align(Alignment.TopCenter)
+                                    .offset {
+                                        IntOffset(
+                                            x = 0,
+                                            y = lerp(
+                                                6.dp,
+                                                (topStrip - 5.dp).coerceAtLeast(0.dp) / 2,
+                                                p(),
+                                            ).roundToPx(),
+                                        )
+                                    }
+                                    .width(38.dp)
+                                    .height(5.dp)
+                                    .graphicsLayer { alpha = spotifyChromeAlpha }
+                                    .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .additiveChrome(LocalPlayerChrome.current)
+                                    .background(chromeWhite(0.70f)),
+                            )
+                            // [p] is the shared album-to-panel transition. Keeping this in
+                            // composition until its final frame gives the caption a real
+                            // fade on both entry and exit, but removes its click target
+                            // entirely once lyrics or the queue owns the player.
+                            if (!hideSongStatus) {
+                                WhileShown({ !collapseAlmostDone }) {
+                                    PlaybackOriginCaption(
+                                        text = playbackOriginText(song, playedBy),
+                                        onClick = openPlaybackOrigin,
+                                        textAlign = TextAlign.Center,
+                                        contentPadding = PaddingValues(start = PLAYER_GUTTER, end = PLAYER_GUTTER, bottom = 1.dp),
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .graphicsLayer { alpha = (1f - p()) * spotifyChromeAlpha },
                                     )
                                 }
-                                .width(38.dp)
-                                .height(5.dp)
-                                .graphicsLayer { alpha = spotifyChromeAlpha }
-                                .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
-                                .clip(RoundedCornerShape(3.dp))
-                                .additiveChrome(LocalPlayerChrome.current)
-                                .background(chromeWhite(0.70f)),
-                        )
-                        // [p] is the shared album-to-panel transition. Keeping this in
-                        // composition until its final frame gives the caption a real
-                        // fade on both entry and exit, but removes its click target
-                        // entirely once lyrics or the queue owns the player.
-                        if (!hideSongStatus) {
-                            WhileShown({ !collapseAlmostDone }) {
-                                PlaybackOriginCaption(
-                                    text = playbackOriginText(song, playedBy),
-                                    onClick = openPlaybackOrigin,
-                                    textAlign = TextAlign.Center,
-                                    contentPadding = PaddingValues(start = PLAYER_GUTTER, end = PLAYER_GUTTER, bottom = 1.dp),
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .graphicsLayer { alpha = (1f - p()) * spotifyChromeAlpha },
-                                )
                             }
                         }
                     }
@@ -3164,7 +3203,8 @@ fun NowPlayingScreen(
                         // it docks.
                         fun sleeveShown(): Float = bannerShown() * dockT()
                         fun sleeveCorner(): Dp {
-                            val corner = 8.dp * (1f - sleeveShown())
+                            val baseCorner = if (isSquareStyle) 26.dp else 8.dp
+                            val corner = baseCorner * (1f - sleeveShown())
                             val t = dockT()
                             return if (dock == null || t >= 1f) corner else lerp(dock.miniArtCorner(), corner, t)
                         }
@@ -3510,9 +3550,10 @@ fun NowPlayingScreen(
                                 // Collapsed, the sleeve is the way back: tapping the
                                 // thumbnail puts the queue or the lyrics away again.
                                 .then(
-                                    if (queueOpen || lyricsOpen) {
+                                    if (queueOpen || lyricsOpen || infoOpen) {
                                         Modifier.clickable {
                                             queueOpen = false
+                                            infoOpen = false
                                             closeLyrics()
                                         }
                                     } else {
@@ -4006,6 +4047,19 @@ fun NowPlayingScreen(
                                 )
                             }
                         }
+
+                        if (isSquareStyle && infoOpen && collapseDone) {
+                            SquareTrackInfoPanel(
+                                song = song,
+                                onOpenAlbum = onOpenAlbum,
+                                onOpenArtist = onOpenArtist,
+                                onOpenAudioPipeline = { showAudioPipeline = true },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(top = HEADER_HEIGHT)
+                                    .graphicsLayer { alpha = panelFade.value },
+                            )
+                        }
                     }
 
                     // ---- Bottom: lyric strip, scrubber, transport, volume, toggles ----
@@ -4134,16 +4188,33 @@ fun NowPlayingScreen(
                     }
 
                     val transport: @Composable () -> Unit = {
-                        TransportRow(
-                            isPlaying = isPlaying,
-                            isLoading = isLoading || audioVersionSwitching,
-                            previousEnabled = !controlsLocked &&
-                                (hasPrevious || pastRestartPoint),
-                            nextEnabled = !controlsLocked && hasNext,
-                            onPrevious = onPrevious,
-                            onPlayPause = onPlayPause,
-                            onNext = onNext,
-                        )
+                        if (isSquareStyle) {
+                            SquareTransportRow(
+                                isPlaying = isPlaying,
+                                isLoading = isLoading || audioVersionSwitching,
+                                previousEnabled = !controlsLocked &&
+                                    (hasPrevious || pastRestartPoint),
+                                nextEnabled = !controlsLocked && hasNext,
+                                shuffleEnabled = shuffleEnabled,
+                                repeatMode = repeatMode,
+                                onPrevious = onPrevious,
+                                onPlayPause = onPlayPause,
+                                onNext = onNext,
+                                onToggleShuffle = onToggleShuffle,
+                                onCycleRepeat = onCycleRepeat,
+                            )
+                        } else {
+                            TransportRow(
+                                isPlaying = isPlaying,
+                                isLoading = isLoading || audioVersionSwitching,
+                                previousEnabled = !controlsLocked &&
+                                    (hasPrevious || pastRestartPoint),
+                                nextEnabled = !controlsLocked && hasNext,
+                                onPrevious = onPrevious,
+                                onPlayPause = onPlayPause,
+                                onNext = onNext,
+                            )
+                        }
                     }
                     if (!hideVolumeBar) {
                         // The transport rides midway between the two blocks it
@@ -4178,7 +4249,49 @@ fun NowPlayingScreen(
                         Spacer(Modifier.height(run / 2 + lift))
                     }
 
-                    playerActions()
+                    if (isSquareStyle) {
+                        val currentStage = when {
+                            lyricsOpen -> SquareStage.LYRICS
+                            queueOpen -> SquareStage.QUEUE
+                            infoOpen -> SquareStage.INFO
+                            else -> SquareStage.COVER
+                        }
+                        SquareBottomPanelPill(
+                            stage = currentStage,
+                            onSelectStage = { target ->
+                                when (target) {
+                                    SquareStage.COVER -> {
+                                        closeLyrics()
+                                        queueOpen = false
+                                        infoOpen = false
+                                    }
+                                    SquareStage.LYRICS -> openLyrics()
+                                    SquareStage.QUEUE -> {
+                                        if (!queueOpen) toggleQueue()
+                                    }
+                                    SquareStage.INFO -> {
+                                        closeLyrics()
+                                        queueOpen = false
+                                        infoOpen = true
+                                    }
+                                }
+                            },
+                            onOpenOutput = openAudioOutput,
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(20.dp),
+                            contentAlignment = Alignment.TopCenter,
+                        ) {
+                            OutputCaption(
+                                accountName = accountName,
+                                onOpenOutput = openAudioOutput,
+                                onOpenMembers = openListenTogetherMembers,
+                            )
+                        }
+                    } else {
+                        playerActions()
+                    }
                     Spacer(Modifier.height(18.dp))
                     }
                     }

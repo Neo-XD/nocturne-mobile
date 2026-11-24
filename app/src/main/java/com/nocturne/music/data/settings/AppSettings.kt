@@ -607,6 +607,15 @@ object AppSettings {
      */
     val playerTheme = MutableStateFlow(PlayerTheme.DEFAULT)
 
+    /** Visual layout style for the expanded player screen (Square by default). */
+    val playerStyle = MutableStateFlow(PlayerStyle.SQUARE)
+
+    /** Overall app UI style: Default (Liquid Glass) or Material 3 Expressive (M3E). */
+    val uiStyle = MutableStateFlow(UiStyle.DEFAULT)
+
+    /** Home screen layout style: Default or Nocturne Music (LiMusic-styled). */
+    val homeStyle = MutableStateFlow(HomeStyle.DEFAULT)
+
     /** Restores the expanded player to the surface the listener left open. */
     val lastPlayerScreen = MutableStateFlow(LastPlayerScreen.MAIN)
 
@@ -1069,6 +1078,15 @@ object AppSettings {
         }.getOrElse {
             if (prefs.getBoolean(KEY_LEGACY_MESH_GRADIENT, false)) PlayerTheme.LEGACY else PlayerTheme.DEFAULT
         }
+        playerStyle.value = runCatching {
+            PlayerStyle.valueOf(prefs.getString(KEY_PLAYER_STYLE, null) ?: PlayerStyle.SQUARE.name)
+        }.getOrDefault(PlayerStyle.SQUARE)
+        uiStyle.value = runCatching {
+            UiStyle.valueOf(prefs.getString(KEY_UI_STYLE, null) ?: UiStyle.DEFAULT.name)
+        }.getOrDefault(UiStyle.DEFAULT)
+        homeStyle.value = runCatching {
+            HomeStyle.valueOf(prefs.getString(KEY_HOME_STYLE, null) ?: HomeStyle.DEFAULT.name)
+        }.getOrDefault(HomeStyle.DEFAULT)
         lastPlayerScreen.value = runCatching {
             LastPlayerScreen.valueOf(
                 prefs.getString(KEY_LAST_PLAYER_SCREEN, null) ?: LastPlayerScreen.MAIN.name,
@@ -1718,6 +1736,21 @@ object AppSettings {
         prefs.edit().putString(KEY_PLAYER_THEME, value.name).apply()
     }
 
+    fun setPlayerStyle(value: PlayerStyle) {
+        playerStyle.value = value
+        prefs.edit().putString(KEY_PLAYER_STYLE, value.name).apply()
+    }
+
+    fun setUiStyle(value: UiStyle) {
+        uiStyle.value = value
+        prefs.edit().putString(KEY_UI_STYLE, value.name).apply()
+    }
+
+    fun setHomeStyle(value: HomeStyle) {
+        homeStyle.value = value
+        prefs.edit().putString(KEY_HOME_STYLE, value.name).apply()
+    }
+
     fun setLastPlayerScreen(value: LastPlayerScreen) {
         if (lastPlayerScreen.value == value) return
         lastPlayerScreen.value = value
@@ -2328,6 +2361,9 @@ object AppSettings {
     private const val KEY_FULL_BLEED_ARTWORK = "full_bleed_artwork"
     private const val KEY_FULL_BLEED_DETAIL_ARTWORK = "full_bleed_detail_artwork"
     private const val KEY_PLAYER_THEME = "player_theme"
+    private const val KEY_PLAYER_STYLE = "player_style"
+    private const val KEY_UI_STYLE = "ui_style"
+    private const val KEY_HOME_STYLE = "home_style"
     private const val KEY_LEGACY_MESH_GRADIENT = "legacy_mesh_gradient"
     private const val KEY_LAST_PLAYER_SCREEN = "last_player_screen"
     private const val KEY_SYNCED_LYRICS = "synced_lyrics"

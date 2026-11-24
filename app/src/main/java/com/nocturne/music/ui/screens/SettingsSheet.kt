@@ -170,6 +170,9 @@ import com.nocturne.music.data.settings.DownloadQuality
 import com.nocturne.music.data.settings.ThemeMode
 import com.nocturne.music.data.settings.AppFont
 import com.nocturne.music.data.settings.PlayerTheme
+import com.nocturne.music.data.settings.PlayerStyle
+import com.nocturne.music.data.settings.UiStyle
+import com.nocturne.music.data.settings.HomeStyle
 import com.nocturne.music.data.stats.Backup
 import com.nocturne.music.playback.AudioCache
 import com.nocturne.music.ui.player.fullBleedArtworkAvailable
@@ -257,6 +260,9 @@ fun SettingsScreen(
     val fullBleedArtwork by AppSettings.fullBleedArtwork.collectAsStateWithLifecycle()
     val fullBleedDetailArtwork by AppSettings.fullBleedDetailArtwork.collectAsStateWithLifecycle()
     val playerTheme by AppSettings.playerTheme.collectAsStateWithLifecycle()
+    val playerStyle by AppSettings.playerStyle.collectAsStateWithLifecycle()
+    val uiStyle by AppSettings.uiStyle.collectAsStateWithLifecycle()
+    val homeStyle by AppSettings.homeStyle.collectAsStateWithLifecycle()
     val syncedLyrics by AppSettings.syncedLyrics.collectAsStateWithLifecycle()
     val lyricsSources by AppSettings.lyricsSources.collectAsStateWithLifecycle()
     val translationLanguage by AppSettings.translationLanguage.collectAsStateWithLifecycle()
@@ -1006,6 +1012,48 @@ fun SettingsScreen(
                     options = ThemeMode.entries.map { it.localizedLabel() },
                     selectedIndex = ThemeMode.entries.indexOf(theme),
                     onSelect = { AppSettings.setThemeMode(ThemeMode.entries[it]) },
+                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
+            val uiStyleTitle = stringResource(R.string.ui_style)
+            row(uiStyleTitle, "m3e", "material", "expressive", "liquid glass", "design") {
+                SettingsRow(
+                    icon = SfIcons.Apps,
+                    title = uiStyleTitle,
+                    subtitle = uiStyle.description(),
+                )
+                SegmentedControl(
+                    options = UiStyle.entries.map { it.localizedLabel() },
+                    selectedIndex = UiStyle.entries.indexOf(uiStyle),
+                    onSelect = { AppSettings.setUiStyle(UiStyle.entries[it]) },
+                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
+            val homeStyleTitle = stringResource(R.string.home_style)
+            row(homeStyleTitle, "home", "nocturne music", "limusic", "carousel", "layout") {
+                SettingsRow(
+                    icon = SfIcons.AutoAwesome,
+                    title = homeStyleTitle,
+                    subtitle = homeStyle.description(),
+                )
+                SegmentedControl(
+                    options = HomeStyle.entries.map { it.localizedLabel() },
+                    selectedIndex = HomeStyle.entries.indexOf(homeStyle),
+                    onSelect = { AppSettings.setHomeStyle(HomeStyle.entries[it]) },
+                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
+            val playerStyleTitle = stringResource(R.string.player_style)
+            row(playerStyleTitle, "player", "square", "classic", "layout") {
+                SettingsRow(
+                    icon = SfIcons.Fullscreen,
+                    title = playerStyleTitle,
+                    subtitle = playerStyle.description(),
+                )
+                SegmentedControl(
+                    options = PlayerStyle.entries.map { it.localizedLabel() },
+                    selectedIndex = PlayerStyle.entries.indexOf(playerStyle),
+                    onSelect = { AppSettings.setPlayerStyle(PlayerStyle.entries[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
             }
@@ -2076,6 +2124,7 @@ private fun PlayerTheme.localizedLabel(): String = stringResource(
         PlayerTheme.DEFAULT -> R.string.player_theme_default
         PlayerTheme.LEGACY -> R.string.player_theme_legacy
         PlayerTheme.SIMPLE -> R.string.player_theme_simple
+        PlayerTheme.BLUR -> R.string.player_theme_blur
     },
 )
 
@@ -2085,6 +2134,55 @@ private fun PlayerTheme.description(): String = stringResource(
         PlayerTheme.DEFAULT -> R.string.player_theme_default_subtitle
         PlayerTheme.LEGACY -> R.string.player_theme_legacy_subtitle
         PlayerTheme.SIMPLE -> R.string.player_theme_simple_subtitle
+        PlayerTheme.BLUR -> R.string.player_theme_blur_subtitle
+    },
+)
+
+@Composable
+private fun UiStyle.localizedLabel(): String = stringResource(
+    when (this) {
+        UiStyle.DEFAULT -> R.string.ui_style_default
+        UiStyle.M3E -> R.string.ui_style_m3e
+    },
+)
+
+@Composable
+private fun UiStyle.description(): String = stringResource(
+    when (this) {
+        UiStyle.DEFAULT -> R.string.ui_style_default_subtitle
+        UiStyle.M3E -> R.string.ui_style_m3e_subtitle
+    },
+)
+
+@Composable
+private fun HomeStyle.localizedLabel(): String = stringResource(
+    when (this) {
+        HomeStyle.DEFAULT -> R.string.home_style_default
+        HomeStyle.NOCTURNE_MUSIC -> R.string.home_style_nocturne_music
+    },
+)
+
+@Composable
+private fun HomeStyle.description(): String = stringResource(
+    when (this) {
+        HomeStyle.DEFAULT -> R.string.home_style_default_subtitle
+        HomeStyle.NOCTURNE_MUSIC -> R.string.home_style_nocturne_music_subtitle
+    },
+)
+
+@Composable
+private fun PlayerStyle.localizedLabel(): String = stringResource(
+    when (this) {
+        PlayerStyle.SQUARE -> R.string.player_style_square
+        PlayerStyle.CLASSIC -> R.string.player_style_classic
+    },
+)
+
+@Composable
+private fun PlayerStyle.description(): String = stringResource(
+    when (this) {
+        PlayerStyle.SQUARE -> R.string.player_style_square_subtitle
+        PlayerStyle.CLASSIC -> R.string.player_style_classic_subtitle
     },
 )
 

@@ -158,6 +158,8 @@ import com.nocturne.music.data.model.durationMillis
 import com.nocturne.music.data.scrobbling.LastFM
 import com.nocturne.music.data.settings.AppSettings
 import com.nocturne.music.data.settings.BitPerfectMode
+import com.nocturne.music.data.settings.HomeStyle
+import com.nocturne.music.data.settings.UiStyle
 import com.nocturne.music.ui.AddonBlockedAlert
 import com.nocturne.music.data.settings.LibrarySort
 import com.nocturne.music.data.settings.ThemeMode
@@ -259,6 +261,7 @@ import com.nocturne.music.ui.components.BottomTab
 import com.nocturne.music.ui.components.FLOATING_BAR_MAX_WIDTH
 import com.nocturne.music.ui.components.FloatingBottomBar
 import com.nocturne.music.ui.components.GlassNavBar
+import com.nocturne.music.ui.components.M3EFloatingNavDock
 import com.nocturne.music.ui.components.floatingtabbar.rememberFloatingTabBarScrollConnection
 import com.nocturne.music.ui.components.FrostedTopBar
 import com.nocturne.music.ui.components.LastfmLoginAlert
@@ -346,6 +349,7 @@ import com.nocturne.music.data.toGroup
 import com.nocturne.music.data.settings.LibraryViewType
 import com.nocturne.music.data.settings.LocalMusicSort
 import com.nocturne.music.ui.screens.HomeScreen
+import com.nocturne.music.ui.screens.NocturneMusicHomeScreen
 import com.nocturne.music.ui.screens.LibraryGridPage
 import com.nocturne.music.ui.screens.LibraryScreen
 import com.nocturne.music.ui.screens.MoodGenrePlaylistsScreen
@@ -406,6 +410,7 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val theme by AppSettings.themeMode.collectAsStateWithLifecycle()
             val appFont by AppSettings.appFont.collectAsStateWithLifecycle()
+            val uiStyle by AppSettings.uiStyle.collectAsStateWithLifecycle()
             val highPerformance by AppSettings.highPerformanceMode.collectAsStateWithLifecycle()
             val liquidGlassEnabled by AppSettings.liquidGlass.collectAsStateWithLifecycle()
             val iosOverscrollFactory = rememberIosOverscrollFactory()
@@ -419,7 +424,7 @@ class MainActivity : AppCompatActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
-            NocturneTheme(darkTheme = darkTheme, font = appFont) {
+            NocturneTheme(darkTheme = darkTheme, font = appFont, uiStyle = uiStyle) {
                 // The glass surfaces sample this layer, and a layer records only
                 // what is drawn into it — which, for BitChord, is a page that
                 // paints no background of its own. Everywhere a page is not
@@ -545,7 +550,9 @@ private fun BitChordApp(
     // below goes with them, which is the part that costs a draw pass.
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     val progressiveBlur by AppSettings.progressiveBlur.collectAsStateWithLifecycle()
-    val glassSamplesBackdrop = glassActive && !reduceDynamicBlur
+    val uiStyle by AppSettings.uiStyle.collectAsStateWithLifecycle()
+    val homeStyle by AppSettings.homeStyle.collectAsStateWithLifecycle()
+    val glassSamplesBackdrop = glassActive && uiStyle != UiStyle.M3E && !reduceDynamicBlur
     // What folds [GlassNavBar] between its expanded and inline shapes. Held here
     // rather than inside the bar because the page's scroll is what drives it,
     // and the page is a sibling of the bar rather than a child.
@@ -3527,7 +3534,44 @@ private fun BitChordApp(
                                 },
                             )
                         } else when ((destination as? AppDestination.Tab)?.index ?: selectedTab) {
-                            TAB_HOME -> HomeScreen(
+                            TAB_HOME -> if (homeStyle == HomeStyle.NOCTURNE_MUSIC) {
+                                NocturneMusicHomeScreen(
+                                    state = visibleHomeState,
+                                    listState = homeListState,
+                                    currentSong = player.song,
+                                    isPlaying = player.isPlaying,
+                                    listenerName = account?.name,
+                                    avatarUrl = account?.thumbnailUrl,
+                                    onOpenAccountSettings = { navigator.push(AppRoute.AccountScrobbling) },
+                                    signedIn = signedIn,
+                                    onSignIn = { webSession = WebSessionMode.SIGN_IN },
+                                    onItemClick = { item, shelfTitle ->
+                                        val song = shelfSong(item)
+                                        val browseId = item.browseId
+                                        when {
+                                            song != null -> playRadio(
+                                                song,
+                                                QueueSource(shelfTitle, PlaybackSourceType.HOME),
+                                            )
+                                            browseId != null -> viewModel.openDetail(
+                                                browseId = browseId,
+                                                title = item.title,
+                                                subtitle = item.subtitle,
+                                                thumbnailUrl = item.thumbnailUrl,
+                                            )
+                                        }
+                                    },
+                                    onItemLongPress = onShelfLongPress,
+                                    onRetry = viewModel::loadHome,
+                                    refreshing = MainViewModel.Feed.HOME in refreshing,
+                                    onRefresh = { viewModel.refresh(MainViewModel.Feed.HOME) },
+                                    pullState = homePull,
+                                    contentPadding = listPadding,
+                                    onLoadMore = viewModel::loadMoreHome,
+                                    loadingMore = homeLoadingMore,
+                                    onMoodClick = playMood.takeUnless { hideHomeMoods },
+                                )
+                            } else HomeScreen(
                                 state = visibleHomeState,
                                 listState = homeListState,
                                 currentSong = player.song,
@@ -3837,6 +3881,7 @@ private fun BitChordApp(
                                 replayLoading = replay.loading,
                                 memberSince = replay.memberSince,
                                 onOpenSettings = { navigator.push(AppRoute.Settings) },
+                                onOpenAccountSettings = { navigator.push(AppRoute.AccountScrobbling) },
                                 onOpenDownloads = { navigator.push(AppRoute.Downloads) },
                                 onOpenHistory = {
                                     navigator.push(AppRoute.History)
@@ -4276,7 +4321,35 @@ private fun BitChordApp(
                     selectedTab = index
                 }
 
-                if (glassActive) Column(
+                if (uiStyle == UiStyle.M3E) Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .widthIn(max = FLOATING_BAR_MAX_WIDTH)
+                        .fillMaxWidth()
+                        .onSizeChanged { floatingBarsHeight.intValue = it.height },
+                ) {
+                    QueueActionNoticeHost(queueNotice)
+                    M3EFloatingNavDock(
+                        tabs = tabs,
+                        selectedIndex = selectedTab,
+                        onTabSelected = onTabSelected,
+                        song = activeTrack,
+                        isPlaying = effectiveIsPlaying,
+                        isLoading = if (isPcSpeaker) false else playPauseBusy,
+                        onPlayPause = { togglePlayPause() },
+                        onNext = {
+                            if (isPcSpeaker) com.nocturne.music.sync.NocturneSyncManager.sendNext() else controller?.seekToNextMediaItem()
+                        },
+                        onExpand = if (reducePlayerMotion) {
+                            { showNowPlaying = true }
+                        } else {
+                            playerSheetMotion::open
+                        },
+                        controlsLocked = controlsLocked,
+                        onBlockedControl = showHostOnlyNotice,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else if (glassActive) Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .widthIn(max = FLOATING_BAR_MAX_WIDTH)

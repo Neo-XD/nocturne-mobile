@@ -37,6 +37,36 @@ enum class PlayerTheme {
 
     /** The cover blurred across the whole screen, as the lyrics and queue are. */
     SIMPLE,
+
+    /** v0.3's deep live-frosted blurred album art backdrop behind the player. */
+    BLUR,
+}
+
+/** Visual layout style for the expanded player screen. */
+enum class PlayerStyle {
+    /** Square-inspired frosted glass player with bottom panel pill and glass discs. */
+    SQUARE,
+
+    /** Classic Apple Music / BitChord player layout. */
+    CLASSIC,
+}
+
+/** Overall app design language. */
+enum class UiStyle {
+    /** Default Liquid Glass / Apple-inspired chrome. */
+    DEFAULT,
+
+    /** Material 3 Expressive (M3E) dynamic tonal surfaces, shapes, and navigation. */
+    M3E,
+}
+
+/** Layout style for the Home tab. */
+enum class HomeStyle {
+    /** Default Listen Now feed. */
+    DEFAULT,
+
+    /** Nocturne Music (LiMusic-inspired) greeting, mood chips, hero carousel, and shortcuts. */
+    NOCTURNE_MUSIC,
 }
 
 /** The surface that was last open inside the expanded player. */
