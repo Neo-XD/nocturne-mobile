@@ -1,17 +1,16 @@
 package com.nocturne.music.ui.player
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +33,7 @@ import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
@@ -42,6 +42,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,12 +52,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,10 +65,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import com.nocturne.music.data.NerdStats
 import com.nocturne.music.data.model.Song
-import com.nocturne.music.data.model.artworkAt
 import com.nocturne.music.sharedui.resources.Res
 import com.nocturne.music.sharedui.resources.ic_player_next
 import com.nocturne.music.sharedui.resources.ic_player_pause
@@ -79,85 +79,87 @@ import com.nocturne.music.sharedui.resources.widget_previous
 import com.nocturne.music.ui.haptics.Haptic
 import com.nocturne.music.ui.haptics.rememberHaptics
 import com.nocturne.music.ui.icons.NocturneIcons
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
- * Classic Nocturne v0.3 blurred album art background:
- * 800ms crossfade on artwork change with a live 80dp Haze frosted blur,
- * subtle dark tint (30%), and film grain noise (0.15f). Falls back to
- * [FullArtworkBlurBackdrop] when dynamic blur is disabled or unsupported.
+ * Material 3 Expressive (M3E) player backdrop:
+ * Extracts expressive tonal surfaces from the artwork palette and paints
+ * layered tonal container gradients with soft radial accent blooms for high
+ * contrast and a clean Material You expressive aesthetic.
  */
 @Composable
-internal fun V3BlurredAlbumBackdrop(
+internal fun M3EPlayerBackdrop(
     imageUrl: String?,
-    fallbackImage: ImageBitmap?,
-    reduceDynamicBlur: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    if (reduceDynamicBlur || !renderEffectBlurSupported) {
-        FullArtworkBlurBackdrop(image = fallbackImage, modifier = modifier)
-        return
-    }
-    Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
-        AnimatedContent(
-            targetState = imageUrl,
-            transitionSpec = {
-                fadeIn(tween(800)) togetherWith fadeOut(tween(800))
-            },
-            label = "v3BlurBackground",
-        ) { url ->
-            if (url != null) {
-                val blurHazeState = remember(url) { HazeState() }
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AsyncImage(
-                        model = url.artworkAt(256),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .hazeSource(state = blurHazeState),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .hazeEffect(
-                                state = blurHazeState,
-                                style = HazeStyle(
-                                    backgroundColor = Color.Black,
-                                    blurRadius = 80.dp,
-                                    tints = listOf(HazeTint(Color.Black.copy(alpha = 0.30f))),
-                                    noiseFactor = 0.15f,
-                                    fallbackTint = HazeTint(Color.Black.copy(alpha = 0.55f)),
-                                ),
-                            ),
-                    )
-                }
-            } else {
-                FullArtworkBlurBackdrop(image = fallbackImage)
-            }
+    val palette = rememberArtworkColors(imageUrl)
+    val seedPrimary = palette.colors.getOrNull(0) ?: Color(0xFF4F378B)
+    val seedSecondary = palette.colors.getOrNull(1) ?: Color(0xFF332D41)
+    val seedTertiary = palette.colors.getOrNull(2) ?: Color(0xFF492532)
+
+    val tonalSurface by animateColorAsState(
+        targetValue = lerp(Color(0xFF121018), seedPrimary, 0.28f),
+        animationSpec = tween(550),
+        label = "m3eSurface",
+    )
+    val tonalAccent by animateColorAsState(
+        targetValue = lerp(Color(0xFF1F1A2B), seedSecondary, 0.45f),
+        animationSpec = tween(550),
+        label = "m3eAccent",
+    )
+    val tonalHighlight by animateColorAsState(
+        targetValue = lerp(Color(0xFF2B2238), seedTertiary, 0.40f),
+        animationSpec = tween(550),
+        label = "m3eHighlight",
+    )
+
+    Box(modifier = modifier.fillMaxSize().background(tonalSurface)) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.verticalGradient(
+                    0.0f to tonalAccent.copy(alpha = 0.85f),
+                    0.55f to tonalSurface,
+                    1.0f to Color(0xFF0E0C12),
+                ),
+            )
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(tonalHighlight.copy(alpha = 0.48f), Color.Transparent),
+                    center = Offset(size.width * 0.82f, size.height * 0.18f),
+                    radius = size.maxDimension * 0.58f,
+                ),
+                center = Offset(size.width * 0.82f, size.height * 0.18f),
+                radius = size.maxDimension * 0.58f,
+            )
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(tonalAccent.copy(alpha = 0.42f), Color.Transparent),
+                    center = Offset(size.width * 0.16f, size.height * 0.78f),
+                    radius = size.maxDimension * 0.52f,
+                ),
+                center = Offset(size.width * 0.16f, size.height * 0.78f),
+                radius = size.maxDimension * 0.52f,
+            )
         }
     }
 }
 
-/** Active middle stage in Square player mode. */
+/** Active middle stage in Nocturne player mode. */
 internal enum class SquareStage {
     COVER,
     LYRICS,
     QUEUE,
+    EFFECTS,
     INFO,
 }
 
 /**
- * Square-inspired top bar inside the expanded player:
- * - Left: circular glass collapse button
+ * Top bar inside the expanded Nocturne player:
+ * - Left: optional circular glass collapse button
  * - Center: crossfading playback source or active panel label with soft shadow
  * - Right: circular glass Audio Output / Devices button
  */
@@ -202,6 +204,7 @@ internal fun SquarePlayerTopBar(
             targetState = when (stage) {
                 SquareStage.LYRICS -> "Lyrics"
                 SquareStage.QUEUE -> "Up Next"
+                SquareStage.EFFECTS -> "Playback Effects"
                 SquareStage.INFO -> "Track Info"
                 SquareStage.COVER -> sourceLabel.ifBlank { "Now Playing" }
             },
@@ -254,8 +257,9 @@ internal fun SquarePlayerTopBar(
 }
 
 /**
- * Square-inspired 5-control transport row:
- * [Shuffle] — [62dp Glass SkipBack] — [76dp Glass Play/Pause] — [62dp Glass SkipForward] — [Repeat]
+ * 5-control transport row:
+ * [Shuffle] — [60dp SkipBack] — [76dp Play/Pause] — [60dp SkipForward] — [Repeat]
+ * Honors [transparentButtons] to hide the circular disc background if the user prefers.
  */
 @Composable
 internal fun SquareTransportRow(
@@ -265,6 +269,7 @@ internal fun SquareTransportRow(
     nextEnabled: Boolean,
     shuffleEnabled: Boolean,
     repeatMode: Int,
+    transparentButtons: Boolean = false,
     onPrevious: () -> Unit,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
@@ -282,6 +287,7 @@ internal fun SquareTransportRow(
             icon = Icons.Rounded.Shuffle,
             contentDescription = "Shuffle",
             active = shuffleEnabled,
+            transparent = transparentButtons,
             onClick = {
                 haptics.play(if (shuffleEnabled) Haptic.ToggleOff else Haptic.ToggleOn)
                 onToggleShuffle()
@@ -291,6 +297,7 @@ internal fun SquareTransportRow(
         SquareGlassDisc(
             size = 60.dp,
             enabled = previousEnabled,
+            transparent = transparentButtons,
             onClick = {
                 haptics.play(Haptic.SkipPrevious)
                 onPrevious()
@@ -307,6 +314,7 @@ internal fun SquareTransportRow(
         SquareGlassDisc(
             size = 76.dp,
             highlighted = true,
+            transparent = transparentButtons,
             onClick = {
                 haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
                 onPlayPause()
@@ -338,6 +346,7 @@ internal fun SquareTransportRow(
         SquareGlassDisc(
             size = 60.dp,
             enabled = nextEnabled,
+            transparent = transparentButtons,
             onClick = {
                 haptics.play(Haptic.SkipNext)
                 onNext()
@@ -355,6 +364,7 @@ internal fun SquareTransportRow(
             icon = if (repeatMode == RepeatModes.ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
             contentDescription = "Repeat",
             active = repeatMode != RepeatModes.OFF,
+            transparent = transparentButtons,
             onClick = {
                 haptics.play(Haptic.Select)
                 onCycleRepeat()
@@ -364,14 +374,14 @@ internal fun SquareTransportRow(
 }
 
 /**
- * Square-inspired bottom segmented frosted glass capsule (44dp tall, 88% width)
- * switching between Cover, Lyrics, Queue, Audio Output/Pipeline, and Track Info.
+ * Bottom segmented frosted capsule (44dp tall, 88% width)
+ * switching between Cover, Lyrics, Queue, Playback Effects (Sliders), and Track Info.
  */
 @Composable
 internal fun SquareBottomPanelPill(
     stage: SquareStage,
+    effectsActive: Boolean,
     onSelectStage: (SquareStage) -> Unit,
-    onOpenOutput: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberHaptics()
@@ -418,11 +428,12 @@ internal fun SquareBottomPanelPill(
         )
         SquarePillTab(
             icon = Icons.Rounded.Tune,
-            label = "Audio",
-            selected = false,
+            label = "Effects",
+            selected = stage == SquareStage.EFFECTS,
+            marked = effectsActive,
             onClick = {
                 haptics.play(Haptic.Select)
-                onOpenOutput()
+                onSelectStage(if (stage == SquareStage.EFFECTS) SquareStage.COVER else SquareStage.EFFECTS)
             },
             modifier = Modifier.weight(1f),
         )
@@ -444,6 +455,7 @@ private fun SquarePillTab(
     icon: ImageVector,
     label: String,
     selected: Boolean,
+    marked: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -459,10 +471,26 @@ private fun SquarePillTab(
             ),
         contentAlignment = Alignment.Center,
     ) {
+        if (marked && !selected) {
+            Box(
+                Modifier
+                    .size(28.dp)
+                    .background(
+                        Brush.radialGradient(
+                            listOf(Color.White.copy(alpha = 0.26f), Color.Transparent),
+                        ),
+                        CircleShape,
+                    ),
+            )
+        }
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (selected) Color.White else Color.White.copy(alpha = 0.62f),
+            tint = when {
+                selected -> Color.White
+                marked -> Color.White.copy(alpha = 0.9f)
+                else -> Color.White.copy(alpha = 0.62f)
+            },
             modifier = Modifier.size(20.dp),
         )
     }
@@ -473,6 +501,7 @@ private fun SquareGlassDisc(
     size: Dp,
     enabled: Boolean = true,
     highlighted: Boolean = false,
+    transparent: Boolean = false,
     onClick: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -494,13 +523,20 @@ private fun SquareGlassDisc(
                 scaleY = scale
             }
             .clip(CircleShape)
-            .background(
-                Color.White.copy(alpha = if (highlighted) 0.22f else 0.14f),
-            )
-            .border(
-                width = 0.75.dp,
-                color = Color.White.copy(alpha = if (highlighted) 0.34f else 0.20f),
-                shape = CircleShape,
+            .then(
+                if (transparent) {
+                    Modifier
+                } else {
+                    Modifier
+                        .background(
+                            Color.White.copy(alpha = if (highlighted) 0.22f else 0.14f),
+                        )
+                        .border(
+                            width = 0.75.dp,
+                            color = Color.White.copy(alpha = if (highlighted) 0.34f else 0.20f),
+                            shape = CircleShape,
+                        )
+                },
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -519,13 +555,14 @@ private fun SquareToggleGlyph(
     icon: ImageVector,
     contentDescription: String,
     active: Boolean,
+    transparent: Boolean = false,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = Modifier
             .size(40.dp)
             .clip(CircleShape)
-            .background(if (active) Color.White.copy(alpha = 0.18f) else Color.Transparent)
+            .background(if (active && !transparent) Color.White.copy(alpha = 0.18f) else Color.Transparent)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -557,8 +594,204 @@ private fun SquareDrawableIcon(
     )
 }
 
+private data class PlaybackPreset(
+    val label: String,
+    val speed: Float,
+    val pitch: Float,
+)
+
+private val PlaybackEffectPresets = listOf(
+    PlaybackPreset("Normal", 1.0f, 1.0f),
+    PlaybackPreset("Slowed", 0.85f, 0.90f),
+    PlaybackPreset("Deep Slowed", 0.78f, 0.82f),
+    PlaybackPreset("Nightcore", 1.25f, 1.22f),
+    PlaybackPreset("Sped Up", 1.20f, 1.0f),
+)
+
 /**
- * Square-inspired inline Track Info & Credits panel shown when the Info tab is selected.
+ * Square-style inline Playback Controls / Audio Effects panel (opened from the Sliders tab):
+ * live Speed slider, Pitch slider, quick effect presets, and one-tap Reset.
+ */
+@Composable
+internal fun SquareEffectsPanel(
+    speed: Float,
+    pitch: Float,
+    onSpeedChange: (Float) -> Unit,
+    onPitchChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val haptics = rememberHaptics()
+    val modified = speed != 1.0f || pitch != 1.0f
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // Presets row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            PlaybackEffectPresets.forEach { preset ->
+                val active = kotlin.math.abs(speed - preset.speed) < 0.02f &&
+                    kotlin.math.abs(pitch - preset.pitch) < 0.02f
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(
+                            if (active) Color.White else Color.White.copy(alpha = 0.14f),
+                        )
+                        .border(
+                            0.75.dp,
+                            Color.White.copy(alpha = if (active) 0.8f else 0.22f),
+                            CircleShape,
+                        )
+                        .clickable {
+                            haptics.play(Haptic.Select)
+                            onSpeedChange(preset.speed)
+                            onPitchChange(preset.pitch)
+                        }
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                ) {
+                    Text(
+                        text = preset.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (active) Color.Black else Color.White,
+                    )
+                }
+            }
+        }
+
+        // Speed & Pitch controls card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White.copy(alpha = 0.10f))
+                .border(0.75.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(22.dp))
+                .padding(16.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Playback Controls",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                    if (modified) {
+                        Row(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.16f))
+                                .clickable {
+                                    haptics.play(Haptic.Tap)
+                                    onSpeedChange(1.0f)
+                                    onPitchChange(1.0f)
+                                }
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Refresh,
+                                contentDescription = "Reset",
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "Reset",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                            )
+                        }
+                    }
+                }
+
+                // Speed slider
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "Speed",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.78f),
+                        )
+                        Text(
+                            text = "%.2fx".format(Locale.ROOT, speed),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                        )
+                    }
+                    Slider(
+                        value = speed,
+                        onValueChange = { raw ->
+                            val snapped = (raw * 20f).roundToInt() / 20f
+                            onSpeedChange(snapped.coerceIn(0.5f, 2.0f))
+                        },
+                        valueRange = 0.5f..2.0f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = Color.White,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.24f),
+                        ),
+                    )
+                }
+
+                HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+
+                // Pitch slider
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "Pitch",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.78f),
+                        )
+                        Text(
+                            text = "%.2fx".format(Locale.ROOT, pitch),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                        )
+                    }
+                    Slider(
+                        value = pitch,
+                        onValueChange = { raw ->
+                            val snapped = (raw * 20f).roundToInt() / 20f
+                            onPitchChange(snapped.coerceIn(0.5f, 2.0f))
+                        },
+                        valueRange = 0.5f..2.0f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = Color.White,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.24f),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Inline Track Info & Credits panel shown when the Info tab is selected.
  */
 @Composable
 internal fun SquareTrackInfoPanel(

@@ -72,6 +72,9 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         override val lastPlayerScreen get() = AppSettings.lastPlayerScreen
         override val playerTheme get() = AppSettings.playerTheme
         override val playerStyle get() = AppSettings.playerStyle
+        override val transparentPlayerButtons get() = AppSettings.transparentPlayerButtons
+        override val playbackSpeed get() = AppSettings.playbackSpeed
+        override val playbackPitch get() = AppSettings.playbackPitch
         override val lyricsBlur get() = AppSettings.lyricsBlur
         override val lyricsOffsetMs get() = AppSettings.lyricsOffsetMs
         override val lyricsSourceOrder get() = AppSettings.lyricsSourceOrder
@@ -101,6 +104,8 @@ class AndroidPlayerHost(context: Context) : PlayerHost {
         override fun setLastPlayerScreen(value: LastPlayerScreen) = AppSettings.setLastPlayerScreen(value)
         override fun setLyricsOffsetMs(value: Int) = AppSettings.setLyricsOffsetMs(value)
         override fun setFullBleedArtwork(value: Boolean) = AppSettings.setFullBleedArtwork(value)
+        override fun setPlaybackSpeed(value: Float) = AppSettings.setPlaybackSpeed(value)
+        override fun setPlaybackPitch(value: Float) = AppSettings.setPlaybackPitch(value)
         override fun setMixViewOpen(open: Boolean) {
             AppSettings.mixViewOpen.value = open
         }

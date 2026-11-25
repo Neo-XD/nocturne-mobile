@@ -32,22 +32,19 @@ enum class PlayerTheme {
     /** The artwork's own colours hung off its bottom edge, as a mesh. */
     DEFAULT,
 
-    /** v1.5's four quantised blobs, drifting behind the whole screen. */
-    LEGACY,
-
     /** The cover blurred across the whole screen, as the lyrics and queue are. */
     SIMPLE,
 
-    /** v0.3's deep live-frosted blurred album art backdrop behind the player. */
-    BLUR,
+    /** Material 3 Expressive tonal backdrop derived from the artwork palette. */
+    M3E,
 }
 
 /** Visual layout style for the expanded player screen. */
 enum class PlayerStyle {
-    /** Square-inspired frosted glass player with bottom panel pill and glass discs. */
+    /** Nocturne player layout with glass controls, top source bar, and bottom panel pill. */
     SQUARE,
 
-    /** Classic Apple Music / BitChord player layout. */
+    /** Classic player layout. */
     CLASSIC,
 }
 

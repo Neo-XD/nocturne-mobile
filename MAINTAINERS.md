@@ -1,10 +1,10 @@
 # Maintainers
 
-This document lists the maintainers responsible for BitChord.
+This document lists the maintainers responsible for Nocturne Mobile.
 
 | Maintainer | GitHub | Responsibilities |
 |---|---|---|
-| Kushagra Singh | [@kushagrasinghx](https://github.com/kushagrasinghx) | Project creator, core architecture, release management, and PR reviews |
+| Amritanshu Praveen | [@Neo-XD](https://github.com/Neo-XD) | Project maintainer, architecture, release management, and PR reviews |
 
 ## Responsibilities
 

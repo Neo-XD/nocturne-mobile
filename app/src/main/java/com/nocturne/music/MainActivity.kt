@@ -106,6 +106,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -145,6 +146,7 @@ import com.nocturne.music.data.model.SearchFilter
 import com.nocturne.music.data.model.SearchResult
 import com.nocturne.music.data.model.ShelfItem
 import com.nocturne.music.data.model.Song
+import com.nocturne.music.data.model.artworkAt
 import com.nocturne.music.data.model.isUnresolvedSpotify
 import com.nocturne.music.data.model.UiState
 import com.nocturne.music.data.model.withoutVideos
@@ -3008,6 +3010,39 @@ private fun BitChordApp(
                 .snapshotBackdropSource(pageBackdrop, floor = MaterialTheme.colorScheme.background),
         ) {
             Box(Modifier.weight(1f).fillMaxHeight()) {
+                // Full-app blurred album art background behind all tabs and screens.
+                // Anchored to the root viewport so overscrolling never cuts it off.
+                val appArtUrl = (activeTrack ?: playerSong)?.thumbnailUrl
+                if (appArtUrl != null) {
+                    androidx.compose.animation.Crossfade(
+                        targetState = appArtUrl,
+                        animationSpec = tween(600),
+                        label = "appBgBlur",
+                        modifier = Modifier.fillMaxSize(),
+                    ) { artUrl ->
+                        Box(Modifier.fillMaxSize()) {
+                            coil3.compose.AsyncImage(
+                                model = artUrl.artworkAt(256),
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .then(if (!reduceDynamicBlur) Modifier.blur(72.dp) else Modifier),
+                            )
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        if (darkTheme) {
+                                            Color.Black.copy(alpha = 0.72f)
+                                        } else {
+                                            Color.White.copy(alpha = 0.80f)
+                                        },
+                                    ),
+                            )
+                        }
+                    }
+                }
                 AnimatedContent(
                     // Whatever is on top of the back stack — see [AppNavigator].
                     targetState = when {

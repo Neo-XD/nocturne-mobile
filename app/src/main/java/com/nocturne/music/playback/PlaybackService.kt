@@ -7305,9 +7305,17 @@ class PlaybackService : MediaLibraryService() {
             // raw value over it would drop the incoming track back to its own
             // tempo halfway through a blend. The controller re-reads the setting
             // when it restores the rate, so the change still lands.
-            AppSettings.playbackSpeed.collect { speed ->
+            combine(
+                AppSettings.playbackSpeed,
+                AppSettings.playbackPitch,
+            ) { speed, pitch -> speed to pitch }.collect { (speed, pitch) ->
                 if (crossfade?.isTransitioning() == true) return@collect
-                crossfade?.applyPlaybackSpeed(speed) ?: eachPlayer { it.setPlaybackSpeed(speed) }
+                if (pitch == 1.0f) {
+                    crossfade?.applyPlaybackSpeed(speed) ?: eachPlayer { it.setPlaybackSpeed(speed) }
+                } else {
+                    val params = androidx.media3.common.PlaybackParameters(speed, pitch)
+                    eachPlayer { it.setPlaybackParameters(params) }
+                }
             }
         }
         scope.launch {

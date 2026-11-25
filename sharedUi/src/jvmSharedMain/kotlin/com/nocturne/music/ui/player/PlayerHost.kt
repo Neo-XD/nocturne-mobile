@@ -260,6 +260,9 @@ interface PlayerSettingsSource {
     val lastPlayerScreen: StateFlow<LastPlayerScreen>
     val playerTheme: StateFlow<PlayerTheme>
     val playerStyle: StateFlow<com.nocturne.music.data.settings.PlayerStyle>
+    val transparentPlayerButtons: StateFlow<Boolean>
+    val playbackSpeed: StateFlow<Float>
+    val playbackPitch: StateFlow<Float>
     val lyricsBlur: StateFlow<Boolean>
     val lyricsOffsetMs: StateFlow<Int>
     val lyricsSourceOrder: StateFlow<List<LyricsSource>>
@@ -302,6 +305,8 @@ interface PlayerSettingsSource {
     fun setLastPlayerScreen(value: LastPlayerScreen)
     fun setLyricsOffsetMs(value: Int)
     fun setFullBleedArtwork(value: Boolean)
+    fun setPlaybackSpeed(value: Float)
+    fun setPlaybackPitch(value: Float)
     /** Whether the mix popup is up, so the host lays out [smartMixPreview] for it. */
     fun setMixViewOpen(open: Boolean)
 }

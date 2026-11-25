@@ -151,28 +151,35 @@ fun NocturneMusicHomeScreen(
     }
     var selectedChip by remember { mutableStateOf("All") }
 
-    PullToRefresh(
-        refreshing = refreshing,
-        onRefresh = onRefresh,
-        state = pullState,
-        modifier = modifier,
-    ) {
-        LazyColumn(
-            state = listState,
+    Box(modifier = modifier.fillMaxSize()) {
+        // Anchored behind the LazyColumn so overscroll bounce at the top never
+        // detaches or cuts off the header wash.
+        if (currentSong == null) {
+            NocturneHomeBackdrop(
+                coverUrl = null,
+                pageBackground = Color.Transparent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(340.dp)
+                    .align(Alignment.TopCenter),
+            )
+        }
+        PullToRefresh(
+            refreshing = refreshing,
+            onRefresh = onRefresh,
+            state = pullState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = 0.dp,
-                bottom = contentPadding.calculateBottomPadding(),
-            ),
         ) {
-            // ── Ambient Header Backdrop + Greeting + Mood Chips ─────────
-            item(key = "nocturne-home-header") {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    NocturneHomeBackdrop(
-                        coverUrl = currentSong?.thumbnailUrl?.artworkAt(ROW_ART_PX),
-                        pageBackground = pageBackground,
-                        modifier = Modifier.matchParentSize(),
-                    )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = 0.dp,
+                    bottom = contentPadding.calculateBottomPadding(),
+                ),
+            ) {
+                // ── Greeting + Mood Chips ─────────
+                item(key = "nocturne-home-header") {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -298,7 +305,6 @@ fun NocturneMusicHomeScreen(
                         Spacer(Modifier.height(6.dp))
                     }
                 }
-            }
 
             if (!signedIn && onSignIn != null) {
                 item(key = "nocturne-signin") {
@@ -378,6 +384,7 @@ fun NocturneMusicHomeScreen(
                     if (loadingMore) feedMoreSkeleton()
                 }
             }
+        }
         }
     }
 

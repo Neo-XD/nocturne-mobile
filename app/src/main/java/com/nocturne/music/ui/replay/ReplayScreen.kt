@@ -172,15 +172,34 @@ fun ReplayScreen(
 
         val textColor = if (dark) Color.White else Color.Black
         val textVariant = if (dark) Color.White.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.55f)
+        val lastfmUsername by AppSettings.lastfmUsername.collectAsStateWithLifecycle()
+        val hasLastFm = lastfmUsername.isNotBlank()
+        var selectedStatsTab by rememberSaveable { mutableStateOf(0) } // 0 = Nocturne, 1 = Last.fm
+        LaunchedEffect(hasLastFm) {
+            if (!hasLastFm) selectedStatsTab = 0
+        }
 
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            item("heading") { Heading(state, onPeriodChange, dark) }
+            item("heading") {
+                Heading(
+                    state = state,
+                    onPeriodChange = onPeriodChange,
+                    dark = dark,
+                    showSourceTabs = hasLastFm,
+                    selectedSourceTab = selectedStatsTab,
+                    onSelectSourceTab = { selectedStatsTab = it },
+                )
+            }
 
-            when {
+            if (hasLastFm && selectedStatsTab == 1) {
+                item("lastfm-tab") {
+                    LastFmSection(dark = dark)
+                }
+            } else when {
                 state.loading && summary == null -> item("loading") {
                     Box(Modifier.fillMaxWidth().padding(64.dp), Alignment.Center) {
                         CircularProgressIndicator(color = textColor.copy(alpha = 0.6f))
@@ -251,7 +270,6 @@ fun ReplayScreen(
                     }
 
                     item("habits") { Habits(summary, dark) }
-                    item("lastfm-stats") { LastFmSection(dark = dark) }
                     item("share") {
                         ReplayActionRow(
                             Icons.Rounded.IosShare,
@@ -270,7 +288,14 @@ fun ReplayScreen(
 // ── Heading ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun Heading(state: ReplayState, onPeriodChange: (ReplayPeriod) -> Unit, dark: Boolean) {
+private fun Heading(
+    state: ReplayState,
+    onPeriodChange: (ReplayPeriod) -> Unit,
+    dark: Boolean,
+    showSourceTabs: Boolean = false,
+    selectedSourceTab: Int = 0,
+    onSelectSourceTab: (Int) -> Unit = {},
+) {
     val context = LocalContext.current
     val textColor = if (dark) Color.White else Color.Black
     Column(Modifier.padding(horizontal = PAGE_GUTTER + 4.dp)) {
@@ -282,12 +307,51 @@ private fun Heading(state: ReplayState, onPeriodChange: (ReplayPeriod) -> Unit, 
             color = textColor,
         )
         Text(
-            text = state.summary?.localizedLabel(context) ?: state.period.localizedChip(context),
+            text = if (selectedSourceTab == 1 && showSourceTabs) {
+                "Last.fm Listening Overview"
+            } else {
+                state.summary?.localizedLabel(context) ?: state.period.localizedChip(context)
+            },
             style = MaterialTheme.typography.titleMedium,
             color = textColor.copy(alpha = 0.6f),
         )
-        Spacer(Modifier.height(14.dp))
-        PeriodPicker(state.period, onPeriodChange, dark)
+        if (showSourceTabs) {
+            Spacer(Modifier.height(14.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(textColor.copy(alpha = 0.10f))
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                listOf("Nocturne", "Last.fm").forEachIndexed { idx, label ->
+                    val active = selectedSourceTab == idx
+                    val bg by animateColorAsState(
+                        if (active) textColor.copy(alpha = 0.92f) else Color.Transparent,
+                        tween(160),
+                        label = "statsSourceTab",
+                    )
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.W700,
+                        color = if (active) (if (dark) Color.Black else Color.White) else textColor.copy(alpha = 0.75f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(bg)
+                            .clickable { onSelectSourceTab(idx) }
+                            .padding(vertical = 8.dp),
+                    )
+                }
+            }
+        }
+        if (selectedSourceTab == 0 || !showSourceTabs) {
+            Spacer(Modifier.height(12.dp))
+            PeriodPicker(state.period, onPeriodChange, dark)
+        }
         Spacer(Modifier.height(18.dp))
     }
 }
@@ -734,6 +798,38 @@ private fun LastFmSection(dark: Boolean) {
                                 )
                                 Text(
                                     text = "${artist.playcount} plays",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = textVariant,
+                                )
+                            }
+                        }
+                    }
+                    if (s.topTracks.isNotEmpty()) {
+                        Spacer(Modifier.height(14.dp))
+                        Text(
+                            text = "Top Tracks on Last.fm",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = textVariant,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        for ((i, track) in s.topTracks.take(5).withIndex()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 3.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = "${i + 1}. ${track.name} — ${track.artist.name}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "${track.playcount} plays",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = textVariant,
                                 )

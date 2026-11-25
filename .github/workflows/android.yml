@@ -38,9 +38,9 @@ jobs:
         echo "LISTEN_TOGETHER_SERVER=${{ secrets.LISTEN_TOGETHER_SERVER }}" >> local.properties
 
         if [ -n "$KEYSTORE_BASE64" ]; then
-          echo "$KEYSTORE_BASE64" | base64 -d > bitchord-release.jks
+          echo "$KEYSTORE_BASE64" | base64 -d > nocturne-release.jks
           {
-            echo "storeFile=bitchord-release.jks"
+            echo "storeFile=nocturne-release.jks"
             echo "storePassword=$KEYSTORE_PASSWORD"
             echo "keyAlias=$KEY_ALIAS"
             echo "keyPassword=$KEY_PASSWORD"

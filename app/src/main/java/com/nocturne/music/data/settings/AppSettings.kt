@@ -607,14 +607,20 @@ object AppSettings {
      */
     val playerTheme = MutableStateFlow(PlayerTheme.DEFAULT)
 
-    /** Visual layout style for the expanded player screen (Square by default). */
+    /** Visual layout style for the expanded player screen (Nocturne by default). */
     val playerStyle = MutableStateFlow(PlayerStyle.SQUARE)
+
+    /** Remove the circular translucent background behind player transport buttons. */
+    val transparentPlayerButtons = MutableStateFlow(false)
 
     /** Overall app UI style: Default (Liquid Glass) or Material 3 Expressive (M3E). */
     val uiStyle = MutableStateFlow(UiStyle.DEFAULT)
 
-    /** Home screen layout style: Default or Nocturne Music (LiMusic-styled). */
-    val homeStyle = MutableStateFlow(HomeStyle.DEFAULT)
+    /** Home screen layout style: Nocturne Music by default. */
+    val homeStyle = MutableStateFlow(HomeStyle.NOCTURNE_MUSIC)
+
+    /** Playback pitch multiplier (0.5f..2.0f, default 1.0f). */
+    val playbackPitch = MutableStateFlow(1.0f)
 
     /** Restores the expanded player to the surface the listener left open. */
     val lastPlayerScreen = MutableStateFlow(LastPlayerScreen.MAIN)
@@ -1073,20 +1079,22 @@ object AppSettings {
         fullBleedArtwork.value = prefs.getBoolean(KEY_FULL_BLEED_ARTWORK, true)
         fullBleedDetailArtwork.value = prefs.getBoolean(KEY_FULL_BLEED_DETAIL_ARTWORK, false)
         // The old legacy mesh switch answers until a theme has been picked.
-        playerTheme.value = runCatching {
-            PlayerTheme.valueOf(prefs.getString(KEY_PLAYER_THEME, null).orEmpty())
-        }.getOrElse {
-            if (prefs.getBoolean(KEY_LEGACY_MESH_GRADIENT, false)) PlayerTheme.LEGACY else PlayerTheme.DEFAULT
+        playerTheme.value = when (prefs.getString(KEY_PLAYER_THEME, null)) {
+            PlayerTheme.SIMPLE.name -> PlayerTheme.SIMPLE
+            PlayerTheme.M3E.name, "BLUR" -> PlayerTheme.M3E
+            else -> PlayerTheme.DEFAULT
         }
         playerStyle.value = runCatching {
             PlayerStyle.valueOf(prefs.getString(KEY_PLAYER_STYLE, null) ?: PlayerStyle.SQUARE.name)
         }.getOrDefault(PlayerStyle.SQUARE)
+        transparentPlayerButtons.value = prefs.getBoolean(KEY_TRANSPARENT_PLAYER_BUTTONS, false)
         uiStyle.value = runCatching {
             UiStyle.valueOf(prefs.getString(KEY_UI_STYLE, null) ?: UiStyle.DEFAULT.name)
         }.getOrDefault(UiStyle.DEFAULT)
         homeStyle.value = runCatching {
-            HomeStyle.valueOf(prefs.getString(KEY_HOME_STYLE, null) ?: HomeStyle.DEFAULT.name)
-        }.getOrDefault(HomeStyle.DEFAULT)
+            HomeStyle.valueOf(prefs.getString(KEY_HOME_STYLE, null) ?: HomeStyle.NOCTURNE_MUSIC.name)
+        }.getOrDefault(HomeStyle.NOCTURNE_MUSIC)
+        playbackPitch.value = prefs.getFloat(KEY_PITCH, 1.0f).coerceIn(0.5f, 2.0f)
         lastPlayerScreen.value = runCatching {
             LastPlayerScreen.valueOf(
                 prefs.getString(KEY_LAST_PLAYER_SCREEN, null) ?: LastPlayerScreen.MAIN.name,
@@ -1741,6 +1749,17 @@ object AppSettings {
         prefs.edit().putString(KEY_PLAYER_STYLE, value.name).apply()
     }
 
+    fun setTransparentPlayerButtons(value: Boolean) {
+        transparentPlayerButtons.value = value
+        prefs.edit().putBoolean(KEY_TRANSPARENT_PLAYER_BUTTONS, value).apply()
+    }
+
+    fun setPlaybackPitch(value: Float) {
+        val clamped = value.coerceIn(0.5f, 2.0f)
+        playbackPitch.value = clamped
+        prefs.edit().putFloat(KEY_PITCH, clamped).apply()
+    }
+
     fun setUiStyle(value: UiStyle) {
         uiStyle.value = value
         prefs.edit().putString(KEY_UI_STYLE, value.name).apply()
@@ -2362,6 +2381,8 @@ object AppSettings {
     private const val KEY_FULL_BLEED_DETAIL_ARTWORK = "full_bleed_detail_artwork"
     private const val KEY_PLAYER_THEME = "player_theme"
     private const val KEY_PLAYER_STYLE = "player_style"
+    private const val KEY_TRANSPARENT_PLAYER_BUTTONS = "transparent_player_buttons"
+    private const val KEY_PITCH = "playback_pitch"
     private const val KEY_UI_STYLE = "ui_style"
     private const val KEY_HOME_STYLE = "home_style"
     private const val KEY_LEGACY_MESH_GRADIENT = "legacy_mesh_gradient"
