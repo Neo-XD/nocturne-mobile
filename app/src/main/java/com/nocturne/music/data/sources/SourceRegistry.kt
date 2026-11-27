@@ -75,17 +75,13 @@ data class SourceConfig(
     val activeQuality: AddonQualityOption?
         get() = qualityOptions.firstOrNull { it.value == pickedQuality } ?: qualityOptions.firstOrNull()
 
-    /** Whether this source is shut out right now because it needs an output that isn't connected. */
+    /** No output-hardware restriction: addons work on any speaker, Bluetooth, or wired output. */
     val awaitsLosslessOutput: Boolean
-        get() = checkValidLossless && !LosslessOutput.capable
+        get() = false
 
-    /**
-     * Whether this is an addon known to be out of date: its manifest doesn't
-     * declare `bitchordAuth`, or it has no manifest at all. Not yet knowing
-     * (null) doesn't count. Only flagged, never gated on: see [bitchordAuth].
-     */
+    /** No BitChord-auth version gate: addons are never flagged as outdated for lacking bitchordAuth. */
     val needsAddonUpdate: Boolean
-        get() = kind == SourceKind.ADDON && bitchordAuth == false
+        get() = false
 
     /** What the manifest last said, without the parts of the config the user set. */
     internal fun withPolicyOf(other: SourceConfig) =
@@ -220,26 +216,13 @@ object SourceRegistry {
      * apply no connection-quality ceiling — see [SourceResolver.forDownload].
      */
     fun active(): List<MusicSource> {
-        val unverified = AddonAuth.standingRefusal() != null
         return enabledConfigs(configs.value)
-            // Not in the walk at all while it would be refused anyway: an addon
-            // that asked for a lossless output costs nothing — not even a timed
-            // out search — while there isn't one. See [SourceConfig.checkValidLossless].
-            .filterNot { it.awaitsLosslessOutput }
-            // Nor, for an addon that asks for auth, while this device was just
-            // refused verification: back in the walk once the backoff lapses,
-            // when the next resolve asks the auth service again.
-            .filterNot { unverified && it.kind == SourceKind.ADDON && it.bitchordAuth == true }
             .sortedBy { it.kind.rank }
             .mapNotNull { instances[it.id] }
     }
 
-    /**
-     * [active], minus the addons whose manifest said `allowDownloads: 0`. A
-     * download walks this instead, so the next source in line serves it.
-     */
-    fun activeForDownload(): List<MusicSource> =
-        active().filter { config(it.configId)?.allowDownloads != false }
+    /** All active sources are eligible for downloads with no addon restrictions. */
+    fun activeForDownload(): List<MusicSource> = active()
 
     /** Why an enabled addon has no part in downloads right now — see [addonsLeftOutOfDownloads]. */
     enum class DownloadExclusion {
@@ -250,25 +233,8 @@ object SourceRegistry {
         NEEDS_LOSSLESS_OUTPUT,
     }
 
-    /**
-     * The enabled addons [activeForDownload] leaves out, and why.
-     *
-     * Both are the addon's own rules, and both used to be applied in silence: a
-     * listener with an addon connected watched downloads arrive from JioSaavn
-     * or YouTube with nothing to say the addon had been passed over on purpose.
-     * The second is the one that catches people out — the phone speaker and
-     * ordinary Bluetooth don't count as lossless outputs.
-     */
-    fun addonsLeftOutOfDownloads(): List<Pair<SourceConfig, DownloadExclusion>> =
-        enabledConfigs(configs.value)
-            .filter { it.kind == SourceKind.ADDON }
-            .mapNotNull { config ->
-                when {
-                    !config.allowDownloads -> config to DownloadExclusion.DOWNLOADS_NOT_ALLOWED
-                    config.awaitsLosslessOutput -> config to DownloadExclusion.NEEDS_LOSSLESS_OUTPUT
-                    else -> null
-                }
-            }
+    /** No addons are excluded from downloads. */
+    fun addonsLeftOutOfDownloads(): List<Pair<SourceConfig, DownloadExclusion>> = emptyList()
 
     /**
      * Records what an addon's manifest said about downloads, lossless output

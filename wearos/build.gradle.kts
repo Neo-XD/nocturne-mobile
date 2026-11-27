@@ -63,6 +63,17 @@ android {
     }
 
     signingConfigs {
+        val sharedDebug = rootProject.file("gradle/debug.keystore")
+        if (sharedDebug.exists()) {
+            getByName("debug") {
+                storeFile = sharedDebug
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
         // The phone's keystore, found the same way app/build.gradle.kts finds it.
         val store = signing.getProperty("storeFile")?.let { rootProject.file(it) }
         if (store != null && store.exists()) {
@@ -71,6 +82,8 @@ android {
                 storePassword = signing.getProperty("storePassword")
                 keyAlias = signing.getProperty("keyAlias")
                 keyPassword = signing.getProperty("keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }

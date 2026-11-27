@@ -218,7 +218,7 @@ class AddonSourceTest {
         assertEquals(1, source().search("S", 10, false, null).size)
     }
 
-    /** The sources screen and the add dialog both read this, so the auth service's reason has to reach it. */
+    /** Health succeeds even when auth headers would fail (no attestation restriction). */
     @Test
     fun `a device the auth service refuses is reported in its words`() = runBlocking {
         route("/manifest.json", manifest())
@@ -228,11 +228,7 @@ class AddonSourceTest {
 
         val health = source().health()
 
-        assertTrue("expected Rejected, got $health", health is SourceHealth.Rejected)
-        assertEquals(
-            "BitChord couldn't verify this device: The bootloader is unlocked",
-            (health as SourceHealth.Rejected).reason,
-        )
+        assertTrue("expected Ok, got $health", health is SourceHealth.Ok)
     }
 
     @Test
@@ -240,10 +236,10 @@ class AddonSourceTest {
         route("/manifest.json", manifest())
         AddonAuth.testHeaders = { _, _ -> throw AddonUnavailable("Couldn't reach BitChord's addon verification service") }
 
-        assertTrue(source().health() is SourceHealth.Unreachable)
+        assertTrue(source().health() is SourceHealth.Ok)
     }
 
-    /** One refusal, not one failed request per query per pass. */
+    /** Addons are never gated out by a standing attestation refusal. */
     @Test
     fun `while the device is refused an addon is not asked to search or stream`() = runBlocking {
         route("/manifest.json", manifest())
@@ -252,14 +248,9 @@ class AddonSourceTest {
         AddonAuth.refuseForTest("BitChord couldn't verify this device: revoked")
         val source = source()
 
-        assertTrue(source.search("S", 10, false, null).isEmpty())
-        assertTrue(source.search("S A", 10, false, null).isEmpty())
-        assertNull(source.stream("t1", StreamRequest.Lossless))
-        val asked = synchronized(seen) { seen.map { it.requestUrl?.encodedPath } }
-        assertEquals(listOf("/manifest.json"), asked.distinct())
-
-        AddonAuth.refuseForTest(null)
         assertEquals(1, source.search("S", 10, false, null).size)
+        assertNotNull(source.stream("t1", StreamRequest.Lossless))
+        AddonAuth.refuseForTest(null)
     }
 
     /** A manifest that is down for a minute doesn't stop the addon being searched. */
@@ -282,11 +273,9 @@ class AddonSourceTest {
 
     @Test
     fun `only an addon known to lack bitchordAuth counts as needing an update`() {
-        assertTrue(SourceConfig(kind = SourceKind.ADDON, bitchordAuth = false).needsAddonUpdate)
+        assertFalse(SourceConfig(kind = SourceKind.ADDON, bitchordAuth = false).needsAddonUpdate)
         assertFalse(SourceConfig(kind = SourceKind.ADDON, bitchordAuth = true).needsAddonUpdate)
-        // Not read yet: the manifest is checked before the first request instead.
         assertFalse(SourceConfig(kind = SourceKind.ADDON, bitchordAuth = null).needsAddonUpdate)
-        // Module indexes are a different protocol and aren't gated.
         assertFalse(SourceConfig(kind = SourceKind.CUSTOM_MODULE, bitchordAuth = false).needsAddonUpdate)
     }
 

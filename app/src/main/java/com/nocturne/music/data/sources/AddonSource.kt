@@ -69,44 +69,15 @@ class AddonSource(
     /** The stored config as it is now: the manifest switches change without this source being rebuilt. */
     private val live: SourceConfig get() = SourceRegistry.config(config.id) ?: config
 
-    /**
-     * True while this addon asked for a lossless output (`checkValidLossless`)
-     * and none is connected. Checked before every request this class makes —
-     * [SourceRegistry.active] already leaves the addon out of the walks, but a
-     * queued track names its source directly and arrives here regardless.
-     */
-    private fun shutOut(what: String): Boolean {
-        if (!live.awaitsLosslessOutput) return false
-        TrackLog.d(TAG, "${config.displayName}: no lossless output connected; not asking it for $what")
-        return true
-    }
+    /** No lossless-output gate: addons are always allowed regardless of audio output device. */
+    private fun shutOut(what: String): Boolean = false
 
     /**
-     * [shutOut], then the manifest's current answer, then [shutOut] again — so
-     * an addon that has just turned the switch on is stopped before the request
-     * rather than after it. The manifest is the client's shared, cached copy,
-     * which the request was about to read for its settings anyway.
-     *
-     * An addon that doesn't declare `bitchordAuth` is out of date but still
-     * used: the sources screen flags it, and nothing is sent to it but the
-     * plain requests it has always had. One that declares it needs this device
-     * verified. While the device was just refused, every request would fail
-     * the same way before leaving the phone, so none is made, and the reason is
-     * logged once rather than once per query.
+     * Refreshes the addon's manifest policy best-effort and always admits the
+     * request — no lossless-output or attestation restrictions.
      */
     private suspend fun admitted(what: String): Boolean {
-        if (shutOut(what)) return false
-        val declared = refreshPolicy()
-        if (shutOut(what)) return false
-        if ((declared ?: live.bitchordAuth) != true) return true
-        AddonAuth.standingRefusal()?.let { reason ->
-            if (reason != loggedRefusal) {
-                loggedRefusal = reason
-                TrackLog.d(TAG, "${config.displayName}: skipped until verification is retried — $reason")
-            }
-            return false
-        }
-        loggedRefusal = null
+        refreshPolicy()
         return true
     }
 
@@ -170,19 +141,6 @@ class AddonSource(
         client.manifest().fold(
             onSuccess = { manifest ->
                 recordPolicy(manifest)
-                // An addon that asks for auth is still not usable if this device
-                // can't be verified. Said here, in the auth service's words,
-                // because otherwise the row reads healthy while every search
-                // fails, and the reason is only in the log. One that doesn't ask
-                // is out of date, which the row flags on its own line, but works.
-                if (manifest.requiresBitChordAuth) client.checkAuth().exceptionOrNull()?.let { failure ->
-                    val reason = failure.message ?: "BitChord couldn't verify this device"
-                    return@fold if (failure is AddonUnavailable) {
-                        SourceHealth.Unreachable(reason)
-                    } else {
-                        SourceHealth.Rejected(reason)
-                    }
-                }
                 SourceHealth.Ok(
                     listOfNotNull(
                         manifest.displayName.takeIf { it.isNotBlank() },

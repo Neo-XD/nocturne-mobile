@@ -36,14 +36,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * caps, and it is the only source that can answer at all when the ones
  * above it are skipped.
  */
-fun AudioQuality.permits(kind: SourceKind): Boolean = when (this) {
-    AudioQuality.LOSSLESS -> true
-    // No lossless answer is wanted here, and a source that can serve one is
-    // the slow half of the list: an addon fronting several catalogues walks
-    // all of them before it answers, which is seconds spent to land on a
-    // transcode JioSaavn already has at 320.
-    AudioQuality.HIGH -> !kind.canServeLossless
-    AudioQuality.MEDIUM, AudioQuality.LOW -> kind == SourceKind.YOUTUBE
+fun AudioQuality.permits(kind: SourceKind): Boolean = when {
+    kind.canServeLossless -> true
+    this == AudioQuality.LOSSLESS || this == AudioQuality.HIGH -> true
+    else -> kind == SourceKind.YOUTUBE
 }
 
 /**

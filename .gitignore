@@ -34,6 +34,7 @@ Thumbs.db
 keystore.properties
 *.jks
 *.keystore
+!gradle/debug.keystore
 
 # Project scratch / debug artifacts
 .shots/

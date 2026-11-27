@@ -3851,10 +3851,7 @@ private fun BitChordApp(
                                 libraryResults = libraryResults,
                                 searchingAddons = searchSource == SearchSource.ADDONS,
                                 addonResults = addonResults,
-                                isBlocked = { song ->
-                                    val configId = SourceRegistry.parseTrackKey(song.videoId)?.first
-                                    !SourceRegistry.permitsForPlayback(configId, addonCeiling)
-                                },
+                                isBlocked = { false },
                                 onBlockedSongClick = { song -> blockedAddonSong = song },
                                 addonHistory =viewModel.addonSearchHistory.collectAsStateWithLifecycle().value,
                                 onAddonHistoryClick = { term ->

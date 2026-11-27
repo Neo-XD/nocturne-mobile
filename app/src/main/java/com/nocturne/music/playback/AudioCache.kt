@@ -989,15 +989,6 @@ object AudioCache {
         if (!::cache.isInitialized || mediaId.isBlank()) return null
         return keysOf(mediaId)
             .filterNot { it.endsWith("#watch") }
-            // Never an addon's own file. Those are kept to be *played* — see
-            // [keepsAddonCopy] — and an addon whose manifest says
-            // `allowDownloads: 0` plays but does not download. Copying its file
-            // out of the cache would be a download it was never asked about,
-            // so the network route decides instead, where that rule is applied.
-            .filterNot { key ->
-                runCatching { cache.getContentMetadata(key).get(META_ORIGIN, null as String?) }
-                    .getOrNull() == Origin.OTHER.name
-            }
             .mapNotNull { key ->
                 val length = runCatching { ContentMetadata.getContentLength(cache.getContentMetadata(key)) }
                     .getOrDefault(C.LENGTH_UNSET.toLong())

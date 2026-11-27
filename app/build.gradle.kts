@@ -142,6 +142,19 @@ android {
     }
 
     signingConfigs {
+        // Consistent debug signing across CI and local builds so dev APKs always
+        // upgrade cleanly instead of failing with a signature conflict.
+        val sharedDebug = rootProject.file("gradle/debug.keystore")
+        if (sharedDebug.exists()) {
+            getByName("debug") {
+                storeFile = sharedDebug
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
         // Both halves have to be there, not just the properties file: it *names*
         // the keystore rather than containing it, and both are gitignored
         // separately, so a checkout can easily end up with the one and not the
@@ -156,6 +169,8 @@ android {
                 storePassword = signing.getProperty("storePassword")
                 keyAlias = signing.getProperty("keyAlias")
                 keyPassword = signing.getProperty("keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }
