@@ -24,17 +24,17 @@ class AudioQualityCeilingTest {
     }
 
     @Test
-    fun `high skips every source that can serve lossless and keeps JioSaavn`() {
-        lossless.forEach { assertFalse(it.name, AudioQuality.HIGH.permits(it)) }
+    fun `high permits lossless addons, JioSaavn, and YouTube`() {
+        lossless.forEach { assertTrue(it.name, AudioQuality.HIGH.permits(it)) }
         assertTrue(AudioQuality.HIGH.permits(SourceKind.JIOSAAVN))
         assertTrue(AudioQuality.HIGH.permits(SourceKind.YOUTUBE))
     }
 
     @Test
-    fun `medium and low leave YouTube alone`() {
+    fun `medium and low keep lossless addons and YouTube`() {
         for (ceiling in listOf(AudioQuality.MEDIUM, AudioQuality.LOW)) {
             SourceKind.entries.forEach { kind ->
-                assertEquals("$ceiling/$kind", kind == SourceKind.YOUTUBE, ceiling.permits(kind))
+                assertEquals("$ceiling/$kind", kind.canServeLossless || kind == SourceKind.YOUTUBE, ceiling.permits(kind))
             }
         }
     }
