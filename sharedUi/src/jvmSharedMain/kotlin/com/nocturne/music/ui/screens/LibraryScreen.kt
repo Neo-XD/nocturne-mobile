@@ -24,12 +24,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import com.nocturne.music.ui.components.ShelfRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,6 +36,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -56,7 +59,6 @@ import com.nocturne.music.ui.components.LIBRARY_GRID_SPACING
 import com.nocturne.music.ui.components.MessageState
 import com.nocturne.music.ui.components.PAGE_GUTTER
 import com.nocturne.music.ui.components.PullToRefresh
-import com.nocturne.music.ui.components.SHELF_CARD_WIDTH
 import com.nocturne.music.ui.components.libraryGrid
 import com.nocturne.music.ui.components.librarySkeleton
 
@@ -118,115 +120,177 @@ fun LibraryScreen(
     showTitle: Boolean = true,
 ) {
     val pinnedPlaylists by AppUi.host.pinnedPlaylists.collectAsStateWithLifecycle()
+    val librarySort by AppUi.host.librarySort.collectAsStateWithLifecycle()
     val onDevice = stringResource(Res.string.on_device)
+    val shelves = (state as? UiState.Success)?.data?.shelves.orEmpty()
+    // Playlists leads, even empty, because it carries the tile that makes the first playlist.
+    val tabs = buildList {
+        add(shelves.firstOrNull { it.title == PLAYLISTS } ?: HomeShelf(PLAYLISTS, emptyList()))
+        if (signedIn) addAll(shelves.filter { it.title != PLAYLISTS })
+        if (deviceItems.isNotEmpty()) add(HomeShelf(title = onDevice, items = deviceItems))
+    }
+    var selectedTitle by rememberSaveable { mutableStateOf(PLAYLISTS) }
+    val selected = tabs.firstOrNull { it.title == selectedTitle } ?: tabs.first()
+    val selectedItems = selected.pinnedFirst(pinnedPlaylists).sortedForLibrary(librarySort).items
+    val isPlaylists = selected.title == PLAYLISTS
+    val isDevice = selected.title == onDevice && deviceItems.isNotEmpty()
     PullToRefresh(
         refreshing = refreshing,
         onRefresh = onRefresh,
         state = pullState,
         modifier = modifier,
     ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = contentPadding,
-        ) {
-            if (showTitle) {
-                item {
-                    Text(
-                        text = stringResource(Res.string.library),
-                        style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp),
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val grid = libraryGrid(maxWidth - PAGE_GUTTER * 2)
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = contentPadding,
+            ) {
+                if (showTitle) {
+                    item {
+                        Text(
+                            text = stringResource(Res.string.library),
+                            style = MaterialTheme.typography.displayLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp),
+                        )
+                    }
+                }
+                item(key = "replay") { replay() }
+                if (links.isNotEmpty()) {
+                    item(key = "links") { LibraryLinkList(links = links, onClick = onShelfItemClick) }
+                }
+                item(key = "tabs") {
+                    LibraryTabRow(
+                        titles = tabs.map { it.title },
+                        selected = selected.title,
+                        onSelect = { selectedTitle = it },
                     )
                 }
-            }
-            item(key = "replay") { replay() }
-            if (links.isNotEmpty()) {
-                item(key = "links") { LibraryLinkList(links = links, onClick = onShelfItemClick) }
-            }
-            if (deviceItems.isNotEmpty()) {
-                item(key = "shelf:$onDevice") {
-                    val onDeviceShelf = HomeShelf(title = onDevice, items = deviceItems)
-                    LibraryGridShelf(
-                        shelf = onDeviceShelf,
-                        onItemClick = onShelfItemClick,
-                        onItemLongPress = onShelfItemLongPress,
-                        onShowAll = { onShowAll(onDeviceShelf) },
-                    )
+                if (signedIn && !isDevice) {
+                    when (state) {
+                        is UiState.Loading -> {
+                            librarySkeleton()
+                            return@LazyColumn
+                        }
+                        is UiState.Error -> {
+                            item {
+                                MessageState(state.message, actionLabel = stringResource(Res.string.retry), onAction = onRetry)
+                            }
+                            return@LazyColumn
+                        }
+                        is UiState.Success -> Unit
+                    }
                 }
-            }
-            if (!signedIn) {
-                item(key = "shelf:$PLAYLISTS") {
-                    val emptyPlaylists = HomeShelf(PLAYLISTS, emptyList())
-                    PlaylistShelf(
-                        shelf = emptyPlaylists,
-                        onItemClick = onShelfItemClick,
-                        onItemLongPress = onShelfItemLongPress,
-                        onNewPlaylist = onNewPlaylist,
-                        onImportSpotifyPlaylist = onImportSpotifyPlaylist,
-                        onShowAll = { onShowAll(emptyPlaylists) },
-                    )
+                val cells = buildList {
+                    if (isPlaylists) {
+                        add(LibraryCell.NewPlaylist)
+                        if (onImportSpotifyPlaylist != null) add(LibraryCell.ImportSpotify)
+                    }
+                    selectedItems.forEach { add(LibraryCell.Item(it)) }
                 }
-                item {
-                    MessageState(
-                        message = stringResource(Res.string.library_sign_in_description),
-                        actionLabel = stringResource(Res.string.sign_in),
-                        onAction = onSignIn,
-                    )
-                }
-                return@LazyColumn
-            }
-            when (state) {
-                is UiState.Loading -> librarySkeleton()
-                is UiState.Error -> item {
-                    MessageState(state.message, actionLabel = stringResource(Res.string.retry), onAction = onRetry)
-                }
-                is UiState.Success -> {
-                    // A fresh account has no Playlists shelf at all, and that
-                    // is exactly the account most in need of the button that
-                    // makes one — so the row is drawn either way, empty but
-                    // for the tile that creates the first playlist.
-                    val shelves = state.data.shelves
-                    if (shelves.none { it.title == PLAYLISTS }) {
-                        item(key = "shelf:$PLAYLISTS") {
-                            val emptyPlaylists = HomeShelf(PLAYLISTS, emptyList())
-                            PlaylistShelf(
-                                shelf = emptyPlaylists,
-                                onItemClick = onShelfItemClick,
-                                onItemLongPress = onShelfItemLongPress,
-                                onNewPlaylist = onNewPlaylist,
-                                onImportSpotifyPlaylist = onImportSpotifyPlaylist,
-                                onShowAll = { onShowAll(emptyPlaylists) },
-                            )
+                cells.chunked(grid.columns).forEachIndexed { rowIndex, row ->
+                    item(key = "tab:${selected.title}:row:$rowIndex") {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(LIBRARY_GRID_SPACING),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = PAGE_GUTTER)
+                                .padding(bottom = 20.dp),
+                        ) {
+                            row.forEach { cell ->
+                                Box(Modifier.weight(1f)) {
+                                    when (cell) {
+                                        LibraryCell.NewPlaylist -> NewShelfCard(
+                                            icon = NocturneIcons.Plus,
+                                            label = stringResource(Res.string.new_playlist),
+                                            subtitle = stringResource(Res.string.saved_to_youtube_music),
+                                            onClick = onNewPlaylist,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                        LibraryCell.ImportSpotify -> NewShelfCard(
+                                            icon = NocturneIcons.Download,
+                                            label = stringResource(Res.string.import_spotify),
+                                            subtitle = stringResource(Res.string.import_spotify_subtitle),
+                                            onClick = { onImportSpotifyPlaylist?.invoke() },
+                                            logo = Res.drawable.spotify_logo,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                        is LibraryCell.Item -> ShelfCard(
+                                            item = cell.item,
+                                            onClick = { onShelfItemClick(cell.item) },
+                                            onLongPress = { onShelfItemLongPress(cell.item) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            isPinned = cell.item.browseId != null && cell.item.browseId in pinnedPlaylists,
+                                        )
+                                    }
+                                }
+                            }
+                            repeat(grid.columns - row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
-                    shelves.forEach { shelf ->
-                        item(key = "shelf:${shelf.title}") {
-                            if (shelf.title == PLAYLISTS) {
-                                val pinnedFirst = shelf.pinnedFirst(pinnedPlaylists)
-                                PlaylistShelf(
-                                    shelf = pinnedFirst,
-                                    onItemClick = onShelfItemClick,
-                                    onItemLongPress = onShelfItemLongPress,
-                                    onNewPlaylist = onNewPlaylist,
-                                    onImportSpotifyPlaylist = onImportSpotifyPlaylist,
-                                    onShowAll = { onShowAll(pinnedFirst) },
-                                    pinnedPlaylists = pinnedPlaylists,
-                                )
-                            } else {
-                                LibraryGridShelf(
-                                    shelf = shelf,
-                                    onItemClick = onShelfItemClick,
-                                    onItemLongPress = onShelfItemLongPress,
-                                    onShowAll = { onShowAll(shelf) },
-                                )
-                            }
-                        }
+                }
+                if (!signedIn && isPlaylists) {
+                    item {
+                        MessageState(
+                            message = stringResource(Res.string.library_sign_in_description),
+                            actionLabel = stringResource(Res.string.sign_in),
+                            onAction = onSignIn,
+                        )
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * The Library's sections as tabs: one pill per shelf, sideways-scrolling when they outrun the
+ * width, the selected one filled.
+ */
+@Composable
+private fun LibraryTabRow(titles: List<String>, selected: String, onSelect: (String) -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = PAGE_GUTTER, vertical = 12.dp),
+    ) {
+        titles.forEach { title ->
+            val isSelected = title == selected
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.onBackground
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        },
+                    )
+                    .clickable { onSelect(title) }
+                    .heightIn(min = 36.dp)
+                    .padding(horizontal = 16.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (isSelected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+/** One cell of a Library tab's grid: a create tile on the Playlists tab, or a shelf card. */
+private sealed interface LibraryCell {
+    data object NewPlaylist : LibraryCell
+    data object ImportSpotify : LibraryCell
+    data class Item(val item: ShelfItem) : LibraryCell
 }
 
 /** One of the Library's folder rows: the page [item] opens, behind [icon]. */
@@ -296,96 +360,6 @@ private fun LibraryLinkList(links: List<LibraryLink>, onClick: (ShelfItem) -> Un
 
 private val LINK_ICON_SIZE = 24.dp
 private val LINK_ICON_GAP = 16.dp
-
-/**
- * The one shelf on this page that can be written to: it leads with the tile
- * that creates a playlist, and holding a card gets rename and delete on top of
- * the queue actions every other shelf's menu offers.
- */
-@Composable
-private fun PlaylistShelf(
-    shelf: HomeShelf,
-    onItemClick: (ShelfItem) -> Unit,
-    onItemLongPress: (ShelfItem) -> Unit,
-    onNewPlaylist: () -> Unit,
-    onImportSpotifyPlaylist: (() -> Unit)? = null,
-    onShowAll: () -> Unit,
-    pinnedPlaylists: List<String> = emptyList(),
-) {
-    LibraryGridShelf(
-        shelf = shelf,
-        onItemClick = onItemClick,
-        onItemLongPress = onItemLongPress,
-        onShowAll = onShowAll,
-        pinnedPlaylists = pinnedPlaylists,
-        leadingCard = {
-            Row(horizontalArrangement = Arrangement.spacedBy(LIBRARY_GRID_SPACING)) {
-                NewShelfCard(
-                    icon = NocturneIcons.Plus,
-                    label = stringResource(Res.string.new_playlist),
-                    subtitle = stringResource(Res.string.saved_to_youtube_music),
-                    onClick = onNewPlaylist,
-                )
-                if (onImportSpotifyPlaylist != null) {
-                    NewShelfCard(
-                        icon = NocturneIcons.Download,
-                        label = stringResource(Res.string.import_spotify),
-                        subtitle = stringResource(Res.string.import_spotify_subtitle),
-                        onClick = onImportSpotifyPlaylist,
-                        logo = Res.drawable.spotify_logo,
-                    )
-                }
-            }
-        },
-    )
-}
-
-/** A Library shelf's preview row never swipes past this many cards. */
-private const val LIBRARY_ROW_MAX_ITEMS = 5
-
-/**
- * A Library shelf: a sideways-scrolling row of [SHELF_CARD_WIDTH] cards, the
- * same as every other shelf, but stopped at [LIBRARY_ROW_MAX_ITEMS] rather
- * than left to run the shelf's whole length — with a "Show all" beside the
- * title whenever there's more than that, opening the rest as a
- * vertically-scrolling grid instead. See [LibraryGridPage].
- *
- * [leadingCard], if given, occupies the first slot and counts against that
- * cap — see [PlaylistShelf].
- */
-@Composable
-internal fun LibraryGridShelf(
-    shelf: HomeShelf,
-    onItemClick: (ShelfItem) -> Unit,
-    onItemLongPress: (ShelfItem) -> Unit,
-    onShowAll: () -> Unit,
-    leadingCard: (@Composable () -> Unit)? = null,
-    pinnedPlaylists: List<String> = emptyList(),
-) {
-    val leadingCount = if (leadingCard != null) 1 else 0
-    val visibleItems = shelf.items.take((LIBRARY_ROW_MAX_ITEMS - leadingCount).coerceAtLeast(0))
-    Column(Modifier.padding(bottom = 26.dp)) {
-        SectionHeader(
-            title = shelf.title,
-            subtitle = shelf.subtitle,
-            onShowAll = onShowAll.takeIf { shelf.items.size + leadingCount > LIBRARY_ROW_MAX_ITEMS },
-        )
-        ShelfRow(
-            contentPadding = PaddingValues(horizontal = PAGE_GUTTER),
-            horizontalArrangement = Arrangement.spacedBy(LIBRARY_GRID_SPACING),
-        ) {
-            leadingCard?.let { card -> item(key = "leading") { card() } }
-            items(visibleItems) { item ->
-                ShelfCard(
-                    item = item,
-                    onClick = { onItemClick(item) },
-                    onLongPress = { onItemLongPress(item) },
-                    isPinned = item.browseId != null && item.browseId in pinnedPlaylists,
-                )
-            }
-        }
-    }
-}
 
 /**
  * Everything a Library shelf's "Show all" opens onto — the same cards, at the
