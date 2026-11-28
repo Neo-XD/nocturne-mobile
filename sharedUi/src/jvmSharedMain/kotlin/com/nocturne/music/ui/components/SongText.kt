@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,7 +71,7 @@ fun ExplicitSongTitle(
             ExplicitBadge(badgeColor)
             Spacer(Modifier.width(6.dp))
         }
-        if (AiDetector.isAiTrack(song.title, song.artist)) {
+        if (rememberAiVerdict(song).music) {
             AiBadge(badgeColor)
             Spacer(Modifier.width(6.dp))
         }
@@ -192,19 +193,37 @@ fun ExplicitBadge(color: Color, modifier: Modifier = Modifier) {
     }
 }
 
+/** [AiDetector]'s verdict for [song], recomputed when the AI artist dataset refreshes. */
+@Composable
+fun rememberAiVerdict(song: Song): AiVerdict {
+    val revision by AiDetector.revision.collectAsState()
+    return remember(song, revision) { AiDetector.verdict(song) }
+}
+
+/** The AI badges for [song] in a row: "AI" for AI music, "AI ART" when its artwork is AI-made too. */
+@Composable
+fun AiBadges(song: Song, color: Color, modifier: Modifier = Modifier) {
+    val verdict = rememberAiVerdict(song)
+    if (!verdict.music && !verdict.art) return
+    Row(modifier = modifier, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (verdict.music) AiBadge(color)
+        if (verdict.art) AiBadge(color, label = "AI ART")
+    }
+}
+
 /**
  * A badge marking AI-generated content (e.g. Suno, Udio, AI covers).
  * Uses the same punched-out Apple Music typography style as [ExplicitBadge].
  */
 @Composable
-fun AiBadge(color: Color, modifier: Modifier = Modifier) {
+fun AiBadge(color: Color, modifier: Modifier = Modifier, label: String = "AI") {
     val measurer = rememberTextMeasurer()
     val style = MaterialTheme.typography.labelSmall.copy(
         fontSize = 8.5.sp,
         fontWeight = FontWeight.W800,
         letterSpacing = 0.sp,
     )
-    val text = remember(measurer, style) { measurer.measure("AI", style) }
+    val text = remember(measurer, style, label) { measurer.measure(label, style) }
     val density = LocalDensity.current
     val capPx = with(density) { style.fontSize.toPx() } * CAP_HEIGHT
     val height = with(density) { (capPx / BADGE_CAP_SHARE).toDp() }
