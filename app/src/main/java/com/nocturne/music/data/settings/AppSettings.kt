@@ -1,5 +1,6 @@
 ﻿package com.nocturne.music.data.settings
 
+import androidx.core.content.edit
 import com.nocturne.music.data.webdav.update
 import com.nocturne.music.ui.components.VideoThumbnails
 import android.content.Context
@@ -1765,19 +1766,19 @@ object AppSettings {
 
     fun setAppBackdrop(value: Boolean) {
         appBackdrop.value = value
-        prefs.edit().putBoolean(KEY_APP_BACKDROP, value).apply()
+        prefs.edit { putBoolean(KEY_APP_BACKDROP, value) }
     }
 
     fun setAppBackdropBlur(value: Float) {
         val clamped = value.coerceIn(APP_BACKDROP_BLUR_RANGE.start, APP_BACKDROP_BLUR_RANGE.endInclusive)
         appBackdropBlur.value = clamped
-        prefs.edit().putFloat(KEY_APP_BACKDROP_BLUR, clamped).apply()
+        prefs.edit { putFloat(KEY_APP_BACKDROP_BLUR, clamped) }
     }
 
     fun setAppBackdropDim(value: Float) {
         val clamped = value.coerceIn(0f, 1f)
         appBackdropDim.value = clamped
-        prefs.edit().putFloat(KEY_APP_BACKDROP_DIM, clamped).apply()
+        prefs.edit { putFloat(KEY_APP_BACKDROP_DIM, clamped) }
     }
 
     fun setPlaybackPitch(value: Float) {
