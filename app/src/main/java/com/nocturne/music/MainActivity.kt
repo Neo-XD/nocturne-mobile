@@ -3018,49 +3018,11 @@ private fun BitChordApp(
                         .hazeSource(hazeState)
                         .then(if (glassActive && glassSamplesBackdrop) Modifier.layerBackdrop(appBackdrop) else Modifier),
                 ) {
-                    // Full-app blurred album art background behind all tabs and screens.
-                    // Anchored to the root viewport so overscrolling never cuts it off.
-                    val appArtUrl = (activeTrack ?: playerSong)?.thumbnailUrl
-                    val artBackdropOn by AppSettings.appBackdrop.collectAsStateWithLifecycle()
-                    val artBackdropBlur by AppSettings.appBackdropBlur.collectAsStateWithLifecycle()
-                    val artBackdropDim by AppSettings.appBackdropDim.collectAsStateWithLifecycle()
-                    if (artBackdropOn && appArtUrl != null) {
-                        androidx.compose.animation.Crossfade(
-                            targetState = appArtUrl,
-                            animationSpec = tween(600),
-                            label = "appBgBlur",
-                            modifier = Modifier.fillMaxSize(),
-                        ) { artUrl ->
-                            Box(Modifier.fillMaxSize()) {
-                                coil3.compose.AsyncImage(
-                                    // Blurred this far, a small copy looks the same and decodes far cheaper.
-                                    model = artUrl.artworkAt(if (artBackdropBlur >= 24f) 96 else 256),
-                                    contentDescription = null,
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .then(
-                                            if (!reduceDynamicBlur && artBackdropBlur > 0f) {
-                                                Modifier.blur(artBackdropBlur.dp)
-                                            } else {
-                                                Modifier
-                                            },
-                                        ),
-                                )
-                                Box(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            if (darkTheme) {
-                                                Color.Black.copy(alpha = artBackdropDim)
-                                            } else {
-                                                Color.White.copy(alpha = (artBackdropDim + 0.08f).coerceAtMost(1f))
-                                            },
-                                        ),
-                                )
-                            }
-                        }
-                    }
+                    AppArtworkBackdrop(
+                        artUrlOrNull = (activeTrack ?: playerSong)?.thumbnailUrl,
+                        darkTheme = darkTheme,
+                        reduceDynamicBlur = reduceDynamicBlur,
+                    )
                     AnimatedContent(
                         // Whatever is on top of the back stack — see [AppNavigator].
                         targetState = when {
@@ -6511,3 +6473,48 @@ private const val TAB_HOME = 0
 private const val TAB_LIBRARY = 1
 private const val TAB_YOU = 2
 private const val TAB_SEARCH = 3
+
+/** The track's cover behind every page; its own function so BitChordApp stays under the JVM's 64 KB method limit. */
+@Composable
+private fun AppArtworkBackdrop(artUrlOrNull: String?, darkTheme: Boolean, reduceDynamicBlur: Boolean) {
+    val artBackdropOn by AppSettings.appBackdrop.collectAsStateWithLifecycle()
+    val artBackdropBlur by AppSettings.appBackdropBlur.collectAsStateWithLifecycle()
+    val artBackdropDim by AppSettings.appBackdropDim.collectAsStateWithLifecycle()
+    if (artBackdropOn && artUrlOrNull != null) {
+        androidx.compose.animation.Crossfade(
+            targetState = artUrlOrNull,
+            animationSpec = tween(600),
+            label = "appBgBlur",
+            modifier = Modifier.fillMaxSize(),
+        ) { artUrl ->
+            Box(Modifier.fillMaxSize()) {
+                coil3.compose.AsyncImage(
+                    // Blurred this far, a small copy looks the same and decodes far cheaper.
+                    model = artUrl.artworkAt(if (artBackdropBlur >= 24f) 96 else 256),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (!reduceDynamicBlur && artBackdropBlur > 0f) {
+                                Modifier.blur(artBackdropBlur.dp)
+                            } else {
+                                Modifier
+                            },
+                        ),
+                )
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            if (darkTheme) {
+                                Color.Black.copy(alpha = artBackdropDim)
+                            } else {
+                                Color.White.copy(alpha = (artBackdropDim + 0.08f).coerceAtMost(1f))
+                            },
+                        ),
+                )
+            }
+        }
+    }
+}
