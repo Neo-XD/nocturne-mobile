@@ -410,7 +410,7 @@
     <string name="transparent_player_buttons" translatable="false">Transparent playback buttons</string>
     <string name="transparent_player_buttons_subtitle" translatable="false">Remove the circular background behind player transport controls</string>
     <string name="app_backdrop" translatable="false">Artwork backdrop</string>
-    <string name="app_backdrop_subtitle" translatable="false">The playing track's blurred cover behind every page</string>
+    <string name="app_backdrop_subtitle" translatable="false">The playing track\'s blurred cover behind every page</string>
     <string name="app_backdrop_blur" translatable="false">Backdrop blur</string>
     <string name="app_backdrop_dim" translatable="false">Backdrop dimming</string>
     <string name="animated_cover_art">Animated cover art</string>
