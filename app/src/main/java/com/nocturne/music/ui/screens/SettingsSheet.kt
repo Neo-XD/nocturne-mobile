@@ -262,6 +262,9 @@ fun SettingsScreen(
     val playerTheme by AppSettings.playerTheme.collectAsStateWithLifecycle()
     val playerStyle by AppSettings.playerStyle.collectAsStateWithLifecycle()
     val transparentPlayerButtons by AppSettings.transparentPlayerButtons.collectAsStateWithLifecycle()
+    val appBackdrop by AppSettings.appBackdrop.collectAsStateWithLifecycle()
+    val appBackdropBlur by AppSettings.appBackdropBlur.collectAsStateWithLifecycle()
+    val appBackdropDim by AppSettings.appBackdropDim.collectAsStateWithLifecycle()
     val uiStyle by AppSettings.uiStyle.collectAsStateWithLifecycle()
     val homeStyle by AppSettings.homeStyle.collectAsStateWithLifecycle()
     val syncedLyrics by AppSettings.syncedLyrics.collectAsStateWithLifecycle()
@@ -1053,6 +1056,38 @@ fun SettingsScreen(
                     },
                     onClick = { AppSettings.setTransparentPlayerButtons(!transparentPlayerButtons) },
                 )
+            }
+            val appBackdropTitle = stringResource(R.string.app_backdrop)
+            row(appBackdropTitle, "background", "artwork", "album art", "blur", "backdrop", "wallpaper") {
+                SettingsRow(
+                    icon = SfIcons.BlurOn,
+                    title = appBackdropTitle,
+                    subtitle = stringResource(R.string.app_backdrop_subtitle),
+                    trailing = {
+                        IosSwitch(checked = appBackdrop, onCheckedChange = AppSettings::setAppBackdrop)
+                    },
+                    onClick = { AppSettings.setAppBackdrop(!appBackdrop) },
+                )
+                if (appBackdrop) {
+                    SliderRow(
+                        icon = SfIcons.BlurOn,
+                        title = stringResource(R.string.app_backdrop_blur),
+                        value = "${appBackdropBlur.roundToInt()} dp",
+                        sliderValue = appBackdropBlur,
+                        onSliderValue = AppSettings::setAppBackdropBlur,
+                        valueRange = AppSettings.APP_BACKDROP_BLUR_RANGE,
+                        steps = 0,
+                    )
+                    SliderRow(
+                        icon = SfIcons.Gradient,
+                        title = stringResource(R.string.app_backdrop_dim),
+                        value = "${(appBackdropDim * 100).roundToInt()}%",
+                        sliderValue = appBackdropDim,
+                        onSliderValue = AppSettings::setAppBackdropDim,
+                        valueRange = 0f..1f,
+                        steps = 0,
+                    )
+                }
             }
             val fontTitle = stringResource(R.string.font)
             row(fontTitle, "typeface", "sf pro", "legacy") {

@@ -3013,7 +3013,10 @@ private fun BitChordApp(
                 // Full-app blurred album art background behind all tabs and screens.
                 // Anchored to the root viewport so overscrolling never cuts it off.
                 val appArtUrl = (activeTrack ?: playerSong)?.thumbnailUrl
-                if (appArtUrl != null) {
+                val appBackdrop by AppSettings.appBackdrop.collectAsStateWithLifecycle()
+                val appBackdropBlur by AppSettings.appBackdropBlur.collectAsStateWithLifecycle()
+                val appBackdropDim by AppSettings.appBackdropDim.collectAsStateWithLifecycle()
+                if (appBackdrop && appArtUrl != null) {
                     androidx.compose.animation.Crossfade(
                         targetState = appArtUrl,
                         animationSpec = tween(600),
@@ -3022,21 +3025,28 @@ private fun BitChordApp(
                     ) { artUrl ->
                         Box(Modifier.fillMaxSize()) {
                             coil3.compose.AsyncImage(
-                                model = artUrl.artworkAt(256),
+                                // Blurred this far, a small copy looks the same and decodes far cheaper.
+                                model = artUrl.artworkAt(if (appBackdropBlur >= 24f) 96 else 256),
                                 contentDescription = null,
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .then(if (!reduceDynamicBlur) Modifier.blur(72.dp) else Modifier),
+                                    .then(
+                                        if (!reduceDynamicBlur && appBackdropBlur > 0f) {
+                                            Modifier.blur(appBackdropBlur.dp)
+                                        } else {
+                                            Modifier
+                                        },
+                                    ),
                             )
                             Box(
                                 Modifier
                                     .fillMaxSize()
                                     .background(
                                         if (darkTheme) {
-                                            Color.Black.copy(alpha = 0.72f)
+                                            Color.Black.copy(alpha = appBackdropDim)
                                         } else {
-                                            Color.White.copy(alpha = 0.80f)
+                                            Color.White.copy(alpha = (appBackdropDim + 0.08f).coerceAtMost(1f))
                                         },
                                     ),
                             )
