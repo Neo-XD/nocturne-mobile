@@ -41,8 +41,8 @@ buildscript {
  * No "v" in the name — the in-app updater reads it as a number; the "v" is the
  * release tag's alone.
  */
-extra["nocturneVersionCode"] = 40
-extra["nocturneVersionName"] = "0.4.0"
+extra["nocturneVersionCode"] = 41
+extra["nocturneVersionName"] = "0.4.1"
 
 /*
  * Bump this by hand before cutting each sideloaded test build ("beta2",
