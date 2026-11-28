@@ -443,14 +443,14 @@ internal fun LandscapeCredits(
                     // Before the title, in the artist line's colour.
                     leading = {
                         val isExplicit = song.isExplicit == true
-                        val isAi = com.nocturne.music.ui.components.AiDetector.isAiTrack(song.title, song.artist)
+                        val isAi = com.nocturne.music.ui.components.rememberAiVerdict(song).let { it.music || it.art }
                         if (isExplicit || isAi) {
                             androidx.compose.foundation.layout.Row(
                                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 if (isExplicit) ExplicitBadge(artistColor)
-                                if (isAi) com.nocturne.music.ui.components.AiBadge(artistColor)
+                                if (isAi) com.nocturne.music.ui.components.AiBadges(song, artistColor)
                             }
                         }
                     },

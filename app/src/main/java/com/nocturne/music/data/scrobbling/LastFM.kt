@@ -250,7 +250,8 @@ object LastFM {
         )
     }
 
-    suspend fun getUserStats(username: String): LastFmStats? = runCatching {
+    /** [period] is Last.fm's own: `7day`, `1month`, `3month`, `6month`, `12month` or `overall`. */
+    suspend fun getUserStats(username: String, period: String = "overall"): LastFmStats? = runCatching {
         val info = postAndDecode<LastFmUserInfoResponse>(
             method = "user.getInfo",
             extra = mapOf("user" to username),
@@ -258,14 +259,14 @@ object LastFM {
         val artists = runCatching {
             postAndDecode<LastFmTopArtistsResponse>(
                 method = "user.getTopArtists",
-                extra = mapOf("user" to username, "limit" to "5", "period" to "overall"),
+                extra = mapOf("user" to username, "limit" to "5", "period" to period),
             ).topartists.artist
         }.getOrDefault(emptyList())
 
         val tracks = runCatching {
             postAndDecode<LastFmTopTracksResponse>(
                 method = "user.getTopTracks",
-                extra = mapOf("user" to username, "limit" to "5", "period" to "overall"),
+                extra = mapOf("user" to username, "limit" to "5", "period" to period),
             ).toptracks.track
         }.getOrDefault(emptyList())
 

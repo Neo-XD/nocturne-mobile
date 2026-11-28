@@ -1,5 +1,6 @@
 ﻿package com.nocturne.music.data.settings
 
+import androidx.core.content.edit
 import com.nocturne.music.data.webdav.update
 import com.nocturne.music.ui.components.VideoThumbnails
 import android.content.Context
@@ -609,6 +610,15 @@ object AppSettings {
     /** Remove the circular translucent background behind player transport buttons. */
     val transparentPlayerButtons = MutableStateFlow(false)
 
+    /** The current track's blurred artwork behind every page; off draws the plain background. */
+    val appBackdrop = MutableStateFlow(true)
+
+    /** How far the app backdrop's artwork is blurred, in dp. */
+    val appBackdropBlur = MutableStateFlow(DEFAULT_APP_BACKDROP_BLUR)
+
+    /** How much of the theme's background is laid over the app backdrop, 0 to 1. */
+    val appBackdropDim = MutableStateFlow(DEFAULT_APP_BACKDROP_DIM)
+
     /** Overall app UI style: Default (Liquid Glass) or Material 3 Expressive (M3E). */
     val uiStyle = MutableStateFlow(UiStyle.DEFAULT)
 
@@ -1084,6 +1094,10 @@ object AppSettings {
             PlayerStyle.valueOf(prefs.getString(KEY_PLAYER_STYLE, null) ?: PlayerStyle.SQUARE.name)
         }.getOrDefault(PlayerStyle.SQUARE)
         transparentPlayerButtons.value = prefs.getBoolean(KEY_TRANSPARENT_PLAYER_BUTTONS, false)
+        appBackdrop.value = prefs.getBoolean(KEY_APP_BACKDROP, true)
+        appBackdropBlur.value = prefs.getFloat(KEY_APP_BACKDROP_BLUR, DEFAULT_APP_BACKDROP_BLUR)
+            .coerceIn(APP_BACKDROP_BLUR_RANGE.start, APP_BACKDROP_BLUR_RANGE.endInclusive)
+        appBackdropDim.value = prefs.getFloat(KEY_APP_BACKDROP_DIM, DEFAULT_APP_BACKDROP_DIM).coerceIn(0f, 1f)
         uiStyle.value = runCatching {
             UiStyle.valueOf(prefs.getString(KEY_UI_STYLE, null) ?: UiStyle.DEFAULT.name)
         }.getOrDefault(UiStyle.DEFAULT)
@@ -1750,6 +1764,23 @@ object AppSettings {
         prefs.edit().putBoolean(KEY_TRANSPARENT_PLAYER_BUTTONS, value).apply()
     }
 
+    fun setAppBackdrop(value: Boolean) {
+        appBackdrop.value = value
+        prefs.edit { putBoolean(KEY_APP_BACKDROP, value) }
+    }
+
+    fun setAppBackdropBlur(value: Float) {
+        val clamped = value.coerceIn(APP_BACKDROP_BLUR_RANGE.start, APP_BACKDROP_BLUR_RANGE.endInclusive)
+        appBackdropBlur.value = clamped
+        prefs.edit { putFloat(KEY_APP_BACKDROP_BLUR, clamped) }
+    }
+
+    fun setAppBackdropDim(value: Float) {
+        val clamped = value.coerceIn(0f, 1f)
+        appBackdropDim.value = clamped
+        prefs.edit { putFloat(KEY_APP_BACKDROP_DIM, clamped) }
+    }
+
     fun setPlaybackPitch(value: Float) {
         val clamped = value.coerceIn(0.5f, 2.0f)
         playbackPitch.value = clamped
@@ -2378,6 +2409,12 @@ object AppSettings {
     private const val KEY_PLAYER_THEME = "player_theme"
     private const val KEY_PLAYER_STYLE = "player_style"
     private const val KEY_TRANSPARENT_PLAYER_BUTTONS = "transparent_player_buttons"
+    private const val KEY_APP_BACKDROP = "app_backdrop"
+    private const val KEY_APP_BACKDROP_BLUR = "app_backdrop_blur"
+    private const val KEY_APP_BACKDROP_DIM = "app_backdrop_dim"
+    const val DEFAULT_APP_BACKDROP_BLUR = 72f
+    const val DEFAULT_APP_BACKDROP_DIM = 0.72f
+    val APP_BACKDROP_BLUR_RANGE = 0f..120f
     private const val KEY_PITCH = "playback_pitch"
     private const val KEY_UI_STYLE = "ui_style"
     private const val KEY_HOME_STYLE = "home_style"

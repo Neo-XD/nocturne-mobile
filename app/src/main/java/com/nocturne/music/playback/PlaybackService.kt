@@ -2313,7 +2313,7 @@ class PlaybackService : MediaLibraryService() {
             // The listener's speed, not the active player's: straight after an
             // Advanced Automix blend the active player is still easing off its
             // beatmatch stretch, and copying that would keep it for good.
-            standbyPlayer.setPlaybackSpeed(AppSettings.playbackSpeed.value)
+            standbyPlayer.setSpeedWithUserPitch(AppSettings.playbackSpeed.value)
             standbyPlayer.volume = 0f
             standbyPlayer.setMediaItems(newItems, currentIndex, alignedStartPos)
             spareLoudness().track(mediaId, nextMediaIdOf(standbyPlayer))
@@ -6902,7 +6902,7 @@ class PlaybackService : MediaLibraryService() {
      */
     private fun applySettings(player: ExoPlayer) {
         player.skipSilenceEnabled = AppSettings.skipSilence.value
-        player.setPlaybackSpeed(AppSettings.playbackSpeed.value)
+        player.setSpeedWithUserPitch(AppSettings.playbackSpeed.value)
         // Restore persisted shuffle and repeat states on startup. Assign both
         // values: Android can destroy and recreate the service while retaining
         // this process, so QueueShuffle's process-wide object may still hold
@@ -7308,14 +7308,9 @@ class PlaybackService : MediaLibraryService() {
             combine(
                 AppSettings.playbackSpeed,
                 AppSettings.playbackPitch,
-            ) { speed, pitch -> speed to pitch }.collect { (speed, pitch) ->
+            ) { speed, _ -> speed }.collect { speed ->
                 if (crossfade?.isTransitioning() == true) return@collect
-                if (pitch == 1.0f) {
-                    crossfade?.applyPlaybackSpeed(speed) ?: eachPlayer { it.setPlaybackSpeed(speed) }
-                } else {
-                    val params = androidx.media3.common.PlaybackParameters(speed, pitch)
-                    eachPlayer { it.setPlaybackParameters(params) }
-                }
+                crossfade?.applyPlaybackSpeed(speed) ?: eachPlayer { it.setSpeedWithUserPitch(speed) }
             }
         }
         scope.launch {

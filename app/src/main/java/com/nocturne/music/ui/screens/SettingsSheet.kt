@@ -262,6 +262,9 @@ fun SettingsScreen(
     val playerTheme by AppSettings.playerTheme.collectAsStateWithLifecycle()
     val playerStyle by AppSettings.playerStyle.collectAsStateWithLifecycle()
     val transparentPlayerButtons by AppSettings.transparentPlayerButtons.collectAsStateWithLifecycle()
+    val appBackdrop by AppSettings.appBackdrop.collectAsStateWithLifecycle()
+    val appBackdropBlur by AppSettings.appBackdropBlur.collectAsStateWithLifecycle()
+    val appBackdropDim by AppSettings.appBackdropDim.collectAsStateWithLifecycle()
     val uiStyle by AppSettings.uiStyle.collectAsStateWithLifecycle()
     val homeStyle by AppSettings.homeStyle.collectAsStateWithLifecycle()
     val syncedLyrics by AppSettings.syncedLyrics.collectAsStateWithLifecycle()
@@ -991,9 +994,9 @@ fun SettingsScreen(
             row(themeTitle, "dark mode", "light mode") {
                 SettingsRow(icon = Icons.Rounded.Brightness4, title = themeTitle)
                 SegmentedControl(
-                    options = ThemeMode.entries.map { it.localizedLabel() },
-                    selectedIndex = ThemeMode.entries.indexOf(theme),
-                    onSelect = { AppSettings.setThemeMode(ThemeMode.entries[it]) },
+                    options = THEME_OPTIONS.map { it.localizedLabel() },
+                    selectedIndex = THEME_OPTIONS.indexOf(theme),
+                    onSelect = { AppSettings.setThemeMode(THEME_OPTIONS[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
             }
@@ -1019,9 +1022,9 @@ fun SettingsScreen(
                     subtitle = homeStyle.description(),
                 )
                 SegmentedControl(
-                    options = HomeStyle.entries.map { it.localizedLabel() },
-                    selectedIndex = HomeStyle.entries.indexOf(homeStyle),
-                    onSelect = { AppSettings.setHomeStyle(HomeStyle.entries[it]) },
+                    options = HOME_STYLE_OPTIONS.map { it.localizedLabel() },
+                    selectedIndex = HOME_STYLE_OPTIONS.indexOf(homeStyle),
+                    onSelect = { AppSettings.setHomeStyle(HOME_STYLE_OPTIONS[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
             }
@@ -1053,6 +1056,38 @@ fun SettingsScreen(
                     },
                     onClick = { AppSettings.setTransparentPlayerButtons(!transparentPlayerButtons) },
                 )
+            }
+            val appBackdropTitle = stringResource(R.string.app_backdrop)
+            row(appBackdropTitle, "background", "artwork", "album art", "blur", "backdrop", "wallpaper") {
+                SettingsRow(
+                    icon = SfIcons.BlurOn,
+                    title = appBackdropTitle,
+                    subtitle = stringResource(R.string.app_backdrop_subtitle),
+                    trailing = {
+                        IosSwitch(checked = appBackdrop, onCheckedChange = AppSettings::setAppBackdrop)
+                    },
+                    onClick = { AppSettings.setAppBackdrop(!appBackdrop) },
+                )
+                if (appBackdrop) {
+                    SliderRow(
+                        icon = SfIcons.BlurOn,
+                        title = stringResource(R.string.app_backdrop_blur),
+                        value = "${appBackdropBlur.roundToInt()} dp",
+                        sliderValue = appBackdropBlur,
+                        onSliderValue = AppSettings::setAppBackdropBlur,
+                        valueRange = AppSettings.APP_BACKDROP_BLUR_RANGE,
+                        steps = 0,
+                    )
+                    SliderRow(
+                        icon = SfIcons.Gradient,
+                        title = stringResource(R.string.app_backdrop_dim),
+                        value = "${(appBackdropDim * 100).roundToInt()}%",
+                        sliderValue = appBackdropDim,
+                        onSliderValue = AppSettings::setAppBackdropDim,
+                        valueRange = 0f..1f,
+                        steps = 0,
+                    )
+                }
             }
             val fontTitle = stringResource(R.string.font)
             row(fontTitle, "typeface", "sf pro", "legacy") {
@@ -2114,6 +2149,12 @@ private fun ThemeMode.localizedLabel(): String = stringResource(
         ThemeMode.DARK -> R.string.dark
     },
 )
+
+/** The picker's options with the fresh-install default leftmost; must match AppSettings' defaults. */
+private fun <T> List<T>.defaultFirst(default: T): List<T> = listOf(default) + filter { it != default }
+
+private val THEME_OPTIONS = ThemeMode.entries.defaultFirst(ThemeMode.DARK)
+private val HOME_STYLE_OPTIONS = HomeStyle.entries.defaultFirst(HomeStyle.NOCTURNE_MUSIC)
 
 @Composable
 private fun PlayerTheme.localizedLabel(): String = stringResource(

@@ -37,6 +37,11 @@ jobs:
         echo "LASTFM_SECRET=${{ secrets.LASTFM_SECRET }}" >> local.properties
         echo "LISTEN_TOGETHER_SERVER=${{ secrets.LISTEN_TOGETHER_SERVER }}" >> local.properties
 
+        # No release key, no release: never publish an APK signed with the public debug key.
+        if [ -z "$KEYSTORE_BASE64" ]; then
+          echo "::error::KEYSTORE_BASE64 is not set; refusing to build a release."
+          exit 1
+        fi
         if [ -n "$KEYSTORE_BASE64" ]; then
           echo "$KEYSTORE_BASE64" | base64 -d > nocturne-release.jks
           {
@@ -83,6 +88,18 @@ jobs:
 
         echo "Prepared assets:"
         ls -la release-assets/
+
+    - name: Refuse debug-signed APKs
+      run: |
+        apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+        for apk in release-assets/*.apk; do
+          certs="$("$apksigner" verify --print-certs "$apk")"
+          echo "$certs" | head -3
+          if echo "$certs" | grep -q "CN=Android Debug"; then
+            echo "::error::$apk is signed with a debug key; not uploading."
+            exit 1
+          fi
+        done
 
     - name: Upload APKs to GitHub Release
       env:

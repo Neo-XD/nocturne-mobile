@@ -178,6 +178,7 @@ fun ReplayScreen(
         LaunchedEffect(hasLastFm) {
             if (!hasLastFm) selectedStatsTab = 0
         }
+        val lastFm = rememberLastFmStats(lastfmUsername, state.period, enabled = hasLastFm && selectedStatsTab == 1)
 
         LazyColumn(
             state = listState,
@@ -196,9 +197,7 @@ fun ReplayScreen(
             }
 
             if (hasLastFm && selectedStatsTab == 1) {
-                item("lastfm-tab") {
-                    LastFmSection(dark = dark)
-                }
+                lastFmCharts(lastFm, lastfmUsername, state.period, topSongs, topArtists, dark)
             } else when {
                 state.loading && summary == null -> item("loading") {
                     Box(Modifier.fillMaxWidth().padding(64.dp), Alignment.Center) {
@@ -576,7 +575,7 @@ private fun ReplayChartRow(row: ReplayRow, circular: Boolean, dark: Boolean, onC
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = listOfNotNull(row.subtitle, formatListening(LocalContext.current, row.ms))
+                text = listOfNotNull(row.subtitle, row.ms.takeIf { it > 0 }?.let { formatListening(LocalContext.current, it) })
                     .joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = textVariant,
@@ -717,132 +716,116 @@ private fun EmptyReplay(period: ReplayPeriod, dark: Boolean) {
  */
 private const val CHART_LENGTH = 5
 
-@Composable
-private fun LastFmSection(dark: Boolean) {
-    val username by AppSettings.lastfmUsername.collectAsStateWithLifecycle()
-    if (username.isBlank()) return
-
-    var stats by remember { mutableStateOf<LastFM.LastFmStats?>(null) }
-    var loading by remember { mutableStateOf(false) }
-
-    LaunchedEffect(username) {
-        loading = true
-        stats = LastFM.getUserStats(username)
-        loading = false
+/** Last.fm's nearest period to [this]: it has rolling windows, not calendar weeks and months. */
+private val ReplayPeriod.lastFmPeriod: String
+    get() = when (this) {
+        ReplayPeriod.THIS_WEEK -> "7day"
+        ReplayPeriod.THIS_MONTH -> "1month"
+        ReplayPeriod.THIS_YEAR -> "12month"
+        ReplayPeriod.ALL_TIME -> "overall"
     }
 
-    val textColor = if (dark) Color.White else Color.Black
-    val textVariant = if (dark) Color.White.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.55f)
+private val ReplayPeriod.lastFmLabel: String
+    get() = when (this) {
+        ReplayPeriod.THIS_WEEK -> "the last 7 days"
+        ReplayPeriod.THIS_MONTH -> "the last 30 days"
+        ReplayPeriod.THIS_YEAR -> "the last 12 months"
+        ReplayPeriod.ALL_TIME -> "all time"
+    }
 
-    Column(Modifier.padding(horizontal = PAGE_GUTTER + 4.dp, vertical = 12.dp)) {
-        SectionTitle("Last.fm Stats", dark)
-        Spacer(Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(if (dark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.04f))
-                .padding(16.dp),
-        ) {
-            val currentStats = stats
-            if (loading) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                }
-            } else if (currentStats != null) {
-                val s = currentStats
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "@${s.username}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFF4D4D),
-                        )
-                        Text(
-                            text = "${s.totalScrobbles} Scrobbles",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = textColor,
-                        )
-                    }
-                    if (s.topArtists.isNotEmpty()) {
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            text = "Top Artists on Last.fm",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = textVariant,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        for ((i, artist) in s.topArtists.take(5).withIndex()) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 3.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    text = "${i + 1}. ${artist.name}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = textColor,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text(
-                                    text = "${artist.playcount} plays",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = textVariant,
-                                )
-                            }
-                        }
-                    }
-                    if (s.topTracks.isNotEmpty()) {
-                        Spacer(Modifier.height(14.dp))
-                        Text(
-                            text = "Top Tracks on Last.fm",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = textVariant,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        for ((i, track) in s.topTracks.take(5).withIndex()) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 3.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    text = "${i + 1}. ${track.name} — ${track.artist.name}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = textColor,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = "${track.playcount} plays",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = textVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            } else {
-                Text(
-                    text = "Could not fetch stats for @$username",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textVariant,
-                )
+/** A Last.fm fetch for one user and period: the stats, or null while [loading] or after a failure. */
+private class LastFmLoad(val stats: LastFM.LastFmStats?, val loading: Boolean)
+
+@Composable
+private fun rememberLastFmStats(username: String, period: ReplayPeriod, enabled: Boolean): LastFmLoad {
+    var load by remember { mutableStateOf(LastFmLoad(null, loading = true)) }
+    LaunchedEffect(username, period, enabled) {
+        if (!enabled || username.isBlank()) return@LaunchedEffect
+        load = LastFmLoad(null, loading = true)
+        load = LastFmLoad(LastFM.getUserStats(username, period.lastFmPeriod), loading = false)
+    }
+    return load
+}
+
+/** The Last.fm tab, drawn with the local tab's own charts and tiles so the two read alike. */
+private fun LazyListScope.lastFmCharts(
+    load: LastFmLoad,
+    username: String,
+    period: ReplayPeriod,
+    topSongs: String,
+    topArtists: String,
+    dark: Boolean,
+) {
+    val stats = load.stats
+    if (load.loading) {
+        item("lastfm-loading") {
+            val textColor = if (dark) Color.White else Color.Black
+            Box(Modifier.fillMaxWidth().padding(64.dp), Alignment.Center) {
+                CircularProgressIndicator(color = textColor.copy(alpha = 0.6f))
+            }
+        }
+        return
+    }
+    if (stats == null) {
+        item("lastfm-error") {
+            Note(
+                text = "Could not fetch Last.fm stats for @$username",
+                dark = dark,
+                modifier = Modifier.padding(horizontal = PAGE_GUTTER + 4.dp, vertical = 24.dp),
+            )
+        }
+        return
+    }
+    item("lastfm-source") {
+        Note(
+            text = "@${stats.username} on Last.fm, ${period.lastFmLabel}",
+            dark = dark,
+            modifier = Modifier.padding(horizontal = PAGE_GUTTER + 4.dp, vertical = 8.dp),
+        )
+    }
+    chart(
+        key = "lastfm-songs",
+        title = topSongs,
+        rows = stats.topTracks.take(CHART_LENGTH).mapIndexed { i, track ->
+            ReplayRow(
+                key = "${track.name}-${track.artist.name}",
+                rank = i + 1,
+                title = track.name,
+                subtitle = track.artist.name.ifBlank { null },
+                artworkUrl = null,
+                ms = 0L,
+                plays = track.playcount.toIntOrNull() ?: 0,
+            )
+        },
+        dark = dark,
+        onClick = {},
+    )
+    chart(
+        key = "lastfm-artists",
+        title = topArtists,
+        rows = stats.topArtists.take(CHART_LENGTH).mapIndexed { i, artist ->
+            ReplayRow(
+                key = artist.name,
+                rank = i + 1,
+                title = artist.name,
+                subtitle = null,
+                artworkUrl = null,
+                ms = 0L,
+                plays = artist.playcount.toIntOrNull() ?: 0,
+            )
+        },
+        dark = dark,
+        circular = true,
+        onClick = {},
+    )
+    item("lastfm-totals") {
+        Column(Modifier.padding(horizontal = PAGE_GUTTER + 4.dp)) {
+            SectionTitleInline("All-time on Last.fm", dark)
+            Spacer(Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile("Scrobbles", stats.totalScrobbles.toString(), dark, Modifier.weight(1f))
+                StatTile(stringResource(R.string.artists), stats.totalArtists.toString(), dark, Modifier.weight(1f))
+                StatTile(stringResource(R.string.songs), stats.totalTracks.toString(), dark, Modifier.weight(1f))
             }
         }
     }
