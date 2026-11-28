@@ -213,16 +213,7 @@ fun YouScreen(
                         }
                     }
 
-                    Spacer(Modifier.width(4.dp))
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                        contentDescription = stringResource(R.string.account_integrations),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp),
-                    )
-
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(12.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -242,6 +233,15 @@ fun YouScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                        contentDescription = stringResource(R.string.account_integrations),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp),
+                    )
                 }
 
                 IconButton(onClick = onOpenSettings) {

@@ -991,9 +991,9 @@ fun SettingsScreen(
             row(themeTitle, "dark mode", "light mode") {
                 SettingsRow(icon = Icons.Rounded.Brightness4, title = themeTitle)
                 SegmentedControl(
-                    options = ThemeMode.entries.map { it.localizedLabel() },
-                    selectedIndex = ThemeMode.entries.indexOf(theme),
-                    onSelect = { AppSettings.setThemeMode(ThemeMode.entries[it]) },
+                    options = THEME_OPTIONS.map { it.localizedLabel() },
+                    selectedIndex = THEME_OPTIONS.indexOf(theme),
+                    onSelect = { AppSettings.setThemeMode(THEME_OPTIONS[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
             }
@@ -1019,9 +1019,9 @@ fun SettingsScreen(
                     subtitle = homeStyle.description(),
                 )
                 SegmentedControl(
-                    options = HomeStyle.entries.map { it.localizedLabel() },
-                    selectedIndex = HomeStyle.entries.indexOf(homeStyle),
-                    onSelect = { AppSettings.setHomeStyle(HomeStyle.entries[it]) },
+                    options = HOME_STYLE_OPTIONS.map { it.localizedLabel() },
+                    selectedIndex = HOME_STYLE_OPTIONS.indexOf(homeStyle),
+                    onSelect = { AppSettings.setHomeStyle(HOME_STYLE_OPTIONS[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
             }
@@ -2116,6 +2116,12 @@ private fun ThemeMode.localizedLabel(): String = stringResource(
 )
 
 @Composable
+/** The picker's options with the fresh-install default leftmost; must match AppSettings' defaults. */
+private fun <T> List<T>.defaultFirst(default: T): List<T> = listOf(default) + filter { it != default }
+
+private val THEME_OPTIONS = ThemeMode.entries.defaultFirst(ThemeMode.DARK)
+private val HOME_STYLE_OPTIONS = HomeStyle.entries.defaultFirst(HomeStyle.NOCTURNE_MUSIC)
+
 private fun PlayerTheme.localizedLabel(): String = stringResource(
     when (this) {
         PlayerTheme.DEFAULT -> R.string.player_theme_default

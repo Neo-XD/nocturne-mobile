@@ -111,10 +111,10 @@ private val SPINNER_SIZE = 22.dp
 private val TRANSPORT_GAP = 8.dp
 
 /**
- * Vertical padding, which with the 40dp artwork sets the bar's height at 56dp
- * and so its pill radius at 28.
+ * Vertical padding, which with the 40dp artwork sets the bar's height at 60dp
+ * and so its pill radius at 30.
  */
-private val ROW_PADDING_VERTICAL = 8.dp
+private val ROW_PADDING_VERTICAL = 10.dp
 
 /**
  * Horizontal padding, deliberately larger than the vertical.
