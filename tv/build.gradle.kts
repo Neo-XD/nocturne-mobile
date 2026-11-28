@@ -205,9 +205,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "../app/proguard-rules.pro"
             )
-            // Null without a keystore to sign with: fallback to debug signing
-            // so the release build is fully R8 optimized and directly installable.
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Release key only; the task guard at the end of this file fails the build without it.
+            signingConfig = signingConfigs.findByName("release")
         }
         /*
          * The release build, installable next to the dev and prod apps: same R8,
@@ -504,5 +503,19 @@ val replacedByTv: Set<String> = fileTree(tvJava) { include("**/*.kt") }.files
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     exclude { el ->
         el.file.startsWith(phoneJava) && el.relativePath.pathString in replacedByTv
+    }
+}
+
+// A release build without the release key fails instead of falling back to the public debug key,
+// which would let anyone holding this repo sign an update that installs over it.
+val releaseKeyPresent = android.signingConfigs.findByName("release") != null
+tasks.matching { Regex("^(assemble|bundle|package)\\w*Release$").matches(it.name) }.configureEach {
+    doFirst {
+        if (!releaseKeyPresent) {
+            throw GradleException(
+                "No release signing key: keystore.properties must name an existing keystore. " +
+                    "Release builds are never signed with the debug key.",
+            )
+        }
     }
 }

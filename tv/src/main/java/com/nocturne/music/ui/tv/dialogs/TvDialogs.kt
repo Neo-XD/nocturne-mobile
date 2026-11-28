@@ -1034,7 +1034,7 @@ private fun TvPhoneSignIn(viewModel: MainViewModel, onBack: () -> Unit) {
         scope.launch {
             TvAuthServer.start { cookie ->
                 scope.launch(Dispatchers.Main) { viewModel.onSignedIn(cookie) }
-            }?.let { (port, ip) -> url = "http://$ip:$port/" }
+            }?.let { url = it }
         }
         onDispose { TvAuthServer.stop() }
     }

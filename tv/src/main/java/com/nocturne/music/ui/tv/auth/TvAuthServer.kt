@@ -6,9 +6,7 @@ import com.nocturne.music.data.YtMusicRepository
 import com.nocturne.music.data.model.SearchFilter
 import com.nocturne.music.data.model.SearchResult
 import com.nocturne.music.data.model.Song
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,6 +18,9 @@ import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.URLDecoder
+import java.security.SecureRandom
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 data class TvRemoteStatus(
@@ -36,9 +37,23 @@ object TvAuthServer {
     private const val TAG = "TvAuthServer"
     private const val DEFAULT_PORT = 8765
 
+    // A cookie paste or a remote command is a few KB; anything bigger is refused before it is read.
+    private const val MAX_BODY_BYTES = 16 * 1024
+    private const val READ_TIMEOUT_MS = 10_000
+    private const val MAX_CLIENT_THREADS = 4
+
+    /** The secret path every request must carry; it is only ever shown in the TV's QR code. */
+    @Volatile
+    private var token: String = ""
+
+    /** The origin the TV's own pages are served from; a request from any other origin is refused. */
+    @Volatile
+    private var ownOrigin: String = ""
+
+    private var clients: ExecutorService? = null
+
     private var serverSocket: ServerSocket? = null
     private val isRunning = AtomicBoolean(false)
-    private val scope = CoroutineScope(Dispatchers.IO)
 
     // Remote callbacks
     var statusProvider: (() -> TvRemoteStatus)? = null
@@ -75,9 +90,10 @@ object TvAuthServer {
         return null
     }
 
+    /** Starts serving and returns the one-time address the phone must open, or null if it cannot. */
     suspend fun start(
         onCookieReceived: ((String) -> Unit)? = null,
-    ): Pair<Int, String>? = withContext(Dispatchers.IO) {
+    ): String? = withContext(Dispatchers.IO) {
         stop()
 
         val ip = getLocalIpAddress() ?: return@withContext null
@@ -88,8 +104,11 @@ object TvAuthServer {
                 ServerSocket(0)
             }
             serverSocket = socket
-            isRunning.set(true)
             val port = socket.localPort
+            token = newToken()
+            ownOrigin = "http://$ip:$port"
+            clients = Executors.newFixedThreadPool(MAX_CLIENT_THREADS)
+            isRunning.set(true)
 
             Thread {
                 while (isRunning.get() && !socket.isClosed) {
@@ -102,7 +121,7 @@ object TvAuthServer {
                 }
             }.start()
 
-            Pair(port, ip)
+            "$ownOrigin/s/$token/"
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start TV server", e)
             null
@@ -115,29 +134,73 @@ object TvAuthServer {
             serverSocket?.close()
         } catch (_: Exception) {}
         serverSocket = null
+        clients?.shutdownNow()
+        clients = null
+        token = ""
+    }
+
+    private fun newToken(): String {
+        val bytes = ByteArray(16).also { SecureRandom().nextBytes(it) }
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun sendStatus(writer: PrintWriter, code: Int, reason: String) {
+        writer.print("HTTP/1.1 $code $reason\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+        writer.flush()
     }
 
     private fun handleClient(client: Socket, onCookieReceived: ((String) -> Unit)?) {
-        Thread {
+        val pool = clients
+        if (pool == null) {
+            try { client.close() } catch (_: Exception) {}
+            return
+        }
+        runCatching { pool.execute { serveClient(client, onCookieReceived) } }
+            .onFailure { try { client.close() } catch (_: Exception) {} }
+    }
+
+    private fun serveClient(client: Socket, onCookieReceived: ((String) -> Unit)?) {
+        run {
             try {
+                client.soTimeout = READ_TIMEOUT_MS
                 val reader = BufferedReader(InputStreamReader(client.getInputStream()))
                 val writer = PrintWriter(client.getOutputStream(), true)
 
-                val requestLine = reader.readLine() ?: return@Thread
+                val requestLine = reader.readLine() ?: return@run
                 val parts = requestLine.split(" ")
                 val method = parts.getOrNull(0) ?: "GET"
                 val rawPath = parts.getOrNull(1) ?: "/"
-                val path = rawPath.substringBefore("?")
                 val query = if (rawPath.contains("?")) rawPath.substringAfter("?") else ""
 
                 var contentLength = 0
+                var origin: String? = null
                 var line: String?
                 while (reader.readLine().also { line = it } != null) {
                     if (line.isNullOrBlank()) break
                     if (line!!.startsWith("Content-Length:", ignoreCase = true)) {
                         contentLength = line!!.substringAfter(":").trim().toIntOrNull() ?: 0
+                    } else if (line!!.startsWith("Origin:", ignoreCase = true)) {
+                        origin = line!!.substringAfter(":").trim()
                     }
                 }
+
+                // Only the address in the QR code is served: without the token there is nothing here.
+                val secret = token
+                val prefix = "/s/$secret"
+                if (secret.isEmpty() || !rawPath.startsWith("$prefix/")) {
+                    sendStatus(writer, 404, "Not Found")
+                    return@run
+                }
+                // A page on another site can post to a LAN address; the browser names it in Origin.
+                if (origin != null && origin != ownOrigin) {
+                    sendStatus(writer, 403, "Forbidden")
+                    return@run
+                }
+                if (contentLength < 0 || contentLength > MAX_BODY_BYTES) {
+                    sendStatus(writer, 413, "Payload Too Large")
+                    return@run
+                }
+                val path = rawPath.substringBefore("?").removePrefix(prefix)
 
                 var requestBody = ""
                 if (contentLength > 0) {
@@ -195,7 +258,8 @@ object TvAuthServer {
                         if (q.isBlank()) {
                             sendJsonResponse(writer, "[]")
                         } else {
-                            scope.launch {
+                            // Answered on this thread: the socket closes when this request returns.
+                            kotlinx.coroutines.runBlocking {
                                 val results = YtMusicRepository.search(q, SearchFilter.SONGS).getOrDefault(emptyList())
                                 val arr = JSONArray()
                                 results.take(15).forEach { item ->
@@ -255,13 +319,12 @@ object TvAuthServer {
             } finally {
                 try { client.close() } catch (_: Exception) {}
             }
-        }.start()
+        }
     }
 
     private fun sendJsonResponse(writer: PrintWriter, json: String) {
         writer.print("HTTP/1.1 200 OK\r\n")
         writer.print("Content-Type: application/json; charset=utf-8\r\n")
-        writer.print("Access-Control-Allow-Origin: *\r\n")
         writer.print("Content-Length: ${json.toByteArray().size}\r\n")
         writer.print("\r\n")
         writer.print(json)
@@ -416,7 +479,7 @@ function fmtTime(ms) {
   return m + ":" + (r < 10 ? "0" : "") + r;
 }
 function updateStatus() {
-  fetch('/api/status').then(r => r.json()).then(data => {
+  fetch('api/status').then(r => r.json()).then(data => {
     document.getElementById('trackTitle').innerText = data.title || "No Song Playing";
     document.getElementById('trackArtist').innerText = data.artist || "BitChord TV";
     let art = document.getElementById('trackArt');
@@ -431,7 +494,7 @@ function updateStatus() {
   }).catch(() => {});
 }
 function sendAction(act, extra = '') {
-  fetch('/api/action?action=' + act + extra, { method: 'POST' });
+  fetch('api/action?action=' + act + extra, { method: 'POST' });
   setTimeout(updateStatus, 150);
 }
 function handleSeek(e) {
@@ -443,7 +506,7 @@ function handleSeek(e) {
 function searchMusic() {
   let q = document.getElementById('sQuery').value;
   if (!q) return;
-  fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json()).then(items => {
+  fetch('api/search?q=' + encodeURIComponent(q)).then(r => r.json()).then(items => {
     let container = document.getElementById('sResults');
     container.innerHTML = '';
     items.forEach(item => {
@@ -451,7 +514,7 @@ function searchMusic() {
       div.className = 'result-item';
       div.innerHTML = '<img class="result-thumb" src="' + (item.thumbnailUrl || '') + '" /><div class="result-text"><div class="result-title">' + item.title + '</div><div class="result-sub">' + item.subtitle + '</div></div>';
       div.onclick = () => {
-        fetch('/api/play?videoId=' + encodeURIComponent(item.videoId) + '&title=' + encodeURIComponent(item.title) + '&artist=' + encodeURIComponent(item.subtitle) + '&thumbnailUrl=' + encodeURIComponent(item.thumbnailUrl), { method: 'POST' });
+        fetch('api/play?videoId=' + encodeURIComponent(item.videoId) + '&title=' + encodeURIComponent(item.title) + '&artist=' + encodeURIComponent(item.subtitle) + '&thumbnailUrl=' + encodeURIComponent(item.thumbnailUrl), { method: 'POST' });
         container.innerHTML = '<div style="padding:10px;text-align:center;color:#00E5FF;">Playing ' + item.title + ' on TV!</div>';
       };
       container.appendChild(div);
@@ -507,8 +570,9 @@ textarea { width: 100%; height: 90px; background: rgba(0,0,0,0.5); border: 1px s
 <div class="card">
   <h2 style="font-size: 17px; font-weight: bold; margin-bottom: 8px;">Direct Session Submission</h2>
   <p style="font-size: 13px; color: #AAA; line-height: 1.4;">Paste your YouTube Music session cookie / headers to immediately log in on TV:</p>
+  <p style="font-size: 12px; color: #FF9F0A; line-height: 1.4; margin-top: 6px;">This cookie is your whole Google account session and travels unencrypted over your Wi-Fi. Only do this on a network you trust, never on public or shared Wi-Fi.</p>
   ${if (error != null) "<div style='color:#FF375F;font-size:13px;margin-top:8px;'>$error</div>" else ""}
-  <form action="/submit" method="POST">
+  <form action="submit" method="POST">
     <textarea name="cookie" placeholder="Paste SAPISID / Session Cookie here..."></textarea>
     <button type="submit" class="btn-primary">Connect Account to TV</button>
   </form>
@@ -535,7 +599,7 @@ body { background: #08080B; color: #FFF; font-family: -apple-system, sans-serif;
   <div style="font-size: 48px; margin-bottom: 12px;">✅</div>
   <h1 style="font-size: 22px; font-weight: bold; margin-bottom: 8px;">Paired Successfully!</h1>
   <p style="font-size: 14px; color: #AAA;">Your BitChord TV is now connected. You can now use the mobile remote to control playback.</p>
-  <a href="/remote" class="btn">📱 Open TV Remote</a>
+  <a href="remote" class="btn">📱 Open TV Remote</a>
 </div>
 </body>
 </html>

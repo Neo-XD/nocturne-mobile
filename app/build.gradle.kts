@@ -202,9 +202,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Fallback to debug signing if release key is absent, so release builds
-            // always produce an installable signed APK rather than failing with "App not installed".
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Release key only; the task guard at the end of this file fails the build without it.
+            signingConfig = signingConfigs.findByName("release")
         }
         /*
          * The release build, installable next to the dev and prod apps: same R8,
@@ -560,5 +559,19 @@ if (providers.gradleProperty("bitchord.bundleWear").orNull != "false" && findPro
             apks.from(rootProject.layout.projectDirectory.dir("wearos/build/outputs/apk/$flavor/$type"))
         }
         variant.sources.assets?.addGeneratedSourceDirectory(bundle, BundleWearApk::outputDir)
+    }
+}
+
+// A release build without the release key fails instead of falling back to the public debug key,
+// which would let anyone holding this repo sign an update that installs over it.
+val releaseKeyPresent = android.signingConfigs.findByName("release") != null
+tasks.matching { Regex("^(assemble|bundle|package)\\w*Release$").matches(it.name) }.configureEach {
+    doFirst {
+        if (!releaseKeyPresent) {
+            throw GradleException(
+                "No release signing key: keystore.properties must name an existing keystore. " +
+                    "Release builds are never signed with the debug key.",
+            )
+        }
     }
 }

@@ -265,7 +265,7 @@ class ModuleManager {
             val result = QuickJsExecutor.callExport(
                 moduleId = loaded.module.id,
                 functionName = "searchTracks",
-                args = listOf("\"$query\"", limit.toString(), contextArg),
+                args = listOf(JsArgs.string(query), limit.toString(), contextArg),
             ).getOrThrow()
             json.decodeFromString<ModuleSearchResponse>(result).also {
                 TrackLog.d(TAG, "  ✓ Parsed ${it.tracks.size} tracks (total=${it.total})")
@@ -311,7 +311,7 @@ class ModuleManager {
             val result = QuickJsExecutor.callExport(
                 moduleId = loaded.module.id,
                 functionName = "getTrackStreamUrl",
-                args = listOf("\"$trackId\"", "\"$quality\"", contextArg),
+                args = listOf(JsArgs.string(trackId), JsArgs.string(quality), contextArg),
             ).getOrThrow()
             json.decodeFromString<ModuleStreamResponse>(result).also {
                 TrackLog.d(TAG, "  ✓ streamUrl=${it.streamUrl?.take(100) ?: "<none>"} quality=${it.track?.audioQuality}")
@@ -353,12 +353,7 @@ class ModuleManager {
      * out of it: every lookup landed on undefined and fell through to the
      * module's own default. Silent, and worth exactly one misplaced brace.
      */
-    private fun contextArg(settings: Map<String, String>): String =
-        settings.entries.joinToString(
-            separator = ",",
-            prefix = "{settings:{",
-            postfix = "}}",
-        ) { (key, value) -> "\"$key\":{\"value\":\"$value\"}" }
+    private fun contextArg(settings: Map<String, String>): String = JsArgs.context(settings)
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
