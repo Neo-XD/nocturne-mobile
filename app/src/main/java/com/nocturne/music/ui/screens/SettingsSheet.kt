@@ -2115,13 +2115,13 @@ private fun ThemeMode.localizedLabel(): String = stringResource(
     },
 )
 
-@Composable
 /** The picker's options with the fresh-install default leftmost; must match AppSettings' defaults. */
 private fun <T> List<T>.defaultFirst(default: T): List<T> = listOf(default) + filter { it != default }
 
 private val THEME_OPTIONS = ThemeMode.entries.defaultFirst(ThemeMode.DARK)
 private val HOME_STYLE_OPTIONS = HomeStyle.entries.defaultFirst(HomeStyle.NOCTURNE_MUSIC)
 
+@Composable
 private fun PlayerTheme.localizedLabel(): String = stringResource(
     when (this) {
         PlayerTheme.DEFAULT -> R.string.player_theme_default
