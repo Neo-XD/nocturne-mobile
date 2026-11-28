@@ -3012,17 +3012,15 @@ private fun BitChordApp(
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 // The artwork and the pages share one recorded layer: the glass samples both, and its
                 // opaque floor sits under the artwork instead of painting over it.
-                Box(
-                    Modifier
+                ArtworkPageLayer(
+                    artUrlOrNull = (activeTrack ?: playerSong)?.thumbnailUrl,
+                    darkTheme = darkTheme,
+                    reduceDynamicBlur = reduceDynamicBlur,
+                    modifier = Modifier
                         .fillMaxSize()
                         .hazeSource(hazeState)
                         .then(if (glassActive && glassSamplesBackdrop) Modifier.layerBackdrop(appBackdrop) else Modifier),
                 ) {
-                    AppArtworkBackdrop(
-                        artUrlOrNull = (activeTrack ?: playerSong)?.thumbnailUrl,
-                        darkTheme = darkTheme,
-                        reduceDynamicBlur = reduceDynamicBlur,
-                    )
                     AnimatedContent(
                         // Whatever is on top of the back stack — see [AppNavigator].
                         targetState = when {
@@ -6474,7 +6472,22 @@ private const val TAB_LIBRARY = 1
 private const val TAB_YOU = 2
 private const val TAB_SEARCH = 3
 
-/** The track's cover behind every page; its own function so BitChordApp stays under the JVM's 64 KB method limit. */
+/** The artwork under the pages, in one layer; a non-inline host so the pages compile outside BitChordApp's 64 KB method. */
+@Composable
+private fun ArtworkPageLayer(
+    artUrlOrNull: String?,
+    darkTheme: Boolean,
+    reduceDynamicBlur: Boolean,
+    modifier: Modifier,
+    pages: @Composable () -> Unit,
+) {
+    Box(modifier) {
+        AppArtworkBackdrop(artUrlOrNull, darkTheme, reduceDynamicBlur)
+        pages()
+    }
+}
+
+/** The track's cover behind every page, blurred and dimmed as the user has it set. */
 @Composable
 private fun AppArtworkBackdrop(artUrlOrNull: String?, darkTheme: Boolean, reduceDynamicBlur: Boolean) {
     val artBackdropOn by AppSettings.appBackdrop.collectAsStateWithLifecycle()
