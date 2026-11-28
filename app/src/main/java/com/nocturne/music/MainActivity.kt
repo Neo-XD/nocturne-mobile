@@ -3013,10 +3013,10 @@ private fun BitChordApp(
                 // Full-app blurred album art background behind all tabs and screens.
                 // Anchored to the root viewport so overscrolling never cuts it off.
                 val appArtUrl = (activeTrack ?: playerSong)?.thumbnailUrl
-                val appBackdrop by AppSettings.appBackdrop.collectAsStateWithLifecycle()
-                val appBackdropBlur by AppSettings.appBackdropBlur.collectAsStateWithLifecycle()
-                val appBackdropDim by AppSettings.appBackdropDim.collectAsStateWithLifecycle()
-                if (appBackdrop && appArtUrl != null) {
+                val artBackdropOn by AppSettings.appBackdrop.collectAsStateWithLifecycle()
+                val artBackdropBlur by AppSettings.appBackdropBlur.collectAsStateWithLifecycle()
+                val artBackdropDim by AppSettings.appBackdropDim.collectAsStateWithLifecycle()
+                if (artBackdropOn && appArtUrl != null) {
                     androidx.compose.animation.Crossfade(
                         targetState = appArtUrl,
                         animationSpec = tween(600),
@@ -3026,14 +3026,14 @@ private fun BitChordApp(
                         Box(Modifier.fillMaxSize()) {
                             coil3.compose.AsyncImage(
                                 // Blurred this far, a small copy looks the same and decodes far cheaper.
-                                model = artUrl.artworkAt(if (appBackdropBlur >= 24f) 96 else 256),
+                                model = artUrl.artworkAt(if (artBackdropBlur >= 24f) 96 else 256),
                                 contentDescription = null,
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .then(
-                                        if (!reduceDynamicBlur && appBackdropBlur > 0f) {
-                                            Modifier.blur(appBackdropBlur.dp)
+                                        if (!reduceDynamicBlur && artBackdropBlur > 0f) {
+                                            Modifier.blur(artBackdropBlur.dp)
                                         } else {
                                             Modifier
                                         },
@@ -3044,9 +3044,9 @@ private fun BitChordApp(
                                     .fillMaxSize()
                                     .background(
                                         if (darkTheme) {
-                                            Color.Black.copy(alpha = appBackdropDim)
+                                            Color.Black.copy(alpha = artBackdropDim)
                                         } else {
-                                            Color.White.copy(alpha = (appBackdropDim + 0.08f).coerceAtMost(1f))
+                                            Color.White.copy(alpha = (artBackdropDim + 0.08f).coerceAtMost(1f))
                                         },
                                     ),
                             )
